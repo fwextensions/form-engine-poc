@@ -22,20 +22,20 @@ const RadioComponent: FieldComponent = ({ field, value, onChange, className }) =
     >
       {options.map((option) => (
         <div key={option.value} className="flex items-center">
-          <Form.Control asChild>
-            <RadioGroupPrimitive.Item
-              value={option.value}
-              className={radioItemStyles}
-              disabled={field.disabled}
-              style={field.style}
-            >
-              <RadioGroupPrimitive.Indicator className={radioIndicatorStyles}>
-                <div className="h-2 w-2 rounded-full bg-white" />
-              </RadioGroupPrimitive.Indicator>
-            </RadioGroupPrimitive.Item>
-          </Form.Control>
+          <RadioGroupPrimitive.Item
+            value={option.value}
+            id={`${field.id}-${option.value}`}
+            className={radioItemStyles}
+            disabled={field.disabled}
+            style={field.style}
+          >
+            <RadioGroupPrimitive.Indicator className={radioIndicatorStyles}>
+              <div className="h-2 w-2 rounded-full bg-white" />
+            </RadioGroupPrimitive.Indicator>
+          </RadioGroupPrimitive.Item>
           <Form.Label 
-            className={`ml-2 text-sm font-medium ${field.disabled ? 'text-gray-400' : 'text-gray-700'}`}
+            htmlFor={`${field.id}-${option.value}`}
+            className={`ml-2 text-sm font-medium ${field.disabled ? 'text-gray-400' : 'text-gray-700 cursor-pointer'}`}
             style={field.style}
           >
             {option.label}

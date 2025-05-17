@@ -11,14 +11,14 @@ const SelectComponent: FieldComponent = ({ field, value, onChange, className }) 
   const selectPlaceholderText = field.placeholder || (field.label ? `Select ${field.label.toLowerCase()}` : 'Select an option');
 
   return (
-    <SelectPrimitive.Root 
+    <SelectPrimitive.Root
       value={value ?? ""}
       onValueChange={onChange}
       required={field.validation?.required}
       disabled={field.disabled}
     >
-      <SelectPrimitive.Trigger 
-        className={`${inputStyles} ${className || ''} justify-between data-[placeholder]:text-gray-500 ${
+      <SelectPrimitive.Trigger
+        className={`flex items-center ${inputStyles} ${className || ''} justify-between data-[placeholder]:text-gray-500 ${
           field.disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
         }`}
         aria-label={field.label}
@@ -30,17 +30,17 @@ const SelectComponent: FieldComponent = ({ field, value, onChange, className }) 
         </SelectPrimitive.Icon>
       </SelectPrimitive.Trigger>
       <SelectPrimitive.Portal>
-        <SelectPrimitive.Content 
-          position="popper" 
+        <SelectPrimitive.Content
+          position="popper"
           sideOffset={5}
-          className="z-50 w-[--radix-select-trigger-width] bg-white rounded-md shadow-lg border border-gray-200"
+          className="z-50 w-(--radix-select-trigger-width) bg-white rounded-md shadow-lg border border-gray-200"
         >
-          <SelectPrimitive.ScrollUpButton 
+          <SelectPrimitive.ScrollUpButton
             className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default hover:bg-gray-50"
           >
             <ChevronUpIcon className="w-4 h-4" />
           </SelectPrimitive.ScrollUpButton>
-          
+
           <SelectPrimitive.Viewport className="p-1">
             {displayOptions.length > 0 ? (
               displayOptions.map((option) => (
@@ -49,13 +49,13 @@ const SelectComponent: FieldComponent = ({ field, value, onChange, className }) 
                   value={option.value}
                   disabled={field.disabled}
                   className={`
-                    text-sm leading-none text-gray-900 rounded flex items-center h-8 px-3 py-1.5 relative select-none 
+                    text-sm leading-none text-gray-900 rounded flex items-center h-8 pl-7 pr-3 py-1.5 relative select-none
                     ${field.disabled ? 'text-gray-400 cursor-not-allowed' : 'cursor-pointer'}
                     data-[highlighted]:outline-none data-[highlighted]:bg-blue-500 data-[highlighted]:text-white
                   `}
                 >
                   <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
-                  <SelectPrimitive.ItemIndicator className="absolute left-1.5 inline-flex items-center">
+                  <SelectPrimitive.ItemIndicator className="absolute left-1.5 top-1/2 -translate-y-1/2 inline-flex items-center">
                     <CheckIcon className="w-4 h-4" />
                   </SelectPrimitive.ItemIndicator>
                 </SelectPrimitive.Item>
@@ -64,8 +64,8 @@ const SelectComponent: FieldComponent = ({ field, value, onChange, className }) 
               <div className="px-3 py-1.5 text-sm text-gray-500">No options available</div>
             )}
           </SelectPrimitive.Viewport>
-          
-          <SelectPrimitive.ScrollDownButton 
+
+          <SelectPrimitive.ScrollDownButton
             className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default hover:bg-gray-50"
           >
             <ChevronDownIcon className="w-4 h-4" />
@@ -78,10 +78,10 @@ const SelectComponent: FieldComponent = ({ field, value, onChange, className }) 
 
 const renderField: FieldDefinition['render'] = (props) => {
   const { field } = props;
-  
+
   return (
-    <Form.Field 
-      name={field.id} 
+    <Form.Field
+      name={field.id}
       className={`mb-4 grid ${field.className || ''}`}
       style={field.style}
     >
