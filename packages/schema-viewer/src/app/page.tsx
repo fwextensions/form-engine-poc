@@ -1,5 +1,4 @@
-import PoCForm from "@/components/PoCForm";
-import { parseFormSchema, FormSchema } from "@/services/schemaParser";
+import { PoCForm, parseFormSchema, FormSchema } from 'form-engine';
 
 // Raw YAML content (simulating loading from a file for PoC) - Updated for M3
 const rawYamlSchema = `
