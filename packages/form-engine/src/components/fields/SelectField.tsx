@@ -1,6 +1,6 @@
 import React from "react";
-import * as Form from "@radix-ui/react-form";
-import * as SelectPrimitive from "@radix-ui/react-select";
+import { Field, Label, Message } from "@radix-ui/react-form";
+import * as Select from "@radix-ui/react-select";
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import { FieldComponent, FieldDefinition } from "./types";
 import fieldRegistry from "./FieldRegistry";
@@ -11,40 +11,40 @@ const SelectComponent: FieldComponent = ({ field, value, onChange, className }) 
   const selectPlaceholderText = field.placeholder || (field.label ? `Select ${field.label.toLowerCase()}` : 'Select an option');
 
   return (
-    <SelectPrimitive.Root
+    <Select.Root
       value={value ?? ""}
       onValueChange={onChange}
       required={field.validation?.required}
       disabled={field.disabled}
     >
-      <SelectPrimitive.Trigger
+      <Select.Trigger
         className={`flex items-center ${inputStyles} ${className || ''} justify-between data-[placeholder]:text-gray-500 ${
           field.disabled ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'
         }`}
         aria-label={field.label}
         style={field.style}
       >
-        <SelectPrimitive.Value placeholder={selectPlaceholderText} />
-        <SelectPrimitive.Icon className={field.disabled ? 'opacity-50' : ''}>
+        <Select.Value placeholder={selectPlaceholderText} />
+        <Select.Icon className={field.disabled ? 'opacity-50' : ''}>
           <ChevronDownIcon className="w-4 h-4" />
-        </SelectPrimitive.Icon>
-      </SelectPrimitive.Trigger>
-      <SelectPrimitive.Portal>
-        <SelectPrimitive.Content
+        </Select.Icon>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Content
           position="popper"
           sideOffset={5}
           className="z-50 w-(--radix-select-trigger-width) bg-white rounded-md shadow-lg border border-gray-200"
         >
-          <SelectPrimitive.ScrollUpButton
+          <Select.ScrollUpButton
             className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default hover:bg-gray-50"
           >
             <ChevronUpIcon className="w-4 h-4" />
-          </SelectPrimitive.ScrollUpButton>
+          </Select.ScrollUpButton>
 
-          <SelectPrimitive.Viewport className="p-1">
+          <Select.Viewport className="p-1">
             {displayOptions.length > 0 ? (
               displayOptions.map((option) => (
-                <SelectPrimitive.Item
+                <Select.Item
                   key={option.value}
                   value={option.value}
                   disabled={field.disabled}
@@ -54,25 +54,25 @@ const SelectComponent: FieldComponent = ({ field, value, onChange, className }) 
                     data-[highlighted]:outline-none data-[highlighted]:bg-blue-500 data-[highlighted]:text-white
                   `}
                 >
-                  <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
-                  <SelectPrimitive.ItemIndicator className="absolute left-1.5 top-1/2 -translate-y-1/2 inline-flex items-center">
+                  <Select.ItemText>{option.label}</Select.ItemText>
+                  <Select.ItemIndicator className="absolute left-1.5 top-1/2 -translate-y-1/2 inline-flex items-center">
                     <CheckIcon className="w-4 h-4" />
-                  </SelectPrimitive.ItemIndicator>
-                </SelectPrimitive.Item>
+                  </Select.ItemIndicator>
+                </Select.Item>
               ))
             ) : (
               <div className="px-3 py-1.5 text-sm text-gray-500">No options available</div>
             )}
-          </SelectPrimitive.Viewport>
+          </Select.Viewport>
 
-          <SelectPrimitive.ScrollDownButton
+          <Select.ScrollDownButton
             className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default hover:bg-gray-50"
           >
             <ChevronDownIcon className="w-4 h-4" />
-          </SelectPrimitive.ScrollDownButton>
-        </SelectPrimitive.Content>
-      </SelectPrimitive.Portal>
-    </SelectPrimitive.Root>
+          </Select.ScrollDownButton>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
   );
 };
 
@@ -80,20 +80,20 @@ const renderField: FieldDefinition['render'] = (props) => {
   const { field } = props;
 
   return (
-    <Form.Field
+    <Field
       name={field.id}
       className={`mb-4 grid ${field.className || ''}`}
       style={field.style}
     >
       <div className="flex items-baseline justify-between">
         {field.label && (
-          <Form.Label className={labelStyles}>
+          <Label className={labelStyles}>
             {field.label}
-          </Form.Label>
+          </Label>
         )}
-        <Form.Message className={formMessageStyles} match="valueMissing">
+        <Message className={formMessageStyles} match="valueMissing">
           {field.label ? `${field.label} is required` : 'Please select an option'}
-        </Form.Message>
+        </Message>
       </div>
       <SelectComponent {...props} />
       {field.description && (
@@ -101,7 +101,7 @@ const renderField: FieldDefinition['render'] = (props) => {
           {field.description}
         </div>
       )}
-    </Form.Field>
+    </Field>
   );
 };
 

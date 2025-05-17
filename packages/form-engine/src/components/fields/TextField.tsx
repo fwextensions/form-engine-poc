@@ -1,12 +1,12 @@
 import React from "react";
-import * as Form from "@radix-ui/react-form";
+import { Control, Field, Label, Message } from "@radix-ui/react-form";
 import { FieldComponent, FieldDefinition } from "./types";
 import fieldRegistry from "./FieldRegistry";
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
 const TextComponent: FieldComponent = ({ field, value, onChange, className }) => {
   return (
-    <Form.Control asChild>
+    <Control asChild>
       <input
         type={field.type || "text"}
         className={`${inputStyles} ${className || ""}`}
@@ -21,7 +21,7 @@ const TextComponent: FieldComponent = ({ field, value, onChange, className }) =>
         autoComplete={field.autoComplete}
         style={field.style}
       />
-    </Form.Control>
+    </Control>
   );
 };
 
@@ -29,20 +29,20 @@ const renderField: FieldDefinition['render'] = (props) => {
   const { field } = props;
   
   return (
-    <Form.Field 
+    <Field 
       name={field.id} 
       className={`mb-4 grid ${field.className || ''}`}
       style={field.style}
     >
       <div className="flex items-baseline justify-between">
         {field.label && (
-          <Form.Label className={labelStyles}>
+          <Label className={labelStyles}>
             {field.label}
-          </Form.Label>
+          </Label>
         )}
-        <Form.Message className={formMessageStyles} match="valueMissing">
+        <Message className={formMessageStyles} match="valueMissing">
           {field.label || 'This field'} is required
-        </Form.Message>
+        </Message>
       </div>
       <TextComponent {...props} />
       {field.description && (
@@ -50,7 +50,7 @@ const renderField: FieldDefinition['render'] = (props) => {
           {field.description}
         </div>
       )}
-    </Form.Field>
+    </Field>
   );
 };
 

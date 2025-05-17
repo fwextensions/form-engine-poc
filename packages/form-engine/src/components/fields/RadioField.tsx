@@ -1,18 +1,15 @@
 import React from "react";
-import * as Form from "@radix-ui/react-form";
-import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
+import { Field, Label, Message } from "@radix-ui/react-form";
+import * as RadioGroup from "@radix-ui/react-radio-group";
 import { FieldComponent, FieldDefinition } from "./types";
 import fieldRegistry from "./FieldRegistry";
-import { formMessageStyles, labelStyles } from "./styles";
-
-const radioItemStyles = "relative h-4 w-4 rounded-full border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600";
-const radioIndicatorStyles = "absolute inset-0 flex items-center justify-center";
+import { labelStyles, formMessageStyles } from "./styles";
 
 const RadioComponent: FieldComponent = ({ field, value, onChange, className }) => {
   const options = field.options || [];
-  
+
   return (
-    <RadioGroupPrimitive.Root
+    <RadioGroup.Root
       className={`flex flex-col gap-3 ${className || ""}`}
       value={value}
       onValueChange={onChange}
@@ -22,48 +19,48 @@ const RadioComponent: FieldComponent = ({ field, value, onChange, className }) =
     >
       {options.map((option) => (
         <div key={option.value} className="flex items-center">
-          <RadioGroupPrimitive.Item
+          <RadioGroup.Item
             value={option.value}
             id={`${field.id}-${option.value}`}
-            className={radioItemStyles}
+            className="relative h-4 w-4 rounded-full border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
             disabled={field.disabled}
             style={field.style}
           >
-            <RadioGroupPrimitive.Indicator className={radioIndicatorStyles}>
+            <RadioGroup.Indicator className="flex items-center justify-center">
               <div className="h-2 w-2 rounded-full bg-white" />
-            </RadioGroupPrimitive.Indicator>
-          </RadioGroupPrimitive.Item>
-          <Form.Label 
+            </RadioGroup.Indicator>
+          </RadioGroup.Item>
+          <Label
             htmlFor={`${field.id}-${option.value}`}
             className={`ml-2 text-sm font-medium ${field.disabled ? 'text-gray-400' : 'text-gray-700 cursor-pointer'}`}
             style={field.style}
           >
             {option.label}
-          </Form.Label>
+          </Label>
         </div>
       ))}
-    </RadioGroupPrimitive.Root>
+    </RadioGroup.Root>
   );
 };
 
 const renderField: FieldDefinition['render'] = (props) => {
   const { field } = props;
-  
+
   return (
-    <Form.Field 
-      name={field.id} 
-      className={`mb-4 ${field.className || ''}`}
+    <Field
+      name={field.id}
+      className={`mb-4 grid ${field.className || ''}`}
       style={field.style}
     >
       <div className="flex items-baseline justify-between">
         {field.label && (
-          <Form.Label className={labelStyles}>
+          <Label className={labelStyles}>
             {field.label}
-          </Form.Label>
+          </Label>
         )}
-        <Form.Message className={formMessageStyles} match="valueMissing">
+        <Message className={formMessageStyles} match="valueMissing">
           {field.label ? `${field.label} is required` : 'Please select an option'}
-        </Form.Message>
+        </Message>
       </div>
       <RadioComponent {...props} />
       {field.description && (
@@ -71,7 +68,7 @@ const renderField: FieldDefinition['render'] = (props) => {
           {field.description}
         </div>
       )}
-    </Form.Field>
+    </Field>
   );
 };
 
@@ -80,7 +77,6 @@ const RadioField: FieldDefinition = {
   render: renderField,
 };
 
-// Register the field type
 fieldRegistry.registerField("radio", RadioField);
 
 export default RadioField;

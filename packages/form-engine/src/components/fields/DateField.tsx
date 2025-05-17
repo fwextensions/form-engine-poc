@@ -1,12 +1,12 @@
 import React from "react";
-import * as Form from "@radix-ui/react-form";
+import { Control, Field, Label, Message } from "@radix-ui/react-form";
 import { FieldComponent, FieldDefinition } from "./types";
 import fieldRegistry from "./FieldRegistry";
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
 const DateComponent: FieldComponent = ({ field, value, onChange, className }) => {
   return (
-    <Form.Control asChild>
+    <Control asChild>
       <input
         type="date"
         className={`${inputStyles} ${className || ""}`}
@@ -20,7 +20,7 @@ const DateComponent: FieldComponent = ({ field, value, onChange, className }) =>
         tabIndex={field.tabIndex}
         autoComplete={field.autoComplete}
       />
-    </Form.Control>
+    </Control>
   );
 };
 
@@ -28,17 +28,17 @@ const renderField: FieldDefinition['render'] = (props) => {
   const { field } = props;
   
   return (
-    <Form.Field name={field.id} className="mb-4 grid">
+    <Field name={field.id} className="mb-4 grid">
       <div className="flex items-baseline justify-between">
-        <Form.Label className={labelStyles}>
+        <Label className={labelStyles}>
           {field.label}
-        </Form.Label>
-        <Form.Message className={formMessageStyles} match="valueMissing">
+        </Label>
+        <Message className={formMessageStyles} match="valueMissing">
           Please enter a date
-        </Form.Message>
-        <Form.Message className={formMessageStyles} match="typeMismatch">
+        </Message>
+        <Message className={formMessageStyles} match="typeMismatch">
           Please enter a valid date
-        </Form.Message>
+        </Message>
       </div>
       <DateComponent {...props} />
       {field.description && (
@@ -46,7 +46,7 @@ const renderField: FieldDefinition['render'] = (props) => {
           {field.description}
         </div>
       )}
-    </Form.Field>
+    </Field>
   );
 };
 

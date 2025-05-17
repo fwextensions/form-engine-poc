@@ -1,6 +1,6 @@
 import React from "react";
-import * as Form from "@radix-ui/react-form";
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
+import { Control, Field, Label, Message } from "@radix-ui/react-form";
+import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons"; 
 import { FieldComponent, FieldDefinition } from "./types";
 import fieldRegistry from "./FieldRegistry";
@@ -18,8 +18,8 @@ const CheckboxComponent: FieldComponent = ({ field, value, onChange, className }
 
   return (
     <div className="flex items-start gap-3">
-      <Form.Control asChild>
-        <CheckboxPrimitive.Root
+      <Control asChild>
+        <Checkbox.Root
           id={field.id} 
           checked={isChecked}
           onCheckedChange={handleCheckedChange}
@@ -40,22 +40,22 @@ const CheckboxComponent: FieldComponent = ({ field, value, onChange, className }
           `}
           style={field.style}
         >
-          <CheckboxPrimitive.Indicator className="flex items-center justify-center w-full h-full">
+          <Checkbox.Indicator className="flex items-center justify-center w-full h-full">
             <CheckIcon className="w-4 h-4" />
-          </CheckboxPrimitive.Indicator>
-        </CheckboxPrimitive.Root>
-      </Form.Control>
+          </Checkbox.Indicator>
+        </Checkbox.Root>
+      </Control>
       
       <div className="flex-1">
         {field.label && (
-          <Form.Label 
+          <Label 
             htmlFor={field.id} 
             className={`block text-sm font-medium ${ 
               isDisabled ? 'text-gray-400' : 'text-gray-700 cursor-pointer'
             }`}
           >
             {field.label}
-          </Form.Label>
+          </Label>
         )}
         {field.description && (
           <div className="mt-1 text-sm text-gray-500">
@@ -72,18 +72,18 @@ const renderField: FieldDefinition['render'] = (props) => {
   const isRequired = field.validation?.required;
   
   return (
-    <Form.Field 
+    <Field 
       name={field.id} 
       className={`mb-4 ${field.className || ''}`}
       style={field.style}
     >
       <CheckboxComponent {...props} />
       {isRequired && (
-        <Form.Message className={formMessageStyles} match="valueMissing">
+        <Message className={formMessageStyles} match="valueMissing">
           {field.label ? `${field.label} is required` : 'This field is required'}
-        </Form.Message>
+        </Message>
       )}
-    </Form.Field>
+    </Field>
   );
 };
 
