@@ -11,12 +11,21 @@ export interface FieldValidation {
 }
 
 export interface FormField {
-	id: string;
-	type: string; // "text", "email", "password", "select", "checkbox", "radio", "date", "textarea"
-	label: string;
-	placeholder?: string;
-	options?: FormFieldOption[]; // For select, radio
-	validation?: FieldValidation;
+  id: string;
+  type: string; // "text", "email", "password", "select", "checkbox", "radio", "date", "textarea"
+  label: string;
+  description?: string;
+  placeholder?: string;
+  options?: FormFieldOption[]; // For select, radio
+  rows?: number; // For textarea
+  validation?: FieldValidation;
+  className?: string;
+  style?: React.CSSProperties;
+  disabled?: boolean;
+  readOnly?: boolean;
+  autoFocus?: boolean;
+  tabIndex?: number;
+  autoComplete?: string;
 }
 
 export interface FormStep {

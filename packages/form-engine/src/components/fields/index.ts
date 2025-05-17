@@ -1,5 +1,10 @@
-// Export types
-export type { FieldComponentProps } from "./types";
+// Re-export types
+export type {
+  FieldComponentProps,
+  FieldDefinition,
+  FieldComponent,
+  RegisterFieldFn,
+} from "./types";
 
 // Export field components
 export { default as TextField } from "./TextField";
@@ -9,24 +14,37 @@ export { default as CheckboxField } from "./CheckboxField";
 export { default as RadioField } from "./RadioField";
 export { default as DateField } from "./DateField";
 
-// Export registry
-export { registerField, getFieldComponent } from "./FieldRegistry";
+// Export styles
+export {
+  inputStyles,
+  labelStyles,
+  formMessageStyles,
+  fieldSpacing,
+  fieldContainer,
+  focusRing,
+  transition,
+  borderRadius,
+} from "./styles";
 
-// Initialize field registry with default field types
-import { registerField } from "./FieldRegistry";
-import TextField from "./TextField";
-import TextareaField from "./TextareaField";
-import SelectField from "./SelectField";
-import CheckboxField from "./CheckboxField";
-import RadioField from "./RadioField";
-import DateField from "./DateField";
+// Import and register field components
+import "./TextField";
+import "./TextareaField";
+import "./SelectField";
+import "./CheckboxField";
+import "./RadioField";
+import "./DateField";
 
-// Register default field types
-registerField("text", TextField);
-registerField("email", TextField);
-registerField("password", TextField);
-registerField("date", DateField); // Use dedicated DateField component
-registerField("textarea", TextareaField);
-registerField("select", SelectField);
-registerField("checkbox", CheckboxField);
-registerField("radio", RadioField);
+// Import the field registry
+import fieldRegistry from "./FieldRegistry";
+
+// Export the field registry API
+export const {
+  registerField,
+  getFieldDefinition,
+  getFieldComponent,
+  hasFieldType,
+  getRegisteredTypes,
+} = fieldRegistry;
+
+// Export the default field registry instance
+export default fieldRegistry;
