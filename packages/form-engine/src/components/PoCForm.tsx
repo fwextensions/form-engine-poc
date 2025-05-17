@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import * as Form from "@radix-ui/react-form";
-import { FormSchema, FormStep, FormField } from "@/services/schemaParser"; 
+import { FormSchema, FormStep, FormField } from "@/services/schemaParser";
 import FormFieldRenderer from "./FormFieldRenderer";
 
 interface PoCFormProps {
@@ -10,17 +10,19 @@ interface PoCFormProps {
 }
 
 interface FormDataState {
-	[fieldId: string]: any; 
+	[fieldId: string]: any;
 }
 
 const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 	const [currentStepIndex, setCurrentStepIndex] = useState(0);
-	const [formData, setFormData] = useState<FormDataState>({}); 
+	const [formData, setFormData] = useState<FormDataState>({});
 
 	const currentStep: FormStep = schema.steps[currentStepIndex];
 	const isLastStep = currentStepIndex === schema.steps.length - 1;
 
-	const handleFieldChange = (fieldId: string, value: any) => {
+	const handleFieldChange = (
+		fieldId: string,
+		value: any) => {
 		setFormData((prevData) => ({
 			...prevData,
 			[fieldId]: value,
@@ -28,7 +30,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 	};
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault(); 
+		event.preventDefault();
 
 		if (!isLastStep) {
 			setCurrentStepIndex((prev) => prev + 1);
@@ -52,7 +54,8 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 			</h1>
 			{currentStep.title && (
 				<h2 className="text-xl font-semibold mb-6 text-center text-gray-700">
-					{currentStep.title} (Step {currentStepIndex + 1} of {schema.steps.length})
+					{currentStep.title} (Step {currentStepIndex +
+					1} of {schema.steps.length})
 				</h2>
 			)}
 			{!currentStep.title && (
@@ -65,8 +68,8 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 				<FormFieldRenderer
 					key={field.id}
 					field={field}
-					value={formData[field.id]} 
-					onChange={handleFieldChange} 
+					value={formData[field.id]}
+					onChange={handleFieldChange}
 				/>
 			))}
 

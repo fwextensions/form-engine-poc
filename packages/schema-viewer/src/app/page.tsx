@@ -1,19 +1,24 @@
-import fs from 'fs';
-import path from 'path';
-import { PoCForm, parseFormSchema, FormSchema } from 'form-engine';
+import fs from "fs";
+import path from "path";
+import { PoCForm, parseFormSchema, FormSchema } from "form-engine";
 
 // Determine the absolute path to the YAML schema file
 // process.cwd() in Next.js app router context (for schema-viewer) should be the root of the schema-viewer package.
-const schemaFilePath = path.join(process.cwd(), 'src', 'schemas', 'poc-simple-form.yaml');
+const schemaFilePath = path.join(process.cwd(), "src", "schemas",
+	"poc-simple-form.yaml");
 let rawYamlSchema: string;
 
 try {
-  rawYamlSchema = fs.readFileSync(schemaFilePath, 'utf8');
-} catch (error: any) {
-  console.error(`Error reading YAML schema file from ${schemaFilePath}:`, error.message);
-  // Fallback to a minimal schema to allow the page to render an error message
-  // The existing error handling in HomePage will catch if parseFormSchema returns null
-  rawYamlSchema = 'formName: Schema Load Error\nsteps: []';
+	rawYamlSchema = fs.readFileSync(schemaFilePath, "utf8");
+} catch (error) {
+	if (error instanceof Error) {
+		console.error(`Error reading YAML schema file from ${schemaFilePath}:`, error.message);
+	} else {
+		console.error(`An unknown error occurred while reading YAML schema file from ${schemaFilePath}:`, error);
+	}
+	// Fallback to a minimal schema to allow the page to render an error message
+	// The existing error handling in HomePage will catch if parseFormSchema returns null
+	rawYamlSchema = "formName: Schema Load Error\nsteps: []";
 }
 
 export default function HomePage() {

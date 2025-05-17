@@ -1,9 +1,9 @@
 // Re-export types
 export type {
-  FieldComponentProps,
-  FieldDefinition,
-  FieldComponent,
-  RegisterFieldFn,
+	FieldComponentProps,
+	FieldDefinition,
+	FieldComponent,
+	RegisterFieldFn,
 } from "./types";
 
 // Export field components
@@ -16,14 +16,14 @@ export { default as DateField } from "./DateField";
 
 // Export styles
 export {
-  inputStyles,
-  labelStyles,
-  formMessageStyles,
-  fieldSpacing,
-  fieldContainer,
-  focusRing,
-  transition,
-  borderRadius,
+	inputStyles,
+	labelStyles,
+	formMessageStyles,
+	fieldSpacing,
+	fieldContainer,
+	focusRing,
+	transition,
+	borderRadius,
 } from "./styles";
 
 // Import and register field components
@@ -39,11 +39,11 @@ import fieldRegistry from "./FieldRegistry";
 
 // Export the field registry API
 export const {
-  registerField,
-  getFieldDefinition,
-  getFieldComponent,
-  hasFieldType,
-  getRegisteredTypes,
+	registerField,
+	getFieldDefinition,
+	getFieldComponent,
+	hasFieldType,
+	getRegisteredTypes,
 } = fieldRegistry;
 
 // Export the default field registry instance
