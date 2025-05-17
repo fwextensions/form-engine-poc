@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import * as Form from "@radix-ui/react-form";
-import { FormSchema, FormStep, FormField } from "@/services/schemaParser";
+import { FormSchema, PageComponentDefinition, FormField } from "@/services/schemaParser";
 import FormFieldRenderer from "./FormFieldRenderer";
 
 interface PoCFormProps {
@@ -14,11 +14,11 @@ interface FormDataState {
 }
 
 const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
-	const [currentStepIndex, setCurrentStepIndex] = useState(0);
+	const [currentPageIndex, setCurrentPageIndex] = useState(0);
 	const [formData, setFormData] = useState<FormDataState>({});
 
-	const currentStep: FormStep = schema.steps[currentStepIndex];
-	const isLastStep = currentStepIndex === schema.steps.length - 1;
+	const currentPage: PageComponentDefinition = schema.children[currentPageIndex];
+	const isLastStep = currentPageIndex === schema.children.length - 1;
 
 	const handleFieldChange = (
 		fieldId: string,
@@ -33,38 +33,38 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 		event.preventDefault();
 
 		if (!isLastStep) {
-			setCurrentStepIndex((prev) => prev + 1);
+			setCurrentPageIndex((prev) => prev + 1);
 		} else {
 			console.log("Form submitted (PoC):", formData);
 		}
 	};
 
 	const handlePrevious = () => {
-		setCurrentStepIndex((prev) => Math.max(0, prev - 1));
+		setCurrentPageIndex((prev) => Math.max(0, prev - 1));
 	};
 
 	return (
 		<Form.Root
-			key={currentStepIndex} // Add this key to reset form state on step change
+			key={currentPageIndex}
 			className="w-[calc(100%-20px)] max-w-[600px] mx-auto my-5 p-5 bg-white shadow-lg rounded-md"
 			onSubmit={handleSubmit}
 		>
 			<h1 className="text-2xl font-bold mb-2 text-center text-gray-800">
-				{schema.formName}
+				{schema.title}
 			</h1>
-			{currentStep.title && (
+			{currentPage.title && (
 				<h2 className="text-xl font-semibold mb-6 text-center text-gray-700">
-					{currentStep.title} (Step {currentStepIndex +
-					1} of {schema.steps.length})
+					{currentPage.title} (Step {currentPageIndex +
+					1} of {schema.children.length})
 				</h2>
 			)}
-			{!currentStep.title && (
+			{!currentPage.title && (
 				<p className="text-md mb-6 text-center text-gray-600">
-					Step {currentStepIndex + 1} of {schema.steps.length}
+					Step {currentPageIndex + 1} of {schema.children.length}
 				</p>
 			)}
 
-			{currentStep.fields.map((field: FormField) => (
+			{currentPage.children.map((field: FormField) => (
 				<FormFieldRenderer
 					key={field.id}
 					field={field}
@@ -74,7 +74,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 			))}
 
 			<div className="mt-8 flex justify-between items-center">
-				{currentStepIndex > 0 && (
+				{currentPageIndex > 0 && (
 					<button
 						type="button"
 						onClick={handlePrevious}
@@ -83,7 +83,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 						Previous
 					</button>
 				)}
-				{currentStepIndex === 0 && <div />}
+				{currentPageIndex === 0 && <div />}
 
 				<Form.Submit asChild>
 					<button

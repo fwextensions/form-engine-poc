@@ -1,42 +1,64 @@
-formName: PoC Multi-Step Form
-steps:
-  - id: personal_info
+title: PoC Multi-Step Form (Refactored)
+children:
+  - id: page_personal_info
+    type: page
     title: Personal Information
-    fields:
-      - id: user_name
+    children:
+      - id: first_name
         type: text
-        label: Your Full Name
-        placeholder: "John Doe"
+        label: First Name
         validation:
           required: true
-      - id: user_email
-        type: email
-        label: Your Email Address
-        placeholder: "name@example.com"
+      - id: last_name
+        type: text
+        label: Last Name
         validation:
           required: true
       - id: birth_date
         type: date
         label: Date of Birth
-        validation:
-          required: false
-  - id: preferences_comments
-    title: Preferences & Comments
-    fields:
-      - id: favorite_color
-        type: select
-        label: Favorite Color
-        placeholder: "Select your favorite color"
-        options:
-          - value: "red"
-            label: "Red"
-          - value: "blue"
-            label: "Blue"
-          - value: "green"
-            label: "Green"
+      - id: email
+        type: email
+        label: Email Address
+        placeholder: user@example.com
         validation:
           required: true
-      - id: contact_preference
+
+  - id: page_address_info
+    type: page
+    title: Address Information
+    children:
+      - id: street_address
+        type: text
+        label: Street Address
+        validation:
+          required: true
+      - id: city
+        type: text
+        label: City
+        validation:
+          required: true
+      - id: country
+        type: select
+        label: Country
+        options:
+          - value: "us"
+            label: "United States"
+          - value: "ca"
+            label: "Canada"
+          - value: "gb"
+            label: "United Kingdom"
+        validation:
+          required: true
+
+  - id: page_preferences
+    type: page
+    title: Preferences
+    children:
+      - id: newsletter_subscription
+        type: checkbox
+        label: Subscribe to newsletter
+      - id: contact_method
         type: radio
         label: Preferred Contact Method
         options:
@@ -46,10 +68,8 @@ steps:
             label: "Phone"
         validation:
           required: true
-      - id: newsletter_subscribe
-        type: checkbox
-        label: Subscribe to newsletter
       - id: comments
         type: textarea
-        label: Additional Comments
-        placeholder: "Enter any comments here..."
+        label: Comments
+        placeholder: Enter any comments...
+        rows: 4
