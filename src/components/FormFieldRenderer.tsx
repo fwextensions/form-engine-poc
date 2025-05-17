@@ -10,11 +10,11 @@ import { FormField } from "@/services/schemaParser";
 
 interface FormFieldRendererProps {
 	field: FormField;
-	// For M2.3, we will pass down form state and update functions if needed at this level
-	// For now, Radix Form handles individual field state
+	value?: any; // Current value from parent state
+	onChange?: (fieldId: string, newValue: any) => void; // Callback to update parent state
 }
 
-const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field }) => {
+const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field, value, onChange }) => {
 	const commonInputClassName = "box-border w-full bg-gray-100 shadow-sm border border-gray-300 inline-flex h-[35px] appearance-none items-center justify-center rounded-[4px] px-[10px] text-[15px] leading-none text-gray-900 outline-none hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 selection:color-white selection:bg-blue-600";
 	const labelClassName = "text-[15px] font-medium leading-[35px] text-gray-700";
 	const formMessageClassName = "text-[13px] text-red-600 opacity-[0.9]";
@@ -32,6 +32,8 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field }) => {
 							placeholder={field.placeholder}
 							required={field.validation?.required}
 							className={commonInputClassName}
+							value={value || ""} // Control the component
+							onChange={(e) => onChange?.(field.id, e.target.value)} // Update parent state
 						/>
 					</Form.Control>
 				);
@@ -42,6 +44,8 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field }) => {
 							placeholder={field.placeholder}
 							required={field.validation?.required}
 							className={`${commonInputClassName} h-auto min-h-[70px] py-2 leading-normal`} // Adjust height
+							value={value || ""} // Control the component
+							onChange={(e) => onChange?.(field.id, e.target.value)} // Update parent state
 						/>
 					</Form.Control>
 				);
@@ -53,16 +57,13 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field }) => {
 				
 				const displayOptions = field.options?.filter(opt => opt.value !== "") || [];
 				
-				// If a placeholder option (value: "") was defined, the select should default to ""
-				// to show that placeholder. Otherwise, undefined (no specific default).
-				const rootDefaultValue = placeholderOption ? "" : undefined;
-
 				return (
 					<Form.Control asChild>
 						<SelectPrimitive.Root 
 							name={field.id} 
 							required={field.validation?.required} // For native constraint API, Radix Form handles its own
-							defaultValue={rootDefaultValue}
+							value={value ?? ""} // Control the component, ensure it's always a string
+							onValueChange={(newValue) => onChange?.(field.id, newValue)} // Update parent state
 						>
 							<SelectPrimitive.Trigger className={`${commonInputClassName} justify-between data-[placeholder]:text-gray-500`}>
 								<SelectPrimitive.Value placeholder={selectPlaceholderText} />
@@ -110,6 +111,8 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field }) => {
 							name={field.id} // For form data
 							required={field.validation?.required}
 							className="shadow-sm flex h-[20px] w-[20px] appearance-none items-center justify-center rounded-[4px] bg-gray-100 border border-gray-300 outline-none focus:ring-2 focus:ring-blue-500 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white"
+							checked={!!value} // Control the component
+							onCheckedChange={(checked) => onChange?.(field.id, checked === true)} // Update parent state
 						>
 							<CheckboxPrimitive.Indicator>
 								<CheckIcon className="h-4 w-4" />
@@ -127,6 +130,8 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field }) => {
 						name={field.id}
 						required={field.validation?.required}
 						className="flex flex-col gap-2 mt-1"
+						value={value ?? ""} // Control the component, ensure it's always a string
+						onValueChange={(newValue) => onChange?.(field.id, newValue)} // Update parent state
 						// defaultValue={field.defaultValue} // if you want to add default value handling
 					>
 						{field.options?.map((option) => (

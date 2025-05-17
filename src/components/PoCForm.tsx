@@ -2,18 +2,30 @@
 
 import React, { useState } from "react";
 import * as Form from "@radix-ui/react-form";
-import { FormSchema, FormStep } from "@/services/schemaParser"; 
+import { FormSchema, FormStep, FormField } from "@/services/schemaParser"; 
 import FormFieldRenderer from "./FormFieldRenderer";
 
 interface PoCFormProps {
 	schema: FormSchema;
 }
 
+interface FormDataState {
+	[fieldId: string]: any; 
+}
+
 const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 	const [currentStepIndex, setCurrentStepIndex] = useState(0);
+	const [formData, setFormData] = useState<FormDataState>({}); 
 
 	const currentStep: FormStep = schema.steps[currentStepIndex];
 	const isLastStep = currentStepIndex === schema.steps.length - 1;
+
+	const handleFieldChange = (fieldId: string, value: any) => {
+		setFormData((prevData) => ({
+			...prevData,
+			[fieldId]: value,
+		}));
+	};
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault(); 
@@ -21,9 +33,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 		if (!isLastStep) {
 			setCurrentStepIndex((prev) => prev + 1);
 		} else {
-			const formData = new FormData(event.currentTarget);
-			const data = Object.fromEntries(formData.entries());
-			console.log("Form submitted (PoC):", data);
+			console.log("Form submitted (PoC):", formData);
 		}
 	};
 
@@ -33,6 +43,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 
 	return (
 		<Form.Root
+			key={currentStepIndex} // Add this key to reset form state on step change
 			className="w-[calc(100%-20px)] max-w-[600px] mx-auto my-5 p-5 bg-white shadow-lg rounded-md"
 			onSubmit={handleSubmit}
 		>
@@ -50,8 +61,13 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 				</p>
 			)}
 
-			{currentStep.fields.map((field) => (
-				<FormFieldRenderer key={field.id} field={field} />
+			{currentStep.fields.map((field: FormField) => (
+				<FormFieldRenderer
+					key={field.id}
+					field={field}
+					value={formData[field.id]} 
+					onChange={handleFieldChange} 
+				/>
 			))}
 
 			<div className="mt-8 flex justify-between items-center">
