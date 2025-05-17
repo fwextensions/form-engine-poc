@@ -3,13 +3,13 @@
 import React from "react";
 import * as Form from "@radix-ui/react-form";
 import { FormField } from "@/services/schemaParser";
-import fieldRegistry from "./fields/FieldRegistry";
+import fieldRegistry from "./fields";
 import { FieldComponentProps } from "./fields/types";
 
 interface FormFieldRendererProps {
   field: FormField;
   value?: any;
-  onChange?: (value: any) => void;
+  onChange?: (fieldId: string, value: any) => void;
   className?: string;
 }
 
@@ -20,7 +20,7 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   className,
 }) => {
   const handleChange = (newValue: any) => {
-    onChange?.(newValue);
+    onChange?.(field.id, newValue);
   };
 
   const fieldDefinition = fieldRegistry.getFieldDefinition(field.type);

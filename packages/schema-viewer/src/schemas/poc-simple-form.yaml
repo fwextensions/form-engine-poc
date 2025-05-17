@@ -26,9 +26,8 @@ steps:
       - id: favorite_color
         type: select
         label: Favorite Color
+        placeholder: "Select your favorite color"
         options:
-          - value: ""
-            label: "Select a color"
           - value: "red"
             label: "Red"
           - value: "blue"

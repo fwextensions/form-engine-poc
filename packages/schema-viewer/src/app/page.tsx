@@ -1,64 +1,20 @@
+import fs from 'fs';
+import path from 'path';
 import { PoCForm, parseFormSchema, FormSchema } from 'form-engine';
 
-// Raw YAML content (simulating loading from a file for PoC) - Updated for M3
-const rawYamlSchema = `
-formName: PoC Multi-Step Form
-steps:
-  - id: personal_info
-    title: Personal Information
-    fields:
-      - id: user_name
-        type: text
-        label: Your Full Name
-        placeholder: "John Doe"
-        validation:
-          required: true
-      - id: user_email
-        type: email
-        label: Your Email Address
-        placeholder: "name@example.com"
-        validation:
-          required: true
-      - id: birth_date
-        type: date
-        label: Date of Birth
-        validation:
-          required: false
-  - id: preferences_comments
-    title: Preferences & Comments
-    fields:
-      - id: favorite_color
-        type: select
-        label: Favorite Color
-        options:
-          - value: ""
-            label: "Select a color"
-          - value: "red"
-            label: "Red"
-          - value: "blue"
-            label: "Blue"
-          - value: "green"
-            label: "Green"
-        validation:
-          required: true
-      - id: contact_preference
-        type: radio
-        label: Preferred Contact Method
-        options:
-          - value: "email"
-            label: "Email"
-          - value: "phone"
-            label: "Phone"
-        validation:
-          required: true
-      - id: newsletter_subscribe
-        type: checkbox
-        label: Subscribe to newsletter
-      - id: comments
-        type: textarea
-        label: Additional Comments
-        placeholder: "Enter any comments here..."
-`;
+// Determine the absolute path to the YAML schema file
+// process.cwd() in Next.js app router context (for schema-viewer) should be the root of the schema-viewer package.
+const schemaFilePath = path.join(process.cwd(), 'src', 'schemas', 'poc-simple-form.yaml');
+let rawYamlSchema: string;
+
+try {
+  rawYamlSchema = fs.readFileSync(schemaFilePath, 'utf8');
+} catch (error: any) {
+  console.error(`Error reading YAML schema file from ${schemaFilePath}:`, error.message);
+  // Fallback to a minimal schema to allow the page to render an error message
+  // The existing error handling in HomePage will catch if parseFormSchema returns null
+  rawYamlSchema = 'formName: Schema Load Error\nsteps: []';
+}
 
 export default function HomePage() {
 	const schema: FormSchema | null = parseFormSchema(rawYamlSchema);
