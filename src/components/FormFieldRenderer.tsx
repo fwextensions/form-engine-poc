@@ -45,12 +45,27 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field }) => {
 						/>
 					</Form.Control>
 				);
-			case "select":
+			case "select": {
+				const placeholderOption = field.options?.find(opt => opt.value === "");
+				const selectPlaceholderText = placeholderOption 
+					? placeholderOption.label 
+					: (field.placeholder || "Select an option");
+				
+				const displayOptions = field.options?.filter(opt => opt.value !== "") || [];
+				
+				// If a placeholder option (value: "") was defined, the select should default to ""
+				// to show that placeholder. Otherwise, undefined (no specific default).
+				const rootDefaultValue = placeholderOption ? "" : undefined;
+
 				return (
 					<Form.Control asChild>
-						<SelectPrimitive.Root name={field.id} required={field.validation?.required} defaultValue={field.options?.find(opt => opt.value === "") ? "" : undefined}>
+						<SelectPrimitive.Root 
+							name={field.id} 
+							required={field.validation?.required} // For native constraint API, Radix Form handles its own
+							defaultValue={rootDefaultValue}
+						>
 							<SelectPrimitive.Trigger className={`${commonInputClassName} justify-between data-[placeholder]:text-gray-500`}>
-								<SelectPrimitive.Value placeholder={field.placeholder || "Select an option"} />
+								<SelectPrimitive.Value placeholder={selectPlaceholderText} />
 								<SelectPrimitive.Icon>
 									<ChevronDownIcon />
 								</SelectPrimitive.Icon>
@@ -61,10 +76,10 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field }) => {
 										<ChevronUpIcon />
 									</SelectPrimitive.ScrollUpButton>
 									<SelectPrimitive.Viewport className="p-[5px]">
-										{field.options?.map((option) => (
+										{displayOptions.map((option) => (
 											<SelectPrimitive.Item
 												key={option.value}
-												value={option.value}
+												value={option.value} // This will now never be an empty string
 												className="text-[13px] leading-none text-gray-900 rounded-[3px] flex items-center h-[25px] pr-[35px] pl-[25px] relative select-none data-[disabled]:text-gray-400 data-[disabled]:pointer-events-none data-[highlighted]:outline-none data-[highlighted]:bg-blue-500 data-[highlighted]:text-white"
 											>
 												<SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
@@ -82,6 +97,7 @@ const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({ field }) => {
 						</SelectPrimitive.Root>
 					</Form.Control>
 				);
+			}
 			case "checkbox":
 				return (
 					// Radix Form.Control doesn't directly wrap Checkbox in the same way as input, handle state if needed or structure differently
