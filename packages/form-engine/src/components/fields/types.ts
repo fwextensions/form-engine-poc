@@ -1,28 +1,3 @@
-import { FormField } from "@/services/schemaParser";
-
-export interface FieldComponentProps {
-	field: FormField;
-	value?: any;
-	onChange?: (value: any) => void;
-	className?: string;
-	style?: React.CSSProperties;
-	disabled?: boolean;
-	readOnly?: boolean;
-	autoFocus?: boolean;
-	tabIndex?: number;
-	autoComplete?: string;
-	error?: string;
-}
-
-export interface FieldDefinition {
-	component: React.ComponentType<FieldComponentProps>;
-	render: (props: FieldComponentProps) => React.ReactNode;
-}
-
-export type FieldComponent = React.FC<FieldComponentProps>;
-
-// Helper type for field registration
-export type RegisterFieldFn = (
-	type: string,
-	definition: FieldDefinition
-) => void;
+// This file is for field-specific types within the components/fields directory.
+// Most of the previous types were related to the old FieldRegistry and are now obsolete.
+// Add new field-specific types here if needed in the future.

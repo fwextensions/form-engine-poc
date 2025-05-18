@@ -1,70 +1,57 @@
 import React from "react";
-import * as Form from "@radix-ui/react-form";
-import { FieldComponent, FieldDefinition } from "./types";
-import fieldRegistry from "./FieldRegistry";
+import { Control, Field, Label, Message } from "@radix-ui/react-form";
+import { FormField } from "../../services/schemaParser"; 
+import { RegisteredComponentProps } from "../componentRegistry"; 
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
-const TextareaComponent: FieldComponent = ({
-	field,
-	value,
-	onChange,
-	className
-}) => {
-	return (
-		<Form.Control asChild>
-      <textarea
-				className={`${inputStyles} min-h-[80px] ${className || ""}`}
-				value={value || ""}
-				onChange={(e) => onChange?.(e.target.value)}
-				required={field.validation?.required}
-				placeholder={field.placeholder}
-				rows={field.rows || 3}
-				disabled={field.disabled}
-				readOnly={field.readOnly}
-				autoFocus={field.autoFocus}
-				tabIndex={field.tabIndex}
-				autoComplete={field.autoComplete}
-				style={field.style}
-			/>
-		</Form.Control>
-	);
-};
+const TextareaFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
+	const fieldSchema = props.component as FormField;
+	const { formData, onFieldChange } = props;
 
-const renderField: FieldDefinition["render"] = (props) => {
-	const { field } = props;
+	const value = formData[fieldSchema.id] || "";
+	const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+		onFieldChange(fieldSchema.id, event.target.value);
+	};
 
 	return (
-		<Form.Field
-			name={field.id}
-			className={`mb-4 grid ${field.className || ""}`}
-			style={field.style}
+		<Field
+			name={fieldSchema.id}
+			className={`mb-4 grid ${fieldSchema.className || ""}`}
+			style={fieldSchema.style}
 		>
 			<div className="flex items-baseline justify-between">
-				{field.label && (
-					<Form.Label className={labelStyles}>
-						{field.label}
-					</Form.Label>
+				{fieldSchema.label && (
+					<Label className={labelStyles}>
+						{fieldSchema.label}
+					</Label>
 				)}
-				<Form.Message className={formMessageStyles} match="valueMissing">
-					{field.label || "This field"} is required
-				</Form.Message>
+				<Message className={formMessageStyles} name={fieldSchema.id} match="valueMissing">
+					{fieldSchema.label || "This field"} is required
+				</Message>
+				{/* TODO: Add other validation messages here if needed */}
 			</div>
-			<TextareaComponent {...props} />
-			{field.description && (
+			<Control asChild>
+				<textarea
+					className={`${inputStyles} ${fieldSchema.className || ""}`}
+					value={value}
+					onChange={handleChange}
+					required={fieldSchema.validation?.required}
+					placeholder={fieldSchema.placeholder}
+					disabled={fieldSchema.disabled}
+					readOnly={fieldSchema.readOnly}
+					autoFocus={fieldSchema.autoFocus}
+					tabIndex={fieldSchema.tabIndex}
+					rows={fieldSchema.rows}
+					// style prop is applied to the outer Field container
+				/>
+			</Control>
+			{fieldSchema.description && (
 				<div className="mt-1 text-sm text-gray-500">
-					{field.description}
+					{fieldSchema.description}
 				</div>
 			)}
-		</Form.Field>
+		</Field>
 	);
 };
 
-const TextareaField: FieldDefinition = {
-	component: TextareaComponent,
-	render: renderField,
-};
-
-// Register the field type
-fieldRegistry.registerField("textarea", TextareaField);
-
-export default TextareaField;
+export default TextareaFieldWrapper;

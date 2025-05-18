@@ -1,4 +1,5 @@
-title: PoC Multi-Step Form (Refactored)
+title: PoC Multi-Step Form
+#display: singlepage
 children:
   - id: page_personal_info
     type: page

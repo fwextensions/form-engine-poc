@@ -1,89 +1,75 @@
 import React from "react";
 import { Field, Label, Message } from "@radix-ui/react-form";
 import * as RadioGroup from "@radix-ui/react-radio-group";
-import { FieldComponent, FieldDefinition } from "./types";
-import fieldRegistry from "./FieldRegistry";
+import { FormField, FormFieldOption } from "../../services/schemaParser";
+import { RegisteredComponentProps } from "../componentRegistry";
 import { labelStyles, formMessageStyles } from "./styles";
 
-const RadioComponent: FieldComponent = ({
-	field,
-	value,
-	onChange,
-	className
-}) => {
-	const options = field.options || [];
+const RadioFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
+	const fieldSchema = props.component as FormField;
+	const { formData, onFieldChange } = props;
 
-	return (
-		<RadioGroup.Root
-			className={`flex flex-col gap-3 ${className || ""}`}
-			value={value}
-			onValueChange={onChange}
-			disabled={field.disabled}
-			aria-label={field.label}
-			required={field.validation?.required}
-		>
-			{options.map((option) => (
-				<div key={option.value} className="flex items-center">
-					<RadioGroup.Item
-						value={option.value}
-						id={`${field.id}-${option.value}`}
-						className="relative h-4 w-4 rounded-full border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 data-[state=checked]:border-blue-600 data-[state=checked]:bg-blue-600"
-						disabled={field.disabled}
-						style={field.style}
-					>
-						<RadioGroup.Indicator className="flex items-center justify-center">
-							<div className="h-2 w-2 rounded-full bg-white" />
-						</RadioGroup.Indicator>
-					</RadioGroup.Item>
-					<Label
-						htmlFor={`${field.id}-${option.value}`}
-						className={`ml-2 text-sm font-medium ${field.disabled ?
-							"text-gray-400" : "text-gray-700 cursor-pointer"}`}
-						style={field.style}
-					>
-						{option.label}
-					</Label>
-				</div>
-			))}
-		</RadioGroup.Root>
-	);
-};
+	const value = formData[fieldSchema.id] || "";
+	const handleChange = (newValue: string) => {
+		onFieldChange(fieldSchema.id, newValue);
+	};
 
-const renderField: FieldDefinition["render"] = (props) => {
-	const { field } = props;
+	const displayOptions: FormFieldOption[] = Array.isArray(fieldSchema.options) ? fieldSchema.options : [];
 
 	return (
 		<Field
-			name={field.id}
-			className={`mb-4 grid ${field.className || ""}`}
-			style={field.style}
+			name={fieldSchema.id}
+			className={`mb-4 grid ${fieldSchema.className || ""}`}
+			style={fieldSchema.style}
 		>
-			<div className="flex items-baseline justify-between">
-				{field.label && (
-					<Label className={labelStyles}>
-						{field.label}
-					</Label>
-				)}
-				<Message className={formMessageStyles} match="valueMissing">
-					{field.label ? `${field.label} is required` :
-						"Please select an option"}
-				</Message>
-			</div>
-			<RadioComponent {...props} />
-			{field.description && (
+			{fieldSchema.label && (
+				<div className="flex items-baseline justify-between">
+					<Label className={labelStyles}>{fieldSchema.label}</Label>
+					<Message className={formMessageStyles} name={fieldSchema.id} match="valueMissing">
+						{fieldSchema.label || "This field"} is required
+					</Message>
+				</div>
+			)}
+			<RadioGroup.Root
+				className={`mt-2 space-y-2 ${fieldSchema.className || ""}`}
+				value={value}
+				onValueChange={handleChange}
+				required={fieldSchema.validation?.required}
+				disabled={fieldSchema.disabled}
+				autoFocus={fieldSchema.autoFocus}
+			>
+				{displayOptions.map((option) => (
+					<div key={option.value} className="flex items-center">
+						<RadioGroup.Item
+							value={option.value}
+							id={`${fieldSchema.id}-${option.value}`}
+							className={`peer h-4 w-4 rounded-full border border-slate-300 text-blue-600 focus:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 ${
+								fieldSchema.disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"
+							}`}
+							disabled={fieldSchema.disabled}
+						>
+							<RadioGroup.Indicator className="flex items-center justify-center">
+								<div className="h-2.5 w-2.5 rounded-full bg-current" />
+							</RadioGroup.Indicator>
+						</RadioGroup.Item>
+						<Label
+							htmlFor={`${fieldSchema.id}-${option.value}`}
+							className={`ml-2 block text-sm ${labelStyles} ${
+								fieldSchema.disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"
+							}`}
+						>
+							{option.label}
+						</Label>
+					</div>
+				))}
+			</RadioGroup.Root>
+			{fieldSchema.description && (
 				<div className="mt-1 text-sm text-gray-500">
-					{field.description}
+					{fieldSchema.description}
 				</div>
 			)}
 		</Field>
 	);
 };
 
-const RadioField: FieldDefinition = {
-	component: RadioComponent,
-	render: renderField,
-};
-
-fieldRegistry.registerField("radio", RadioField);
-
-export default RadioField;
+export default RadioFieldWrapper;

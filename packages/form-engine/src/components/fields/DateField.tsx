@@ -1,66 +1,57 @@
 import React from "react";
 import { Control, Field, Label, Message } from "@radix-ui/react-form";
-import { FieldComponent, FieldDefinition } from "./types";
-import fieldRegistry from "./FieldRegistry";
+import { FormField } from "../../services/schemaParser";
+import { RegisteredComponentProps } from "../componentRegistry";
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
-const DateComponent: FieldComponent = ({
-	field,
-	value,
-	onChange,
-	className
-}) => {
-	return (
-		<Control asChild>
-			<input
-				type="date"
-				className={`${inputStyles} ${className || ""}`}
-				value={value || ""}
-				onChange={(e) => onChange?.(e.target.value)}
-				required={field.validation?.required}
-				placeholder={field.placeholder}
-				disabled={field.disabled}
-				readOnly={field.readOnly}
-				autoFocus={field.autoFocus}
-				tabIndex={field.tabIndex}
-				autoComplete={field.autoComplete}
-			/>
-		</Control>
-	);
-};
+const DateFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
+	const fieldSchema = props.component as FormField;
+	const { formData, onFieldChange } = props;
 
-const renderField: FieldDefinition["render"] = (props) => {
-	const { field } = props;
+	const value = formData[fieldSchema.id] || ""; // Date input expects YYYY-MM-DD string
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		onFieldChange(fieldSchema.id, event.target.value);
+	};
 
 	return (
-		<Field name={field.id} className="mb-4 grid">
+		<Field
+			name={fieldSchema.id}
+			className={`mb-4 grid ${fieldSchema.className || ""}`}
+			style={fieldSchema.style}
+		>
 			<div className="flex items-baseline justify-between">
-				<Label className={labelStyles}>
-					{field.label}
-				</Label>
-				<Message className={formMessageStyles} match="valueMissing">
-					Please enter a date
+				{fieldSchema.label && (
+					<Label className={labelStyles}>
+						{fieldSchema.label}
+					</Label>
+				)}
+				<Message className={formMessageStyles} name={fieldSchema.id} match="valueMissing">
+					{fieldSchema.label || "This field"} is required
 				</Message>
-				<Message className={formMessageStyles} match="typeMismatch">
-					Please enter a valid date
-				</Message>
+				{/* TODO: Add other validation messages here if needed (e.g., typeMismatch for invalid date) */}
 			</div>
-			<DateComponent {...props} />
-			{field.description && (
+			<Control asChild>
+				<input
+					type="date" // Explicitly set type to date
+					className={`${inputStyles} ${fieldSchema.className || ""}`}
+					value={value}
+					onChange={handleChange}
+					required={fieldSchema.validation?.required}
+					placeholder={fieldSchema.placeholder} // Placeholder might not be very effective for date type
+					disabled={fieldSchema.disabled}
+					readOnly={fieldSchema.readOnly}
+					autoFocus={fieldSchema.autoFocus}
+					tabIndex={fieldSchema.tabIndex}
+					// style prop is applied to the outer Field container
+				/>
+			</Control>
+			{fieldSchema.description && (
 				<div className="mt-1 text-sm text-gray-500">
-					{field.description}
+					{fieldSchema.description}
 				</div>
 			)}
 		</Field>
 	);
 };
 
-const DateField: FieldDefinition = {
-	component: DateComponent,
-	render: renderField,
-};
-
-// Register the field type
-fieldRegistry.registerField("date", DateField);
-
-export default DateField;
+export default DateFieldWrapper;

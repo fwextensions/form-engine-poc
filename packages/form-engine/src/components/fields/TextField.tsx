@@ -1,73 +1,58 @@
 import React from "react";
 import { Control, Field, Label, Message } from "@radix-ui/react-form";
-import { FieldComponent, FieldDefinition } from "./types";
-import fieldRegistry from "./FieldRegistry";
+import { FormField } from "../../services/schemaParser";
+import { RegisteredComponentProps } from "../componentRegistry";
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
-const TextComponent: FieldComponent = ({
-	field,
-	value,
-	onChange,
-	className
-}) => {
-	return (
-		<Control asChild>
-			<input
-				type={field.type || "text"}
-				className={`${inputStyles} ${className || ""}`}
-				value={value || ""}
-				onChange={(e) => onChange?.(e.target.value)}
-				required={field.validation?.required}
-				placeholder={field.placeholder}
-				disabled={field.disabled}
-				readOnly={field.readOnly}
-				autoFocus={field.autoFocus}
-				tabIndex={field.tabIndex}
-				autoComplete={field.autoComplete}
-				style={field.style}
-			/>
-		</Control>
-	);
-};
+const TextFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
+	const fieldSchema = props.component as FormField;
+	const { formData, onFieldChange } = props;
 
-const renderField: FieldDefinition["render"] = (props) => {
-	const { field } = props;
+	const value = formData[fieldSchema.id] || "";
+	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		onFieldChange(fieldSchema.id, event.target.value);
+	};
 
 	return (
 		<Field
-			name={field.id}
-			className={`mb-4 grid ${field.className || ""}`}
-			style={field.style}
+			name={fieldSchema.id}
+			className={`mb-4 grid ${fieldSchema.className || ""}`}
+			style={fieldSchema.style}
 		>
 			<div className="flex items-baseline justify-between">
-				{field.label && (
+				{fieldSchema.label && (
 					<Label className={labelStyles}>
-						{field.label}
+						{fieldSchema.label}
 					</Label>
 				)}
-				<Message className={formMessageStyles} match="valueMissing">
-					{field.label || "This field"} is required
+				<Message className={formMessageStyles} name={fieldSchema.id} match="valueMissing">
+					{fieldSchema.label || "This field"} is required
 				</Message>
+				{/* TODO: Add other validation messages here if needed */}
 			</div>
-			<TextComponent {...props} />
-			{field.description && (
+			<Control asChild>
+				<input
+					type={fieldSchema.type || "text"} // Type comes from schema (e.g. text, email, password)
+					className={`${inputStyles} ${fieldSchema.className || ""}`}
+					value={value}
+					onChange={handleChange}
+					required={fieldSchema.validation?.required}
+					placeholder={fieldSchema.placeholder}
+					disabled={fieldSchema.disabled}
+					readOnly={fieldSchema.readOnly}
+					autoFocus={fieldSchema.autoFocus}
+					tabIndex={fieldSchema.tabIndex}
+					autoComplete={fieldSchema.autoComplete}
+					// style prop is applied to the outer Field container, not directly on input here
+				/>
+			</Control>
+			{fieldSchema.description && (
 				<div className="mt-1 text-sm text-gray-500">
-					{field.description}
+					{fieldSchema.description}
 				</div>
 			)}
 		</Field>
 	);
 };
 
-const TextField: FieldDefinition = {
-	component: TextComponent,
-	render: renderField,
-};
-
-// Register the field type for all text-based input types
-const textTypes = ["text", "email", "password", "tel", "url", "number"];
-textTypes.forEach(type => {
-	fieldRegistry.registerField(type, TextField);
-});
-
-export default TextField;
+export default TextFieldWrapper;
