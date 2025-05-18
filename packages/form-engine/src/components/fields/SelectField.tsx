@@ -10,7 +10,7 @@ import { FormField } from "../../services/schemaParser";
 import { RegisteredComponentProps } from "../componentRegistry";
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
-const SelectFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
+export default function SelectField(props: RegisteredComponentProps) {
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
 
@@ -20,8 +20,6 @@ const SelectFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
 	};
 
 	const displayOptions = Array.isArray(fieldSchema.options) ? fieldSchema.options : [];
-	const selectPlaceholderText = fieldSchema.placeholder ||
-		(fieldSchema.label ? `Select ${fieldSchema.label.toLowerCase()}` : "Select an option");
 
 	return (
 		<Field
@@ -42,8 +40,8 @@ const SelectFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
 				{/* TODO: Add other validation messages here if needed */}
 			</div>
 			<Select.Root
-				value={value ?? ""} // Radix Select expects a string value or undefined
-				onValueChange={handleChange} // Use the new handleChange
+				value={value ?? ""}
+				onValueChange={handleChange}
 				required={fieldSchema.validation?.required}
 				disabled={fieldSchema.disabled}
 			>
@@ -55,7 +53,8 @@ const SelectFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
 					aria-label={fieldSchema.label}
 					// style prop is applied to the outer Field container
 				>
-					<Select.Value placeholder={selectPlaceholderText} />
+					<Select.Value placeholder={fieldSchema.placeholder ||
+						(fieldSchema.label ? `Select ${fieldSchema.label.toLowerCase()}` : "Select an option")} />
 					<Select.Icon className={fieldSchema.disabled ? "opacity-50" : ""}>
 						<ChevronDownIcon className="w-4 h-4" />
 					</Select.Icon>
@@ -115,6 +114,4 @@ const SelectFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
 			)}
 		</Field>
 	);
-};
-
-export default SelectFieldWrapper;
+}

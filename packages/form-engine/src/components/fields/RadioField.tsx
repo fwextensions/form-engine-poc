@@ -5,7 +5,7 @@ import { FormField, FormFieldOption } from "../../services/schemaParser";
 import { RegisteredComponentProps } from "../componentRegistry";
 import { labelStyles, formMessageStyles } from "./styles";
 
-const RadioFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
+export default function RadioField(props: RegisteredComponentProps) {
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
 
@@ -70,6 +70,4 @@ const RadioFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
 			)}
 		</Field>
 	);
-};
-
-export default RadioFieldWrapper;
+}

@@ -4,7 +4,7 @@ import { FormField } from "../../services/schemaParser";
 import { RegisteredComponentProps } from "../componentRegistry";
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
-const TextFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
+export default function TextField(props: RegisteredComponentProps) {
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
 
@@ -53,6 +53,4 @@ const TextFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
 			)}
 		</Field>
 	);
-};
-
-export default TextFieldWrapper;
+}

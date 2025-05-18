@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import * as Form from "@radix-ui/react-form";
+import { Submit, Root } from "@radix-ui/react-form";
 import { FormSchema } from "../services/schemaParser";
 import ComponentRenderer from "./ComponentRenderer";
 
@@ -85,13 +85,13 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 					)}
 					{currentPageIndex === 0 && <div />}
 
-					<Form.Submit asChild>
+					<Submit asChild>
 						<button
 							className="box-border text-white touch-manipulation bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none"
 						>
 							{isLastStep ? "Submit (PoC)" : "Next"}
 						</button>
-					</Form.Submit>
+					</Submit>
 				</div>
 			</>
 		);
@@ -121,20 +121,20 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 					);
 				})}
 				<div className="mt-8 flex justify-end items-center">
-					<Form.Submit asChild>
+					<Submit asChild>
 						<button
 							className="box-border text-white touch-manipulation bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none"
 						>
 							Submit (PoC)
 						</button>
-					</Form.Submit>
+					</Submit>
 				</div>
 			</>
 		);
 	};
 
 	return (
-		<Form.Root
+		<Root
 			key={isMultipage ? schema.children[currentPageIndex]?.id || currentPageIndex : "singlepage-form"}
 			className="w-[calc(100%-20px)] max-w-[600px] mx-auto my-3 p-5 bg-white shadow-lg rounded-md"
 			onSubmit={handleSubmit}
@@ -146,7 +146,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 			)}
 
 			{isMultipage ? renderMultipageFormContent() : renderSinglepageFormContent()}
-		</Form.Root>
+		</Root>
 	);
 };
 

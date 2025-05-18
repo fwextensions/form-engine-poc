@@ -2,9 +2,9 @@ import React from "react";
 import { Control, Field, Label, Message } from "@radix-ui/react-form";
 import { FormField } from "../../services/schemaParser"; 
 import { RegisteredComponentProps } from "../componentRegistry"; 
-import { inputStyles, labelStyles, formMessageStyles } from "./styles";
+import { inputStyles, labelStyles, formMessageStyles } from "./styles"; // Ensure inputStyles is appropriate or a textarea specific one is used
 
-const TextareaFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
+export default function TextareaField(props: RegisteredComponentProps) {
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
 
@@ -52,6 +52,4 @@ const TextareaFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
 			)}
 		</Field>
 	);
-};
-
-export default TextareaFieldWrapper;
+}

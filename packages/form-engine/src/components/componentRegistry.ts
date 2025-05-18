@@ -39,7 +39,7 @@ export const getComponent = (
 // Containers
 import PageRenderer from "./containers/PageRenderer";
 
-// Fields (assuming these will be refactored to be default exports of wrapper components)
+// Fields
 import TextField from "./fields/TextField";
 import TextareaField from "./fields/TextareaField";
 import SelectField from "./fields/SelectField";

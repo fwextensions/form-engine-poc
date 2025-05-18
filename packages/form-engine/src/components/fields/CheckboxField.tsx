@@ -6,7 +6,7 @@ import { FormField } from "../../services/schemaParser";
 import { RegisteredComponentProps } from "../componentRegistry";
 import { labelStyles, formMessageStyles } from "./styles";
 
-const CheckboxFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
+export default function CheckboxField(props: RegisteredComponentProps) {
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
 
@@ -27,9 +27,8 @@ const CheckboxFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
 			<div className="flex items-center space-x-2">
 				<Checkbox.Root
 					id={fieldSchema.id} // Link checkbox to its label
-					className={`peer h-5 w-5 shrink-0 rounded-sm border border-slate-300 shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white ${
-						fieldSchema.className || ""
-					}`}
+					className={`peer h-5 w-5 shrink-0 rounded-sm border border-slate-300 shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white ${fieldSchema.className ||
+						""}`}
 					checked={checked}
 					onCheckedChange={handleCheckedChange}
 					required={fieldSchema.validation?.required}
@@ -61,6 +60,4 @@ const CheckboxFieldWrapper: React.FC<RegisteredComponentProps> = (props) => {
 			)}
 		</Field>
 	);
-};
-
-export default CheckboxFieldWrapper;
+}
