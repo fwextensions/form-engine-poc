@@ -1,21 +1,53 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Submit, Root } from "@radix-ui/react-form";
 import { FormSchema } from "../services/schemaParser";
 import ComponentRenderer from "./ComponentRenderer";
 
 interface PoCFormProps {
 	schema: FormSchema;
+	onSubmit?: (formData: FormDataState) => void;
 }
 
 interface FormDataState {
 	[fieldId: string]: any;
 }
 
-const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
-	const [currentPageIndex, setCurrentPageIndex] = useState(0);
-	const [formData, setFormData] = useState<FormDataState>({});
+const SESSION_STORAGE_FORM_DATA_KEY = "formEngine_formData";
+const SESSION_STORAGE_PAGE_INDEX_KEY = "formEngine_currentPageIndex";
+
+const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
+	const [currentPageIndex, setCurrentPageIndex] = useState<number>(() => {
+		// Load initial page index from session storage if available
+		if (typeof window !== 'undefined') {
+			const storedPageIndex = sessionStorage.getItem(SESSION_STORAGE_PAGE_INDEX_KEY);
+			return storedPageIndex ? parseInt(storedPageIndex, 10) : 0;
+		}
+		return 0;
+	});
+	const [formData, setFormData] = useState<FormDataState>(() => {
+		// Load initial form data from session storage if available
+		if (typeof window !== 'undefined') {
+			const storedFormData = sessionStorage.getItem(SESSION_STORAGE_FORM_DATA_KEY);
+			return storedFormData ? JSON.parse(storedFormData) : {};
+		}
+		return {};
+	});
+
+	// Effect to save formData to session storage whenever it changes
+	useEffect(() => {
+		if (typeof window !== 'undefined') {
+			sessionStorage.setItem(SESSION_STORAGE_FORM_DATA_KEY, JSON.stringify(formData));
+		}
+	}, [formData]);
+
+	// Effect to save currentPageIndex to session storage whenever it changes
+	useEffect(() => {
+		if (typeof window !== 'undefined') {
+			sessionStorage.setItem(SESSION_STORAGE_PAGE_INDEX_KEY, currentPageIndex.toString());
+		}
+	}, [currentPageIndex]);
 
 	const isMultipage = schema.display === "multipage" || !schema.display;
 
@@ -26,19 +58,39 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 		}));
 	};
 
+	const handleClearFormData = () => {
+		if (typeof window !== 'undefined') {
+			sessionStorage.removeItem(SESSION_STORAGE_FORM_DATA_KEY);
+			sessionStorage.removeItem(SESSION_STORAGE_PAGE_INDEX_KEY);
+		}
+		setFormData({});
+		setCurrentPageIndex(0);
+		// Optionally, could also add a visual confirmation or reload the page
+		// window.location.reload(); // Uncomment to force a full reset if needed
+	};
+
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+
 		if (isMultipage) {
 			const isLastStep = currentPageIndex === schema.children.length - 1;
 			if (!isLastStep) {
 				setCurrentPageIndex((prev) => prev + 1);
 			} else {
-				console.log("Form submitted (Multipage PoC):", formData);
-				// TODO: Call an onSubmit prop if passed, e.g., schema.onSubmit(formData)
+				if (onSubmit) {
+					onSubmit(formData);
+				} else {
+					console.log("Form submitted (Multipage PoC):", formData);
+					alert("Form submitted! Check console for data.");
+				}
 			}
 		} else {
-			console.log("Form submitted (Singlepage PoC):", formData);
-			// TODO: Call an onSubmit prop if passed
+			if (onSubmit) {
+				onSubmit(formData);
+			} else {
+				console.log("Form submitted (Singlepage PoC):", formData);
+				alert("Form submitted! Check console for data.");
+			}
 		}
 	};
 
@@ -74,16 +126,17 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 				/>
 
 				<div className="mt-8 flex justify-between items-center">
-					{currentPageIndex > 0 && (
-						<button
-							type="button"
-							onClick={handlePrevious}
-							className="box-border text-gray-700 bg-gray-200 hover:bg-gray-300 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none"
-						>
-							Previous
-						</button>
-					)}
-					{currentPageIndex === 0 && <div />}
+					<div> {/* Wrapper for left-aligned buttons */}
+						{currentPageIndex > 0 && (
+							<button
+								type="button"
+								onClick={handlePrevious}
+								className="box-border text-gray-700 bg-gray-200 hover:bg-gray-300 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none mr-2"
+							>
+								Previous
+							</button>
+						)}
+					</div>
 
 					<Submit asChild>
 						<button
@@ -120,7 +173,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 						</div>
 					);
 				})}
-				<div className="mt-8 flex justify-end items-center">
+				<div className="mt-8 flex justify-end items-center"> {/* Reverted to justify-end for submit */}
 					<Submit asChild>
 						<button
 							className="box-border text-white touch-manipulation bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none"
@@ -146,6 +199,17 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema }) => {
 			)}
 
 			{isMultipage ? renderMultipageFormContent() : renderSinglepageFormContent()}
+
+			{/* Debug Clear Button Section */}
+			<div className="mt-10 pt-6 border-t border-gray-300 flex justify-center">
+				<button
+					type="button"
+					onClick={handleClearFormData}
+					className="box-border text-sm text-red-700 bg-red-100 hover:bg-red-200 focus:ring-4 focus:ring-red-300 font-medium rounded-lg px-4 py-2 focus:outline-none"
+				>
+					Clear Form
+				</button>
+			</div>
 		</Root>
 	);
 };
