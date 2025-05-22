@@ -132,6 +132,19 @@ function parseComponent(componentData: any, path: string): FormComponent {
 				throw new Error(`Invalid field component '${componentData.id}' at ${path}: 'label' is missing or not a string.`);
 			}
 
+			let label = componentData.label as string;
+			const trimmedLabel = label.trim();
+
+			// Check for asterisk in label to imply required, ignoring surrounding whitespace
+			if (trimmedLabel.endsWith("*")) {
+				label = trimmedLabel.slice(0, -1).trim(); // Remove asterisk and trim again
+				componentData.label = label;
+				if (!componentData.validation) {
+					componentData.validation = {};
+				}
+				componentData.validation.required = true;
+			}
+
 			// Delegate to a function for other FormField-specific validations (options, validation rules etc.)
 			validateFormFieldSpecifics(componentData, path);
 

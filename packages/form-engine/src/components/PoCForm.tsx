@@ -65,8 +65,6 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 		}
 		setFormData({});
 		setCurrentPageIndex(0);
-		// Optionally, could also add a visual confirmation or reload the page
-		// window.location.reload(); // Uncomment to force a full reset if needed
 	};
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -126,7 +124,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 				/>
 
 				<div className="mt-8 flex justify-between items-center">
-					<div> {/* Wrapper for left-aligned buttons */}
+					<div>
 						{currentPageIndex > 0 && (
 							<button
 								type="button"
@@ -173,7 +171,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 						</div>
 					);
 				})}
-				<div className="mt-8 flex justify-end items-center"> {/* Reverted to justify-end for submit */}
+				<div className="mt-8 flex justify-end items-center">
 					<Submit asChild>
 						<button
 							className="box-border text-white touch-manipulation bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none"
@@ -200,7 +198,6 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 
 			{isMultipage ? renderMultipageFormContent() : renderSinglepageFormContent()}
 
-			{/* Debug Clear Button Section */}
 			<div className="mt-10 pt-6 border-t border-gray-300 flex justify-center">
 				<button
 					type="button"

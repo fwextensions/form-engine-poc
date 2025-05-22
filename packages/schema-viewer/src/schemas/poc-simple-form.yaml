@@ -1,47 +1,38 @@
 title: PoC Multi-Step Form
 #display: singlepage
 children:
-  - id: page_personal_info
+  - id: pagePersonalInfo
     type: page
     title: Personal Information
     children:
-      - id: first_name
+      - id: firstName
         type: text
-        label: First Name
-        validation:
-          required: true
-      - id: last_name
+        label: First Name*
+        placeholder: First Name
+      - id: lastName
         type: text
-        label: Last Name
-        validation:
-          required: true
-      - id: birth_date
+        label: Last Name*
+      - id: birthDate
         type: date
         label: Date of Birth
       - id: email
         type: email
-        label: Email Address
+        label: Email Address*
         placeholder: user@example.com
-        validation:
-          required: true
 
-  - id: page_address_info
+  - id: pageAddressInfo
     type: page
     title: Address Information
     children:
-      - id: street_address
+      - id: streetAddress
         type: text
-        label: Street Address
-        validation:
-          required: true
+        label: Street Address*
       - id: city
         type: text
-        label: City
-        validation:
-          required: true
+        label: City*
       - id: country
         type: select
-        label: Country
+        label: Country*
         options:
           - value: "us"
             label: "United States"
@@ -49,26 +40,22 @@ children:
             label: "Canada"
           - value: "gb"
             label: "United Kingdom"
-        validation:
-          required: true
 
-  - id: page_preferences
+  - id: pagePreferences
     type: page
     title: Preferences
     children:
-      - id: newsletter_subscription
+      - id: newsletterSubscription
         type: checkbox
         label: Subscribe to newsletter
-      - id: contact_method
+      - id: contactMethod
         type: radio
-        label: Preferred Contact Method
+        label: Preferred Contact Method*
         options:
           - value: "email"
             label: "Email"
           - value: "phone"
             label: "Phone"
-        validation:
-          required: true
       - id: comments
         type: textarea
         label: Comments
