@@ -1,8 +1,8 @@
 import React from "react";
 import { Field, Label, Message } from "@radix-ui/react-form";
 import * as RadioGroup from "@radix-ui/react-radio-group";
-import { FormField, FormFieldOption } from "../../services/schemaParser";
-import { RegisteredComponentProps } from "../componentRegistry";
+import type { FormField, FormFieldOption } from "../../services/schemaParser";
+import type { RegisteredComponentProps } from "../componentRegistry";
 import { labelStyles, formMessageStyles } from "./styles";
 
 export default function RadioField(props: RegisteredComponentProps) {

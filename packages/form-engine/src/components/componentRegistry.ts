@@ -1,5 +1,5 @@
 import React from "react";
-import { FormComponent } from "../services/schemaParser"; // Adjusted path
+import type { FormComponent } from "../services/schemaParser"; // Adjusted path
 
 // Props that every registered component will receive
 export interface RegisteredComponentProps {

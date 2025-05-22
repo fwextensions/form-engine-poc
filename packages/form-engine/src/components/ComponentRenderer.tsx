@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { FormComponent } from "@/services/schemaParser"; // Adjust path if necessary
-import { getComponent, RegisteredComponentProps } from "./componentRegistry";
+import type { FormComponent } from "@/services/schemaParser";
+import { getComponent, type RegisteredComponentProps } from "./componentRegistry";
 
 interface ComponentRendererBaseProps {
 	component: FormComponent;

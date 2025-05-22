@@ -1,7 +1,7 @@
 import React from "react";
 import { Control, Field, Label, Message } from "@radix-ui/react-form";
-import { FormField } from "../../services/schemaParser";
-import { RegisteredComponentProps } from "../componentRegistry";
+import type { FormField } from "../../services/schemaParser";
+import type { RegisteredComponentProps } from "../componentRegistry";
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
 export default function DateField(props: RegisteredComponentProps) {

@@ -1,13 +1,12 @@
 import React from "react";
 import { Control, Field, Label, Message } from "@radix-ui/react-form";
-import { FormField } from "../../services/schemaParser";
-import { RegisteredComponentProps } from "../componentRegistry";
+import type { FormField } from "../../services/schemaParser";
+import type { RegisteredComponentProps } from "../componentRegistry";
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
 export default function TextField(props: RegisteredComponentProps) {
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
-
 	const value = formData[fieldSchema.id] || "";
 	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 		onFieldChange(fieldSchema.id, event.target.value);

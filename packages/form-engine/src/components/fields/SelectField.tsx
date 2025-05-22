@@ -6,8 +6,8 @@ import {
 	CheckIcon,
 	ChevronUpIcon
 } from "@radix-ui/react-icons";
-import { FormField } from "../../services/schemaParser";
-import { RegisteredComponentProps } from "../componentRegistry";
+import type { FormField } from "../../services/schemaParser";
+import type { RegisteredComponentProps } from "../componentRegistry";
 import { inputStyles, labelStyles, formMessageStyles } from "./styles";
 
 export default function SelectField(props: RegisteredComponentProps) {

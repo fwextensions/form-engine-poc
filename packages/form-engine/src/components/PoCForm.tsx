@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Submit, Root } from "@radix-ui/react-form";
-import { FormSchema } from "../services/schemaParser";
+import type { FormSchema } from "../services/schemaParser";
 import ComponentRenderer from "./ComponentRenderer";
 
 interface PoCFormProps {

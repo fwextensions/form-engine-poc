@@ -2,8 +2,8 @@ import React from "react";
 import { Field, Label, Message } from "@radix-ui/react-form";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
-import { FormField } from "../../services/schemaParser";
-import { RegisteredComponentProps } from "../componentRegistry";
+import type { FormField } from "../../services/schemaParser";
+import type { RegisteredComponentProps } from "../componentRegistry";
 import { labelStyles, formMessageStyles } from "./styles";
 
 export default function CheckboxField(props: RegisteredComponentProps) {

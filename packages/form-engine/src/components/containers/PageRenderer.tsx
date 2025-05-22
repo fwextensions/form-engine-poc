@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { FormPage, FormComponent } from "../../services/schemaParser"; 
+import type { FormPage, FormComponent } from "../../services/schemaParser"; 
 import ComponentRenderer from "../ComponentRenderer";
-import { RegisteredComponentProps } from "../componentRegistry";
+import type { RegisteredComponentProps } from "../componentRegistry";
 
 // PageRenderer now directly uses RegisteredComponentProps
 const PageRenderer: React.FC<RegisteredComponentProps> = ({
