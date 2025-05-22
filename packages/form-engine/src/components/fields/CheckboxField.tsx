@@ -1,14 +1,20 @@
 import React from "react";
-import { Field, Label, Message } from "@radix-ui/react-form";
+import { Message, Label } from "@radix-ui/react-form";
 import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import type { FormField } from "../../services/schemaParser";
 import type { RegisteredComponentProps } from "../componentRegistry";
-import { labelStyles, formMessageStyles } from "./styles";
+import { messageStyles, labelStyles } from "./styles";
+import FormFieldContainer from "./FormFieldContainer";
 
-export default function CheckboxField(props: RegisteredComponentProps) {
+export default function CheckboxField(
+	props: RegisteredComponentProps)
+{
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
+	// we don't want to pass the label to the FormFieldContainer, because the label
+	// should be to the right of the checkbox, not above it
+	const { label, ...componentWithoutLabel } = fieldSchema;
 
 	// Checkbox value should be boolean. Default to false if undefined.
 	const checked = formData[fieldSchema.id] === true;
@@ -19,11 +25,7 @@ export default function CheckboxField(props: RegisteredComponentProps) {
 	};
 
 	return (
-		<Field
-			name={fieldSchema.id}
-			className={`mb-4 grid ${fieldSchema.className || ""}`}
-			style={fieldSchema.style}
-		>
+		<FormFieldContainer component={componentWithoutLabel}>
 			<div className="flex items-center space-x-2">
 				<Checkbox.Root
 					id={fieldSchema.id} // Link checkbox to its label
@@ -41,23 +43,18 @@ export default function CheckboxField(props: RegisteredComponentProps) {
 						<CheckIcon className="h-4 w-4" />
 					</Checkbox.Indicator>
 				</Checkbox.Root>
-				{fieldSchema.label && (
+				{label && (
 					<Label htmlFor={fieldSchema.id} className={`${labelStyles} cursor-pointer`}>
-						{fieldSchema.label}
+						{label}
 					</Label>
 				)}
 			</div>
-			{/* Radix Form Message for checkbox often requires a bit more setup if specific messages are needed beyond 'required' for a boolean */} 
+			{/* Radix Form Message for checkbox often requires a bit more setup if specific messages are needed beyond 'required' for a boolean */}
 			{fieldSchema.validation?.required && (
-				<Message className={formMessageStyles} name={fieldSchema.id} match={(value) => value !== "true"}>
+				<Message className={messageStyles} name={fieldSchema.id} match={(value) => value !== "true"}>
 					{fieldSchema.label || "This checkbox"} must be checked.
 				</Message>
 			)}
-			{fieldSchema.description && (
-				<div className="mt-1 ml-7 text-sm text-gray-500">
-					{fieldSchema.description}
-				</div>
-			)}
-		</Field>
+		</FormFieldContainer>
 	);
 }

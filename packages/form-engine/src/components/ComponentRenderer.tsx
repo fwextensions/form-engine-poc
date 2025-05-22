@@ -10,11 +10,11 @@ interface ComponentRendererBaseProps {
 	onFieldChange: (fieldId: string, value: any) => void;
 }
 
-const ComponentRenderer: React.FC<ComponentRendererBaseProps> = ({
+export default function ComponentRenderer({
 	component,
 	formData,
-	onFieldChange,
-}) => {
+	onFieldChange }: ComponentRendererBaseProps)
+{
 	const RegisteredReactComponent = getComponent(component.type);
 
 	if (!RegisteredReactComponent) {
@@ -22,7 +22,8 @@ const ComponentRenderer: React.FC<ComponentRendererBaseProps> = ({
 		return (
 			<div className="my-2 p-2 border border-red-300 bg-red-50 text-red-700 rounded-md">
 				<p className="font-semibold">Unsupported Component Type</p>
-				<p className="text-sm">No renderer registered for type: "{component.type}" (id: "{component.id}").</p>
+				<p className="text-sm">No renderer registered for type:
+					"{component.type}" (id: "{component.id}").</p>
 			</div>
 		);
 	}
@@ -35,6 +36,4 @@ const ComponentRenderer: React.FC<ComponentRendererBaseProps> = ({
 	};
 
 	return <RegisteredReactComponent {...propsForRegisteredComponent} />;
-};
-
-export default ComponentRenderer;
+}

@@ -1,5 +1,3 @@
-import yaml from "js-yaml";
-
 export interface FormFieldOption {
 	value: string;
 	label: string;
@@ -13,7 +11,7 @@ export interface FieldValidation {
 export interface FormField {
 	id: string;
 	type: string; // "text", "email", "password", "select", "checkbox", "radio", "date", "textarea"
-	label: string;
+	label?: string;
 	description?: string;
 	placeholder?: string;
 	options?: FormFieldOption[]; // For select, radio
@@ -31,7 +29,6 @@ export interface FormField {
 // New discriminated union for all component types
 export type FormComponent = FormField | FormPage;
 
-// New interface for Page components
 export interface FormPage {
 	id: string;
 	type: "page"; // Literal type to ensure it's a page component
@@ -47,7 +44,7 @@ export interface FormSchema {
 	// Future properties: etc.
 }
 
-// Helper function for FormField specific validation
+// Helper function for FormFieldContainer specific validation
 function validateFormFieldSpecifics(fieldData: any, path: string): void {
 	// Validate 'options' for select and radio types
 	if (fieldData.type === "select" || fieldData.type === "radio") {
@@ -126,8 +123,8 @@ function parseComponent(componentData: any, path: string): FormComponent {
 		// Add cases for other container types (e.g., "section") here in the future
 
 		default:
-			// Assume it's a FormField type if not "page" (or other known container types)
-			// Validate FormField specific base properties
+			// Assume it's a FormFieldContainer type if not "page" (or other known container types)
+			// Validate FormFieldContainer specific base properties
 			if (!componentData.label || typeof componentData.label !== "string") {
 				throw new Error(`Invalid field component '${componentData.id}' at ${path}: 'label' is missing or not a string.`);
 			}
@@ -145,28 +142,11 @@ function parseComponent(componentData: any, path: string): FormComponent {
 				componentData.validation.required = true;
 			}
 
-			// Delegate to a function for other FormField-specific validations (options, validation rules etc.)
+			// Delegate to a function for other FormFieldContainer-specific validations (options, validation rules etc.)
 			validateFormFieldSpecifics(componentData, path);
 
-			// Construct and return the FormField object
-			// This assumes componentData has all necessary FormField properties plus id, type, label.
-			return {
-				id: componentData.id,
-				type: componentData.type, // This is the field type like "text", "select"
-				label: componentData.label,
-				description: componentData.description,
-				placeholder: componentData.placeholder,
-				options: componentData.options,
-				rows: componentData.rows,
-				validation: componentData.validation,
-				className: componentData.className,
-				style: componentData.style,
-				disabled: componentData.disabled,
-				readOnly: componentData.readOnly,
-				autoFocus: componentData.autoFocus,
-				tabIndex: componentData.tabIndex,
-				autoComplete: componentData.autoComplete,
-			} as FormField;
+			// This assumes componentData has all necessary FormFieldContainer properties plus id, type, label.
+			return componentData as FormField;
 	}
 }
 

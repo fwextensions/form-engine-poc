@@ -1,5 +1,5 @@
 import React from "react";
-import { Field, Label, Message } from "@radix-ui/react-form";
+import { Message } from "@radix-ui/react-form";
 import * as Select from "@radix-ui/react-select";
 import {
 	ChevronDownIcon,
@@ -8,9 +8,12 @@ import {
 } from "@radix-ui/react-icons";
 import type { FormField } from "../../services/schemaParser";
 import type { RegisteredComponentProps } from "../componentRegistry";
-import { inputStyles, labelStyles, formMessageStyles } from "./styles";
+import { inputStyles, messageStyles } from "./styles";
+import FormFieldContainer from "./FormFieldContainer";
 
-export default function SelectField(props: RegisteredComponentProps) {
+export default function SelectField(
+	props: RegisteredComponentProps)
+{
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
 
@@ -22,23 +25,7 @@ export default function SelectField(props: RegisteredComponentProps) {
 	const displayOptions = Array.isArray(fieldSchema.options) ? fieldSchema.options : [];
 
 	return (
-		<Field
-			name={fieldSchema.id}
-			className={`mb-4 grid ${fieldSchema.className || ""}`}
-			style={fieldSchema.style}
-		>
-			<div className="flex items-baseline justify-between">
-				{fieldSchema.label && (
-					<Label className={labelStyles}>
-						{fieldSchema.label}
-					</Label>
-				)}
-				<Message className={formMessageStyles} name={fieldSchema.id} match="valueMissing">
-					{fieldSchema.label ? `${fieldSchema.label} is required` :
-						"Please select an option"}
-				</Message>
-				{/* TODO: Add other validation messages here if needed */}
-			</div>
+		<FormFieldContainer component={fieldSchema}>
 			<Select.Root
 				value={value ?? ""}
 				onValueChange={handleChange}
@@ -46,12 +33,12 @@ export default function SelectField(props: RegisteredComponentProps) {
 				disabled={fieldSchema.disabled}
 			>
 				<Select.Trigger
-					className={`flex items-center ${inputStyles} ${fieldSchema.className ||
-					""} justify-between data-[placeholder]:text-gray-500 ${
+					className={`flex items-center ${inputStyles} ${fieldSchema.className || ""} justify-between data-[placeholder]:text-gray-500 ${
 						fieldSchema.disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"
 					}`}
 					aria-label={fieldSchema.label}
-					// style prop is applied to the outer Field container
+					autoFocus={fieldSchema.autoFocus}
+					tabIndex={fieldSchema.tabIndex}
 				>
 					<Select.Value placeholder={fieldSchema.placeholder ||
 						(fieldSchema.label ? `Select ${fieldSchema.label.toLowerCase()}` : "Select an option")} />
@@ -63,7 +50,7 @@ export default function SelectField(props: RegisteredComponentProps) {
 					<Select.Content
 						position="popper"
 						sideOffset={5}
-						className="z-50 w-(--radix-select-trigger-width) bg-white rounded-md shadow-lg border border-gray-200"
+						className="z-50 w-[var(--radix-select-trigger-width)] bg-white rounded-md shadow-lg border border-gray-200"
 					>
 						<Select.ScrollUpButton
 							className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default hover:bg-gray-50"
@@ -94,8 +81,9 @@ export default function SelectField(props: RegisteredComponentProps) {
 									</Select.Item>
 								))
 							) : (
-								<div className="px-3 py-1.5 text-sm text-gray-500">No options
-									available</div>
+								<div className="px-3 py-1.5 text-sm text-gray-500">
+									No options available
+								</div>
 							)}
 						</Select.Viewport>
 
@@ -107,11 +95,11 @@ export default function SelectField(props: RegisteredComponentProps) {
 					</Select.Content>
 				</Select.Portal>
 			</Select.Root>
-			{fieldSchema.description && (
-				<div className="mt-1 text-sm text-gray-500">
-					{fieldSchema.description}
-				</div>
-			)}
-		</Field>
+			<Message className={messageStyles} name={fieldSchema.id} match="valueMissing">
+				{fieldSchema.label ? `${fieldSchema.label} is required` :
+					"Please select an option"}
+			</Message>
+			{/* TODO: Add other validation messages here if needed */}
+		</FormFieldContainer>
 	);
 }

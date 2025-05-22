@@ -8,7 +8,6 @@ children:
       - id: firstName
         type: text
         label: First Name*
-        placeholder: First Name
       - id: lastName
         type: text
         label: Last Name*

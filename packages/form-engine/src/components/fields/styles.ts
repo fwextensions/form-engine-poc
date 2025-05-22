@@ -12,11 +12,10 @@ export const inputStyles = `
 // Label styles
 export const labelStyles = `
   block text-sm font-medium text-gray-700
-  mb-1
 `;
 
 // Form message styles
-export const formMessageStyles = `
+export const messageStyles = `
   text-sm text-red-600
   mt-1
 `;

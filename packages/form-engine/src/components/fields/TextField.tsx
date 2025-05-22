@@ -1,10 +1,13 @@
 import React from "react";
-import { Control, Field, Label, Message } from "@radix-ui/react-form";
+import { Control, Message } from "@radix-ui/react-form";
 import type { FormField } from "../../services/schemaParser";
 import type { RegisteredComponentProps } from "../componentRegistry";
-import { inputStyles, labelStyles, formMessageStyles } from "./styles";
+import { inputStyles, messageStyles } from "./styles";
+import FormFieldContainer from "./FormFieldContainer";
 
-export default function TextField(props: RegisteredComponentProps) {
+export default function TextField(
+	props: RegisteredComponentProps)
+{
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
 	const value = formData[fieldSchema.id] || "";
@@ -13,22 +16,7 @@ export default function TextField(props: RegisteredComponentProps) {
 	};
 
 	return (
-		<Field
-			name={fieldSchema.id}
-			className={`mb-4 grid ${fieldSchema.className || ""}`}
-			style={fieldSchema.style}
-		>
-			<div className="flex items-baseline justify-between">
-				{fieldSchema.label && (
-					<Label className={labelStyles}>
-						{fieldSchema.label}
-					</Label>
-				)}
-				<Message className={formMessageStyles} name={fieldSchema.id} match="valueMissing">
-					{fieldSchema.label || "This field"} is required
-				</Message>
-				{/* TODO: Add other validation messages here if needed */}
-			</div>
+		<FormFieldContainer component={fieldSchema}>
 			<Control asChild>
 				<input
 					type={fieldSchema.type || "text"} // Type comes from schema (e.g. text, email, password)
@@ -45,11 +33,9 @@ export default function TextField(props: RegisteredComponentProps) {
 					// style prop is applied to the outer Field container, not directly on input here
 				/>
 			</Control>
-			{fieldSchema.description && (
-				<div className="mt-1 text-sm text-gray-500">
-					{fieldSchema.description}
-				</div>
-			)}
-		</Field>
+			<Message className={messageStyles} name={fieldSchema.id} match="valueMissing">
+				{fieldSchema.label || "This field"} is required
+			</Message>
+		</FormFieldContainer>
 	);
 }

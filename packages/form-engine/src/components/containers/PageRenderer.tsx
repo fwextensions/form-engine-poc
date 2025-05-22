@@ -1,20 +1,20 @@
 "use client";
 
 import React from "react";
-import type { FormPage, FormComponent } from "../../services/schemaParser"; 
+import type { FormPage, FormComponent } from "../../services/schemaParser";
 import ComponentRenderer from "../ComponentRenderer";
 import type { RegisteredComponentProps } from "../componentRegistry";
 
-// PageRenderer now directly uses RegisteredComponentProps
-const PageRenderer: React.FC<RegisteredComponentProps> = ({
+export default function PageRenderer({
 	component,
 	formData,
-	onFieldChange,
-}) => {
+	onFieldChange }: RegisteredComponentProps)
+{
 	// Type guard to ensure the component is a FormPage
 	if (component.type !== "page") {
 		// This case should ideally not be reached if the schema and registry are correct
-		console.error("PageRenderer received a component that is not a page:", component);
+		console.error("PageRenderer received a component that is not a page:",
+			component);
 		return null; // Or render an error message
 	}
 
@@ -38,6 +38,4 @@ const PageRenderer: React.FC<RegisteredComponentProps> = ({
 			))}
 		</div>
 	);
-};
-
-export default PageRenderer;
+}

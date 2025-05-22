@@ -18,7 +18,7 @@ export { default as DateField } from "./DateField";
 export {
 	inputStyles,
 	labelStyles,
-	formMessageStyles,
+	messageStyles,
 	fieldSpacing,
 	fieldContainer,
 	focusRing,
