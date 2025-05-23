@@ -26,8 +26,14 @@ export interface FormField {
 	autoComplete?: string;
 }
 
-// New discriminated union for all component types
-export type FormComponent = FormField | FormPage;
+export interface StaticHtml {
+	id?: string; // Optional ID for static content
+	type: "html"; // Discriminator
+	content: string; // The HTML string or plain text
+	tag?: string; // Optional HTML tag to wrap the content (e.g., 'p', 'div', 'span'). Defaults in component.
+	className?: string; // Optional CSS classes for the component's container
+	style?: React.CSSProperties; // Optional inline styles
+}
 
 export interface FormPage {
 	id: string;
@@ -35,6 +41,9 @@ export interface FormPage {
 	title?: string;
 	children: FormComponent[]; // Pages contain an array of FormComponent
 }
+
+// New discriminated union for all component types
+export type FormComponent = FormField | FormPage | StaticHtml;
 
 // Updated FormSchema interface
 export interface FormSchema {
@@ -93,11 +102,22 @@ function parseComponent(componentData: any, path: string): FormComponent {
 	if (!componentData || typeof componentData !== "object") {
 		throw new Error(`Invalid component at ${path}: not an object.`);
 	}
-	if (!componentData.id || typeof componentData.id !== "string") {
-		throw new Error(`Invalid component at ${path}: 'id' is missing or not a string.`);
-	}
+	// Validate 'type' first, as it's needed for conditional 'id' validation
 	if (!componentData.type || typeof componentData.type !== "string") {
 		throw new Error(`Invalid component at ${path}: 'type' is missing or not a string.`);
+	}
+
+	// Conditional 'id' validation based on component type
+	if (componentData.type !== "html") {
+		// For non-HTML components, 'id' is required and must be a string
+		if (!componentData.id || typeof componentData.id !== "string") {
+			throw new Error(`Invalid component (type: ${componentData.type}) at ${path}: 'id' is missing or not a string.`);
+		}
+	} else {
+		// For HTML components, 'id' is optional. If provided, it must be a string.
+		if (componentData.id !== undefined && typeof componentData.id !== "string") {
+			throw new Error(`Invalid component (type: html) at ${path}: 'id', if provided, must be a string.`);
+		}
 	}
 
 	switch (componentData.type) {
@@ -119,6 +139,23 @@ function parseComponent(componentData: any, path: string): FormComponent {
 				title: componentData.title,
 				children: pageChildren,
 			} as FormPage;
+
+		case "html":
+			// Validate StaticHtml specific properties
+			if (componentData.content !== undefined && typeof componentData.content !== "string") {
+				throw new Error(`Invalid static HTML component '${componentData.id || "(no id)"}' at ${path}: 'content' must be a string.`);
+			}
+			if (componentData.tag !== undefined && typeof componentData.tag !== "string") {
+				throw new Error(`Invalid static HTML component '${componentData.id || "(no id)"}' at ${path}: 'tag' must be a string if provided.`);
+			}
+			return {
+				id: componentData.id,
+				type: "html",
+				content: componentData.content,
+				tag: componentData.tag,
+				className: componentData.className,
+				style: componentData.style,
+			} as StaticHtml;
 
 		// Add cases for other container types (e.g., "section") here in the future
 

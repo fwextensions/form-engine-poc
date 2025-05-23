@@ -46,6 +46,10 @@ import SelectField from "./fields/SelectField";
 import CheckboxField from "./fields/CheckboxField";
 import RadioField from "./fields/RadioField";
 import DateField from "./fields/DateField";
+//import FormFieldContainer from "./fields/FormFieldContainer"; // Assuming this is for layout, not a registered component type
+
+// Import the new static HTML component
+import StaticHtmlDisplay from "./static/StaticHtmlDisplay";
 
 // --- Register Components ---
 
@@ -66,5 +70,8 @@ registerComponent("select", SelectField);
 registerComponent("checkbox", CheckboxField);
 registerComponent("radio", RadioField);
 registerComponent("date", DateField);
+
+// Register the new static HTML component
+registerComponent("html", StaticHtmlDisplay);
 
 // TODO: Add other components like 'file', 'customHtml', etc. in the future.

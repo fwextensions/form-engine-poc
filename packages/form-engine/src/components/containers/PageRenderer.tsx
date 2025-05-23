@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import type { FormPage, FormComponent } from "../../services/schemaParser";
 import ComponentRenderer from "../ComponentRenderer";
@@ -28,10 +26,10 @@ export default function PageRenderer({
 					{pageComponent.title}
 				</h2>
 			)}
-			{pageComponent.children.map((childComponent: FormComponent) => (
+			{pageComponent.children.map((childComponent: FormComponent, i) => (
 				<ComponentRenderer
-					key={childComponent.id} // Ensure unique keys
-					component={childComponent} // childComponent is a FormComponent
+					key={childComponent.id || `${childComponent.type}-${i}`} // Ensure unique keys
+					component={childComponent}
 					formData={formData}
 					onFieldChange={onFieldChange}
 				/>
