@@ -11,7 +11,7 @@ export default function HomePage()
 	// The imported schemaData is already a JavaScript object thanks to yaml-loader
 	const schema: FormSchema | null = parseFormSchema(schemaData);
 
-	const handleSubmit = (formData: Record<string, any>) => {
+	const handleSubmit = (formData: Record<string, unknown>) => {
 		const queryString = encodeURIComponent(JSON.stringify(formData));
 		router.push(`/submission?data=${queryString}`);
 	};

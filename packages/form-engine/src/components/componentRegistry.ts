@@ -13,27 +13,30 @@ export type RegisteredComponentType = React.FC<RegisteredComponentProps>;
 
 const componentRegistry = new Map<string, RegisteredComponentType>();
 
-export const registerComponent = (
+export function registerComponent(
 	type: string,
-	component: RegisteredComponentType
-): void => {
+	component: RegisteredComponentType): void
+{
 	if (componentRegistry.has(type)) {
 		console.warn(`Component type "${type}" is already registered. Overwriting.`);
 	}
-	componentRegistry.set(type, component);
-};
 
-export const getComponent = (
-	type: string
-): RegisteredComponentType | undefined => {
+	componentRegistry.set(type, component);
+}
+
+export function getComponent(
+	type: string): RegisteredComponentType | undefined
+{
 	if (!componentRegistry.has(type)) {
 		// It's better to throw an error or return a specific fallback component
 		// For now, a console warning and undefined is kept from original logic
 		console.warn(`No component registered for type "${type}". You might see a blank space or an error in the form.`);
+
 		return undefined;
 	}
+
 	return componentRegistry.get(type);
-};
+}
 
 // --- Component Imports ---
 // Containers
@@ -71,7 +74,5 @@ registerComponent("checkbox", CheckboxField);
 registerComponent("radio", RadioField);
 registerComponent("date", DateField);
 
-// Register the new static HTML component
+// static components
 registerComponent("html", StaticHtmlDisplay);
-
-// TODO: Add other components like 'file', 'customHtml', etc. in the future.

@@ -18,36 +18,38 @@ const SESSION_STORAGE_FORM_DATA_KEY = "formEngine_formData";
 const SESSION_STORAGE_PAGE_INDEX_KEY = "formEngine_currentPageIndex";
 
 const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
-	const [currentPageIndex, setCurrentPageIndex] = useState<number>(() => {
-		// Load initial page index from session storage if available
-		if (typeof window !== 'undefined') {
-			const storedPageIndex = sessionStorage.getItem(SESSION_STORAGE_PAGE_INDEX_KEY);
-			return storedPageIndex ? parseInt(storedPageIndex, 10) : 0;
+	const [currentPageIndex, setCurrentPageIndex] = useState<number>(0); // Initial render always 0
+	const [formData, setFormData] = useState<FormDataState>({}); // Initial render always empty
+	const [isClient, setIsClient] = useState(false); // Flag to ensure sessionStorage access only on client
+
+	// Effect to set isClient to true after mount, and load initial state from session storage
+	useEffect(() => {
+		setIsClient(true);
+
+		const storedPageIndex = sessionStorage.getItem(SESSION_STORAGE_PAGE_INDEX_KEY);
+		if (storedPageIndex) {
+			setCurrentPageIndex(parseInt(storedPageIndex, 10));
 		}
-		return 0;
-	});
-	const [formData, setFormData] = useState<FormDataState>(() => {
-		// Load initial form data from session storage if available
-		if (typeof window !== 'undefined') {
-			const storedFormData = sessionStorage.getItem(SESSION_STORAGE_FORM_DATA_KEY);
-			return storedFormData ? JSON.parse(storedFormData) : {};
+
+		const storedFormData = sessionStorage.getItem(SESSION_STORAGE_FORM_DATA_KEY);
+		if (storedFormData) {
+			setFormData(JSON.parse(storedFormData));
 		}
-		return {};
-	});
+	}, []); // Empty dependency array ensures this runs once on mount (client-side)
 
 	// Effect to save formData to session storage whenever it changes
 	useEffect(() => {
-		if (typeof window !== 'undefined') {
+		if (isClient) { // Only run on client
 			sessionStorage.setItem(SESSION_STORAGE_FORM_DATA_KEY, JSON.stringify(formData));
 		}
-	}, [formData]);
+	}, [formData, isClient]);
 
 	// Effect to save currentPageIndex to session storage whenever it changes
 	useEffect(() => {
-		if (typeof window !== 'undefined') {
+		if (isClient) { // Only run on client
 			sessionStorage.setItem(SESSION_STORAGE_PAGE_INDEX_KEY, currentPageIndex.toString());
 		}
-	}, [currentPageIndex]);
+	}, [currentPageIndex, isClient]);
 
 	const isMultipage = schema.display === "multipage" || !schema.display;
 
@@ -59,7 +61,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 	};
 
 	const handleClearFormData = () => {
-		if (typeof window !== 'undefined') {
+		if (isClient) { // Only run on client
 			sessionStorage.removeItem(SESSION_STORAGE_FORM_DATA_KEY);
 			sessionStorage.removeItem(SESSION_STORAGE_PAGE_INDEX_KEY);
 		}
@@ -80,6 +82,8 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 				} else {
 					console.log("Form submitted (Multipage PoC):", formData);
 					alert("Form submitted! Check console for data.");
+					// Optionally clear data on final submit
+					// handleClearFormData();
 				}
 			}
 		} else {
@@ -88,6 +92,8 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 			} else {
 				console.log("Form submitted (Singlepage PoC):", formData);
 				alert("Form submitted! Check console for data.");
+				// Optionally clear data on final submit
+				// handleClearFormData();
 			}
 		}
 	};
@@ -113,7 +119,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 			<>
 				{schema.children.length > 1 && (
 					<p className="text-base mb-4 text-center text-gray-600">
-						Step {currentPageIndex + 1} of {schema.children.length}
+						Step {isClient ? currentPageIndex + 1 : 1} of {schema.children.length}
 					</p>
 				)}
 
@@ -125,7 +131,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 
 				<div className="mt-8 flex justify-between items-center">
 					<div>
-						{currentPageIndex > 0 && (
+						{isClient && currentPageIndex > 0 && (
 							<button
 								type="button"
 								onClick={handlePrevious}

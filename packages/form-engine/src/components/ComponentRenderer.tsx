@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { FormComponent } from "@/services/schemaParser";
+import type { FormComponent } from "../services/schemaParser";
 import { getComponent, type RegisteredComponentProps } from "./componentRegistry";
 
 interface ComponentRendererBaseProps {

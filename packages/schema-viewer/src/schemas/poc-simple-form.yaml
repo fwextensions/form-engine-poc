@@ -8,7 +8,7 @@ children:
       - type: html
         tag: div
         className: mb-4 p-4 bg-gray-100 rounded-md shadow
-        content:
+        content: |
           <h3>Hello from Static HTML!</h3>
           <p>This content is rendered via <strong>dangerouslySetInnerHTML</strong>
           from the YAML schema. It supports <em>basic</em> HTML tags.</p>

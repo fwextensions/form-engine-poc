@@ -1,7 +1,7 @@
 import React from "react";
 import { Label, Message } from "@radix-ui/react-form";
 import * as RadioGroup from "@radix-ui/react-radio-group";
-import type { FormField, FormFieldOption } from "../../services/schemaParser";
+import type { FormFieldOption } from "../../services/schemaParser";
 import type { RegisteredComponentProps } from "../componentRegistry";
 import { labelStyles, messageStyles } from "./styles";
 import FormFieldContainer from "./FormFieldContainer";
@@ -9,15 +9,24 @@ import FormFieldContainer from "./FormFieldContainer";
 export default function RadioField(
 	props: RegisteredComponentProps)
 {
-	const fieldSchema = props.component as FormField;
-	const { formData, onFieldChange } = props;
+	const { component, formData, onFieldChange } = props;
+
+	// Type guard to ensure this is a select field
+	if (component.type !== "radio") {
+		console.error(
+			`RadioField received a component of type '${component.type}' (id: ${component.id}). Expected 'radio'.`,
+		);
+		return null; // Or render a more user-friendly error
+	}
+
+	const fieldSchema = component;
 
 	const value = formData[fieldSchema.id] || "";
 	const handleChange = (newValue: string) => {
 		onFieldChange(fieldSchema.id, newValue);
 	};
 
-	const displayOptions: FormFieldOption[] = Array.isArray(fieldSchema.options) ? fieldSchema.options : [];
+	const displayOptions = Array.isArray(fieldSchema.options) ? fieldSchema.options : [];
 
 	return (
 		<FormFieldContainer component={fieldSchema}>
@@ -28,7 +37,7 @@ export default function RadioField(
 				required={fieldSchema.validation?.required}
 				disabled={fieldSchema.disabled}
 			>
-				{displayOptions.map((option, index) => (
+				{displayOptions.map((option: FormFieldOption, index: number) => (
 					<div key={option.value} className="flex items-center">
 						<RadioGroup.Item
 							value={option.value}

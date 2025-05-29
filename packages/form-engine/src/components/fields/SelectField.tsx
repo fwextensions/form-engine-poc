@@ -6,7 +6,7 @@ import {
 	CheckIcon,
 	ChevronUpIcon
 } from "@radix-ui/react-icons";
-import type { FormField } from "../../services/schemaParser";
+import type { FormFieldOption } from "../../services/schemaParser";
 import type { RegisteredComponentProps } from "../componentRegistry";
 import { inputStyles, messageStyles } from "./styles";
 import FormFieldContainer from "./FormFieldContainer";
@@ -14,8 +14,19 @@ import FormFieldContainer from "./FormFieldContainer";
 export default function SelectField(
 	props: RegisteredComponentProps)
 {
-	const fieldSchema = props.component as FormField;
-	const { formData, onFieldChange } = props;
+	const { component, formData, onFieldChange } = props;
+
+	// Type guard to ensure this is a select field
+	if (component.type !== "select") {
+		// This component should only be rendered for "select" type components.
+		// If this happens, it's likely an issue with the component registry or schema.
+		console.error(
+			`SelectField received a component of type '${component.type}' (id: ${component.id}). Expected 'select'.`,
+		);
+		return null; // Or render a more user-friendly error
+	}
+
+	const fieldSchema = component;
 
 	const value = formData[fieldSchema.id] || "";
 	const handleChange = (newValue: string) => {
@@ -60,7 +71,7 @@ export default function SelectField(
 
 						<Select.Viewport className="p-1">
 							{displayOptions.length > 0 ? (
-								displayOptions.map((option) => (
+								displayOptions.map((option: FormFieldOption) => (
 									<Select.Item
 										key={option.value}
 										value={option.value}

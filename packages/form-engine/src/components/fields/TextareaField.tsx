@@ -1,37 +1,46 @@
 import React from "react";
 import { Control, Message } from "@radix-ui/react-form";
-import type { FormField } from "../../services/schemaParser";
 import type { RegisteredComponentProps } from "../componentRegistry";
 import { inputStyles, messageStyles } from "./styles";
 import FormFieldContainer from "./FormFieldContainer";
 
 export default function TextareaField(props: RegisteredComponentProps) {
-	const fieldSchema = props.component as FormField;
-	const { formData, onFieldChange } = props;
+	const { component, formData, onFieldChange } = props;
 
-	const value = formData[fieldSchema.id] || "";
+	// Type guard to ensure this is a textarea field
+	if (component.type !== "textarea") {
+		console.error(
+			`TextareaField received a component of type '${component.type}' (id: ${component.id}). Expected 'textarea'.`,
+		);
+		return null; // Or render a more user-friendly error
+	}
+
+	// Now TypeScript knows 'component' is specifically the textarea field type,
+	// so 'component.rows' is guaranteed to exist (if defined in the schema for textarea).
+
+	const value = formData[component.id] || "";
 	const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-		onFieldChange(fieldSchema.id, event.target.value);
+		onFieldChange(component.id, event.target.value);
 	};
 
 	return (
-		<FormFieldContainer component={fieldSchema}>
+		<FormFieldContainer component={component}>
 			<Control asChild>
 				<textarea
-					className={`${inputStyles} ${fieldSchema.className || ""}`}
+					className={`${inputStyles} ${component.className || ""}`}
 					value={value}
 					onChange={handleChange}
-					required={fieldSchema.validation?.required}
-					placeholder={fieldSchema.placeholder}
-					disabled={fieldSchema.disabled}
-					readOnly={fieldSchema.readOnly}
-					autoFocus={fieldSchema.autoFocus}
-					tabIndex={fieldSchema.tabIndex}
-					rows={fieldSchema.rows}
+					required={component.validation?.required}
+					placeholder={component.placeholder}
+					disabled={component.disabled}
+					readOnly={component.readOnly}
+					autoFocus={component.autoFocus}
+					tabIndex={component.tabIndex}
+					rows={component.rows}
 				/>
 			</Control>
-			<Message className={messageStyles} name={fieldSchema.id} match="valueMissing">
-				{fieldSchema.label || "This field"} is required
+			<Message className={messageStyles} name={component.id} match="valueMissing">
+				{component.label || "This field"} is required
 			</Message>
 			{/* TODO: Add other validation messages here if needed */}
 		</FormFieldContainer>

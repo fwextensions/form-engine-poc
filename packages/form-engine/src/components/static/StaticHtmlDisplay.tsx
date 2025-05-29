@@ -25,15 +25,17 @@ export default function StaticHtmlDisplay({
 	const Wrapper: keyof JSX.IntrinsicElements = (tag && tag.trim() !== "")
 		? tag.toLowerCase() as keyof JSX.IntrinsicElements
 		: "div";
-	const innerHTML = VoidElements.includes(Wrapper)
-		? {}
-		: { dangerouslySetInnerHTML: { __html: content } };
+	let innerHTMLProps = {};
+
+	if (typeof content === "string" && !VoidElements.includes(Wrapper)) {
+		innerHTMLProps = { dangerouslySetInnerHTML: { __html: content } };
+	}
 
 	return (
 		<Wrapper
 			className={className}
 			style={style}
-			{...innerHTML}
+			{...innerHTMLProps}
 		/>
 	);
 }

@@ -12,6 +12,5 @@
     "lint": "npm run lint --workspace=schema-viewer",
     "lint:all": "npm run lint --workspaces --if-present",
     "build:all": "npm run build --workspaces --if-present"
-  },
-  "devDependencies": {}
+  }
 }

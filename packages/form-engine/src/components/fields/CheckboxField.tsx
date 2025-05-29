@@ -12,6 +12,7 @@ export default function CheckboxField(
 {
 	const fieldSchema = props.component as FormField;
 	const { formData, onFieldChange } = props;
+
 	// we don't want to pass the label to the FormFieldContainer, because the label
 	// should be to the right of the checkbox, not above it
 	const { label, ...componentWithoutLabel } = fieldSchema;
