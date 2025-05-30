@@ -15,6 +15,10 @@ export const ZodFieldValidationSchema = z.object({
 }).strict();
 export type FieldValidation = z.infer<typeof ZodFieldValidationSchema>;
 
+// Zod schema for a JSON Logic rule
+export const ZodJsonLogicRuleSchema = z.record(z.string(), z.any());
+export type JsonLogicRule = z.infer<typeof ZodJsonLogicRuleSchema>;
+
 // Base Zod schema for common FormField properties
 const ZodBaseFieldSchema = z.object({
 	id: z.string({ required_error: "Field 'id' is required" }),
@@ -30,6 +34,7 @@ const ZodBaseFieldSchema = z.object({
 	tabIndex: z.number().int().optional(),
 	autoComplete: z.string().optional(),
 	validation: ZodFieldValidationSchema.optional(),
+	condition: ZodJsonLogicRuleSchema.optional(),
 });
 
 // Specific Zod schemas for each field type
@@ -74,6 +79,7 @@ export const ZodStaticHtmlSchema = z.object({
 	tag: z.string().optional(),
 	className: z.string().optional(),
 	style: z.record(z.string(), z.any()).optional(),
+	condition: ZodJsonLogicRuleSchema.optional(),
 }).strict();
 export type StaticHtml = z.infer<typeof ZodStaticHtmlSchema>;
 
@@ -87,6 +93,7 @@ export const ZodFormPageSchema = z.object({
 	type: z.literal("page"),
 	title: z.string().optional(),
 	children: z.array(z.lazy(() => ZodFormComponentSchema)).min(1, "Page 'children' must be a non-empty array"),
+	condition: ZodJsonLogicRuleSchema.optional(),
 }).strict();
 export type FormPage = z.infer<typeof ZodFormPageSchema>;
 

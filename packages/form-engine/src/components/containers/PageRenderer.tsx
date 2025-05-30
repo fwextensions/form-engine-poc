@@ -6,7 +6,9 @@ import type { RegisteredComponentProps } from "../componentRegistry";
 export default function PageRenderer({
 	component,
 	formData,
-	onFieldChange }: RegisteredComponentProps)
+	onFieldChange,
+	context,
+}: RegisteredComponentProps)
 {
 	// Type guard to ensure the component is a FormPage
 	if (component.type !== "page") {
@@ -31,6 +33,7 @@ export default function PageRenderer({
 					component={childComponent}
 					formData={formData}
 					onFieldChange={onFieldChange}
+					context={context}
 				/>
 			))}
 		</div>

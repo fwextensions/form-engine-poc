@@ -1,0 +1,222 @@
+# Form Engine System Feature Suggestion: Consider implementing a "Save and finish later" functionality for long forms.
+title: "Housing Application Example"
+display: multipage
+# Page Navigation based on screenshots: YOU, HOUSEHOLD, INCOME, PREFERENCES, REVIEW
+children:
+  # Page 1: Introduction (Based on Screenshot 1)
+  - id: intro
+    type: page
+    title: "Here's what to expect for this application."
+    children:
+      - id: intro_content
+        type: html
+        content: |
+          <p class="mb-4">First we'll ask about you and the people you plan to live with. Then, we'll ask about your income. Finally, we'll see if you qualify for any affordable housing lottery preference, and if so, ask you to upload proof of those preferences.</p>
+          <p class="mb-4"><a href="#">See our checklist</a> for information about required documents and claiming preferences.</p>
+          <p class="mb-4">You may also start the application now and save it and upload documents later.</p>
+          <p class="mb-4">Please be aware that each household member can only appear on one application for each listing. If your application contains household members that are on other applications for this listing, all of them will be disqualified.</p>
+          <p class="mb-4">Any fraudulent statements will cause your application to be removed from the lottery.</p>
+
+  # Page 2: "YOU" Section - Part 1: Name, Date of Birth, Email (Based on Screenshot 2)
+  - id: you_part1_name_dob_email
+    type: page
+    title: "What's your name?"
+    children:
+      # Form Engine Enhancement: Need a way to visually group related fields under a common heading (e.g., "YOUR NAME").
+      # This could be a 'fieldset' component or a 'header' component for sections within a page.
+      - id: firstName
+        type: text
+        label: "First Name*"
+        placeholder: "First Name"
+      - id: middleName
+        type: text
+        label: "Middle Name (optional)"
+        placeholder: "Middle Name (optional)"
+      - id: lastName
+        type: text
+        label: "Last Name*"
+        placeholder: "Last Name"
+
+      # Form Engine Enhancement: Need a way to group fields for "YOUR DATE OF BIRTH".
+      # Consider a composite date field component (MM/DD/YYYY) or better styling for grouped simple fields.
+      - id: dobMonth
+        type: text
+        label: "MM*" # Assuming Date of Birth is required
+        placeholder: "MM"
+        # Potential validation: { pattern: "^(0?[1-9]|1[0-2])$", maxLength: 2 }
+      - id: dobDay
+        type: text
+        label: "DD*"
+        placeholder: "DD"
+        # Potential validation: { pattern: "^(0?[1-9]|[12][0-9]|3[01])$", maxLength: 2 }
+      - id: dobYear
+        type: text
+        label: "YYYY*"
+        placeholder: "YYYY"
+        # Potential validation: { pattern: "^(19|20)\\d{2}$", maxLength: 4 }
+
+      # Form Engine Enhancement: Need a dedicated 'description' property for fields to hold helper text like
+      # "We will only use your email address to contact you about your application."
+      - id: email
+        type: email
+        label: "YOUR EMAIL ADDRESS*" # Assuming email is required unless 'noEmail' is checked
+        placeholder: "you@myemail.com"
+        # description: "We will only use your email address to contact you about your application."
+      - id: noEmail
+        type: checkbox
+        label: "I don't have an email address"
+        # Form Engine Enhancement: Conditional Logic - checking this should make the 'email' field optional or hidden.
+
+  # Page 3: "YOU" Section - Part 2: Contact Info, Address, Work in SF (Based on Screenshot 3)
+  - id: you_part2_contact_address_work
+    type: page
+    # Form Engine Enhancement: Support for dynamic content in titles (e.g., using data from previous steps like "Thanks, {{firstName}}.").
+    title: "Now we need to know how to contact you."
+    children:
+      # Form Engine Enhancement: Field grouping for "YOUR PHONE NUMBER".
+      - id: phoneNumber
+        type: text # Consider 'tel' type for semantic HTML if styling is appropriate
+        label: "YOUR PHONE NUMBER"
+        placeholder: "(555) 555-5555"
+      - id: phoneType
+        type: select
+        label: "What type of number is this?"
+        options:
+          - label: "Mobile"
+            value: "mobile"
+          - label: "Home"
+            value: "home"
+          - label: "Work"
+            value: "work"
+        placeholder: "Select type"
+      - id: noPhoneNumber
+        type: checkbox
+        label: "I don't have a phone number"
+        # Form Engine Enhancement: Conditional Logic - if checked, phone fields might become optional/hidden.
+      - id: additionalPhoneNumber
+        type: checkbox
+        label: "I have an additional phone number"
+        # Form Engine Enhancement: Conditional Logic / Repeater pattern - checking this could reveal fields for an additional phone number.
+
+      # Form Engine Enhancement: Field grouping for "ADDRESS" and a way to display descriptive text for the group.
+      # Address group description: "We need the address where you currently live. If you are experiencing homelessness or have an unstable address, enter an address close to where you stay. PO Boxes are not allowed."
+      - id: streetAddress
+        type: text
+        label: "Street Address*"
+        placeholder: "Street Address"
+      - id: aptOrUnit
+        type: text
+        label: "Apt or Unit #"
+        placeholder: "Apt or Unit #"
+      - id: city
+        type: text
+        label: "City Name*"
+        placeholder: "City Name"
+      - id: state
+        type: select
+        label: "State*"
+        placeholder: "Select One"
+        # Form Engine Enhancement: Consider pre-filled option lists for common data like US states.
+        options:
+          - label: "Alabama"
+            value: "AL"
+          - label: "Alaska"
+            value: "AK"
+          - label: "Arizona"
+            value: "AZ"
+          - label: "Arkansas"
+            value: "AR"
+          - label: "California"
+            value: "CA"
+          # ... (add all US states for a complete list)
+          - label: "Wyoming"
+            value: "WY"
+      - id: zipcode
+        type: text
+        label: "Zipcode*"
+        placeholder: "Zipcode"
+      - id: mailToDifferentAddress
+        type: checkbox
+        label: "Send my mail to a different address"
+        # Form Engine Enhancement: Conditional Logic - if checked, reveal fields for a separate mailing address.
+
+      # Form Engine Enhancement: Field grouping for "DO YOU WORK IN SAN FRANCISCO?" and description text.
+      # Description: "This means you currently work in San Francisco at least 75% of your working hours."
+      - id: workInSF
+        type: radio
+        label: "DO YOU WORK IN SAN FRANCISCO?*"
+        options:
+          - label: "Yes"
+            value: "yes"
+          - label: "No"
+            value: "no"
+
+  # Page 4: "YOU" Section - Part 3: Alternate Contact (Based on Screenshot 4)
+  - id: you_part3_alternate_contact
+    type: page
+    title: "Is there someone else you'd like to authorize us to contact if we can't reach you?"
+    # Form Engine Enhancement: Page-level description or static text component for:
+    # "By providing an alternate contact, you are allowing us to discuss your application with them."
+    children:
+      # Form Engine Enhancement: Field grouping for "ALTERNATE CONTACT" and description text.
+      # Description: "Please select one."
+      - id: alternateContactType
+        type: radio
+        label: "ALTERNATE CONTACT*"
+        options:
+          - label: "Family member"
+            value: "family_member"
+          - label: "Friend"
+            value: "friend"
+          - label: "Case manager or housing counselor"
+            value: "case_manager_housing_counselor"
+          - label: "Other"
+            value: "other"
+          - label: "I don't have an alternate contact"
+            value: "none"
+      - id: alternateContactOtherDescription
+        type: text
+        label: "If other, please specify"
+        placeholder: "Specify other contact type"
+        # Form Engine Enhancement: Conditional Logic - this field should only be visible if 'alternateContactType' is 'other'.
+
+  # Placeholder for HOUSEHOLD Page
+  - id: household_info
+    type: page
+    title: "Household Information"
+    # Form Engine Task: Define fields for household members, their details, etc.
+    children:
+      - id: householdPlaceholder
+        type: text # Placeholder field
+        label: "Details about your household members will be collected here. (To be defined)"
+
+  # Placeholder for INCOME Page
+  - id: income_info
+    type: page
+    title: "Income Information"
+    # Form Engine Task: Define fields for income sources, amounts, employment details for all relevant household members.
+    children:
+      - id: incomePlaceholder
+        type: text # Placeholder field
+        label: "Details about your household income will be collected here. (To be defined)"
+
+  # Placeholder for PREFERENCES Page
+  - id: preferences_info
+    type: page
+    title: "Preferences"
+    # Form Engine Task: Define fields for housing preferences, accessibility needs, lottery preferences, etc.
+    children:
+      - id: preferencesPlaceholder
+        type: text # Placeholder field
+        label: "Details about your housing preferences will be collected here. (To be defined)"
+
+  # Placeholder for REVIEW Page
+  - id: review_application
+    type: page
+    title: "Review Your Application"
+    # Form Engine Task: This page should display a summary of all data entered in previous steps.
+    # This likely requires a special 'summary' component or logic within the form engine to gather and display data.
+    children:
+      - id: reviewPlaceholder
+        type: text # Placeholder field
+        label: "A summary of your application will be displayed here for review before submission. (To be defined)"

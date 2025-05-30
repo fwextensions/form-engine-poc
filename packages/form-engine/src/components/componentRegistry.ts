@@ -5,6 +5,7 @@ import type { FormComponent } from "../services/schemaParser"; // Adjusted path
 export interface RegisteredComponentProps {
 	component: FormComponent; // The schema definition for this component
 	formData: Record<string, any>; // Current overall form data
+	context?: Record<string, any>; // Optional: context data from the form
 	onFieldChange: (fieldId: string, value: any) => void; // Callback to update form data
 	// path?: string; // Optional: for deeply nested data, if needed later
 }

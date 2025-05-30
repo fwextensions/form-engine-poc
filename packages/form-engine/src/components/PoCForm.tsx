@@ -7,6 +7,7 @@ import ComponentRenderer from "./ComponentRenderer";
 
 interface PoCFormProps {
 	schema: FormSchema;
+	context?: Record<string, any>;
 	onSubmit?: (formData: FormDataState) => void;
 }
 
@@ -17,7 +18,7 @@ interface FormDataState {
 const SESSION_STORAGE_FORM_DATA_KEY = "formEngine_formData";
 const SESSION_STORAGE_PAGE_INDEX_KEY = "formEngine_currentPageIndex";
 
-const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
+const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => {
 	const [currentPageIndex, setCurrentPageIndex] = useState<number>(0); // Initial render always 0
 	const [formData, setFormData] = useState<FormDataState>({}); // Initial render always empty
 	const [isClient, setIsClient] = useState(false); // Flag to ensure sessionStorage access only on client
@@ -127,6 +128,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 					component={currentComponentDefinition}
 					formData={formData}
 					onFieldChange={handleFieldChange}
+					context={context}
 				/>
 
 				<div className="mt-8 flex justify-between items-center">
@@ -173,6 +175,7 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, onSubmit }) => {
 								component={componentDefinition}
 								formData={formData}
 								onFieldChange={handleFieldChange}
+								context={context}
 							/>
 						</div>
 					);
