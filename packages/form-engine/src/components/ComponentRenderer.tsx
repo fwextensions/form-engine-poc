@@ -21,7 +21,7 @@ export default function ComponentRenderer({
 	// Evaluate condition if it exists
 	if (component.condition) {
 		const dataForLogic = {
-			formData,
+			data: formData,
 			context,
 			// Potentially add other relevant data sources here, e.g., user info
 		};
