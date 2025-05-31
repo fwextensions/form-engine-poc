@@ -1,8 +1,8 @@
 "use client";
 
 import { PoCForm, parseFormSchema, FormSchema } from "form-engine";
-import schemaData from "@/schemas/dahlia-application.yaml";
-//import schemaData from "@/schemas/poc-simple-form.yaml";
+//import schemaData from "@/schemas/dahlia-application.yaml";
+import schemaData from "@/schemas/poc-simple-form.yaml";
 import { useRouter } from "next/navigation";
 
 export default function HomePage()
