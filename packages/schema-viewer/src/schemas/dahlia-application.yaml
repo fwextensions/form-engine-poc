@@ -1,6 +1,6 @@
 # Form Engine System Feature Suggestion: Consider implementing a "Save and finish later" functionality for long forms.
 title: "Housing Application Example"
-display: multipage
+#display: singlepage
 # Page Navigation based on screenshots: YOU, HOUSEHOLD, INCOME, PREFERENCES, REVIEW
 children:
   # Page 1: Introduction (Based on Screenshot 1)
@@ -76,7 +76,7 @@ children:
       # Form Engine Enhancement: Field grouping for "YOUR PHONE NUMBER".
       - id: phoneNumber
         type: text # Consider 'tel' type for semantic HTML if styling is appropriate
-        label: "YOUR PHONE NUMBER"
+        label: "Your Phone Number"
         placeholder: "(555) 555-5555"
       - id: phoneType
         type: select

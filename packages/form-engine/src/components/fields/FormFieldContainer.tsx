@@ -1,7 +1,7 @@
 import React from "react";
 import { Field, Label } from "@radix-ui/react-form";
 import type { FormField } from "../../services/schemaParser";
-import { labelStyles } from "./styles";
+import { labelStyles, fieldSpacing } from "./styles";
 
 type FormFieldProps = {
 	component: FormField;
@@ -16,11 +16,11 @@ export default function FormFieldContainer(
 	return (
 		<Field
 			name={id}
-			className={`mb-4 grid ${className || ""}`}
+			className={`${fieldSpacing} grid ${className || ""}`}
 			style={style}
 		>
 			{label &&
-				<Label className={`mb-1 ${labelStyles}`}>
+				<Label className={`${labelStyles}`}>
 					{label}
 				</Label>
 			}

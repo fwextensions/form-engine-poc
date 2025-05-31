@@ -1,4 +1,4 @@
-# Dynamic Form Engine - Proof of Concept
+# DAHLIA Form Engine - Proof of Concept
 
 This project is a proof-of-concept for a schema-driven dynamic form engine. It's designed to parse form definitions written in YAML and render them as interactive, multi-step web forms using React.
 

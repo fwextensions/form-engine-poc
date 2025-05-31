@@ -4,7 +4,7 @@ import * as Checkbox from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import type { FormField } from "../../services/schemaParser";
 import type { RegisteredComponentProps } from "../componentRegistry";
-import { messageStyles, labelStyles } from "./styles";
+import { messageStyles, labelStyles, borderRadius, focusRing, transition } from "./styles";
 import FormFieldContainer from "./FormFieldContainer";
 
 export default function CheckboxField(
@@ -27,11 +27,10 @@ export default function CheckboxField(
 
 	return (
 		<FormFieldContainer component={componentWithoutLabel}>
-			<div className="flex items-center space-x-2">
+			<div className="flex items-center space-x-2.5">
 				<Checkbox.Root
 					id={fieldSchema.id} // Link checkbox to its label
-					className={`peer h-5 w-5 shrink-0 rounded-sm border border-slate-300 shadow focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white ${fieldSchema.className ||
-						""}`}
+					className={`peer h-5 w-5 shrink-0 ${borderRadius} border border-gray-300 ${focusRing} ${transition} disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-blue-600 data-[state=checked]:text-white data-[state=checked]:border-blue-600 ${fieldSchema.className || ""}`}
 					checked={checked}
 					onCheckedChange={handleCheckedChange}
 					required={fieldSchema.validation?.required}
@@ -41,18 +40,29 @@ export default function CheckboxField(
 					// style prop is applied to the outer Field container
 				>
 					<Checkbox.Indicator className="flex items-center justify-center text-current">
-						<CheckIcon className="h-4 w-4" />
+						<CheckIcon className="h-5 w-5" />
 					</Checkbox.Indicator>
 				</Checkbox.Root>
 				{label && (
-					<Label htmlFor={fieldSchema.id} className={`${labelStyles} cursor-pointer`}>
+					<Label htmlFor={fieldSchema.id} className={`${labelStyles} !mb-0 font-normal cursor-pointer`}>
 						{label}
 					</Label>
 				)}
 			</div>
 			{/* Radix Form Message for checkbox often requires a bit more setup if specific messages are needed beyond 'required' for a boolean */}
 			{fieldSchema.validation?.required && (
-				<Message className={messageStyles} name={fieldSchema.id} match={(value) => value !== "true"}>
+				<Message className={messageStyles} name={fieldSchema.id} match={(value) => {
+					switch (typeof value) {
+						case "boolean":
+							return !value; // Show message if boolean value is false
+						case "string":
+							// Show message if string value (case-insensitive) is not "true"
+							return value.toLowerCase() !== "true";
+						default:
+							// For undefined, null, or other types, consider it "not checked"
+							return true;
+					}
+				}}>
 					{fieldSchema.label || "This checkbox"} must be checked.
 				</Message>
 			)}

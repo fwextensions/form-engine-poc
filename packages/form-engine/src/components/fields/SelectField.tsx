@@ -8,7 +8,7 @@ import {
 } from "@radix-ui/react-icons";
 import type { FormFieldOption } from "../../services/schemaParser";
 import type { RegisteredComponentProps } from "../componentRegistry";
-import { inputStyles, messageStyles } from "./styles";
+import { inputStyles, messageStyles, borderRadius, transition } from "./styles";
 import FormFieldContainer from "./FormFieldContainer";
 
 export default function SelectField(
@@ -16,14 +16,11 @@ export default function SelectField(
 {
 	const { component, formData, onFieldChange } = props;
 
-	// Type guard to ensure this is a select field
 	if (component.type !== "select") {
-		// This component should only be rendered for "select" type components.
-		// If this happens, it's likely an issue with the component registry or schema.
 		console.error(
 			`SelectField received a component of type '${component.type}' (id: ${component.id}). Expected 'select'.`,
 		);
-		return null; // Or render a more user-friendly error
+		return null;
 	}
 
 	const fieldSchema = component;
@@ -44,7 +41,7 @@ export default function SelectField(
 				disabled={fieldSchema.disabled}
 			>
 				<Select.Trigger
-					className={`flex items-center ${inputStyles} ${fieldSchema.className || ""} justify-between data-[placeholder]:text-gray-500 ${
+					className={`flex items-center ${inputStyles} ${fieldSchema.className || ""} justify-between data-[placeholder]:text-gray-400 ${
 						fieldSchema.disabled ? "cursor-not-allowed opacity-70" : "cursor-pointer"
 					}`}
 					aria-label={fieldSchema.label}
@@ -53,7 +50,7 @@ export default function SelectField(
 				>
 					<Select.Value placeholder={fieldSchema.placeholder ||
 						(fieldSchema.label ? `Select ${fieldSchema.label.toLowerCase()}` : "Select an option")} />
-					<Select.Icon className={fieldSchema.disabled ? "opacity-50" : ""}>
+					<Select.Icon className={fieldSchema.disabled ? "opacity-50" : "text-gray-500"}>
 						<ChevronDownIcon className="w-4 h-4" />
 					</Select.Icon>
 				</Select.Trigger>
@@ -61,10 +58,10 @@ export default function SelectField(
 					<Select.Content
 						position="popper"
 						sideOffset={5}
-						className="z-50 w-[var(--radix-select-trigger-width)] bg-white rounded-md shadow-lg border border-gray-200"
+						className={`z-50 w-[var(--radix-select-trigger-width)] bg-white ${borderRadius} shadow-lg border border-gray-200 ${transition}`}
 					>
 						<Select.ScrollUpButton
-							className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default hover:bg-gray-50"
+							className={`flex items-center justify-center h-6 bg-white text-gray-700 cursor-default hover:bg-gray-50 ${transition}`}
 						>
 							<ChevronUpIcon className="w-4 h-4" />
 						</Select.ScrollUpButton>
@@ -77,29 +74,28 @@ export default function SelectField(
 										value={option.value}
 										disabled={fieldSchema.disabled}
 										className={`
-                    text-sm leading-none text-gray-900 rounded flex items-center h-8 pl-7 pr-3 py-1.5 relative select-none
+                    text-sm leading-none text-gray-900 ${borderRadius} flex items-center h-8 pl-7 pr-3 py-1.5 relative select-none ${transition}
                     ${
 											fieldSchema.disabled ? "text-gray-400 cursor-not-allowed" :
-												"cursor-pointer"
+												"cursor-pointer data-[highlighted]:outline-none data-[highlighted]:bg-blue-500 data-[highlighted]:text-white hover:bg-gray-100"
 										}
-                    data-[highlighted]:outline-none data-[highlighted]:bg-blue-500 data-[highlighted]:text-white
                   `}
 									>
 										<Select.ItemText>{option.label}</Select.ItemText>
-										<Select.ItemIndicator className="absolute left-1.5 top-1/2 -translate-y-1/2 inline-flex items-center">
-											<CheckIcon className="w-4 h-4" />
+										<Select.ItemIndicator className="absolute left-0 w-7 inline-flex items-center justify-center">
+											<CheckIcon className="w-4 h-4 data-[state=checked]:text-blue-600" />
 										</Select.ItemIndicator>
 									</Select.Item>
 								))
 							) : (
-								<div className="px-3 py-1.5 text-sm text-gray-500">
+								<Select.Item value="no-options" disabled className={`text-sm text-gray-500 ${borderRadius} flex items-center h-8 pl-7 pr-3 py-1.5 relative select-none`}>
 									No options available
-								</div>
+								</Select.Item>
 							)}
 						</Select.Viewport>
 
 						<Select.ScrollDownButton
-							className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default hover:bg-gray-50"
+							className={`flex items-center justify-center h-6 bg-white text-gray-700 cursor-default hover:bg-gray-50 ${transition}`}
 						>
 							<ChevronDownIcon className="w-4 h-4" />
 						</Select.ScrollDownButton>
@@ -107,10 +103,8 @@ export default function SelectField(
 				</Select.Portal>
 			</Select.Root>
 			<Message className={messageStyles} name={fieldSchema.id} match="valueMissing">
-				{fieldSchema.label ? `${fieldSchema.label} is required` :
-					"Please select an option"}
+				{fieldSchema.label || "This field"} is required
 			</Message>
-			{/* TODO: Add other validation messages here if needed */}
 		</FormFieldContainer>
 	);
 }

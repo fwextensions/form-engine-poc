@@ -1,7 +1,7 @@
 import React from "react";
 import { Control, Message } from "@radix-ui/react-form";
 import type { RegisteredComponentProps } from "../componentRegistry";
-import { inputStyles, messageStyles } from "./styles";
+import { inputStyles, messageStyles, transition } from "./styles";
 import FormFieldContainer from "./FormFieldContainer";
 
 export default function TextareaField(props: RegisteredComponentProps) {
@@ -27,7 +27,7 @@ export default function TextareaField(props: RegisteredComponentProps) {
 		<FormFieldContainer component={component}>
 			<Control asChild>
 				<textarea
-					className={`${inputStyles} ${component.className || ""}`}
+					className={`${inputStyles} ${transition} ${component.className || ""}`}
 					value={value}
 					onChange={handleChange}
 					required={component.validation?.required}

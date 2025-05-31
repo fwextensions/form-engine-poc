@@ -18,6 +18,25 @@ interface FormDataState {
 const SESSION_STORAGE_FORM_DATA_KEY = "formEngine_formData";
 const SESSION_STORAGE_PAGE_INDEX_KEY = "formEngine_currentPageIndex";
 
+const SaveAndFinishLater = () => (
+	<a
+		href="#"
+		onClick={(e) => {
+			e.preventDefault();
+			console.log("Save and finish later clicked (Multipage)");
+			// TODO: Implement actual save logic here if needed
+		}}
+		className={`${linkStyles} block text-center`}
+	>
+		Save and finish later
+	</a>
+);
+
+// Button and Link Styles
+const primaryButtonStyles = "text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-4 focus:ring-offset-1 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors duration-150";
+const secondaryButtonStyles = "text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-offset-1 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors duration-150";
+const linkStyles = "text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium transition-colors duration-150";
+
 const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => {
 	const [currentPageIndex, setCurrentPageIndex] = useState<number>(0); // Initial render always 0
 	const [formData, setFormData] = useState<FormDataState>({}); // Initial render always empty
@@ -131,26 +150,26 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 					context={context}
 				/>
 
-				<div className="mt-8 flex justify-between items-center">
-					<div>
+				<div className="mt-8 space-y-4"> {/* Outer container for buttons and link */}
+					<div className={`flex items-center ${isClient && currentPageIndex > 0 ? 'justify-between' : 'justify-end'}`}>
 						{isClient && currentPageIndex > 0 && (
 							<button
 								type="button"
 								onClick={handlePrevious}
-								className="box-border text-gray-700 bg-gray-200 hover:bg-gray-300 focus:ring-4 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none mr-2"
+								className={secondaryButtonStyles}
 							>
 								Previous
 							</button>
 						)}
+						<Submit asChild>
+							<button
+								className={primaryButtonStyles}
+							>
+								{isLastStep ? "Submit" : "Next"}
+							</button>
+						</Submit>
 					</div>
-
-					<Submit asChild>
-						<button
-							className="box-border text-white touch-manipulation bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none"
-						>
-							{isLastStep ? "Submit (PoC)" : "Next"}
-						</button>
-					</Submit>
+					<SaveAndFinishLater />
 				</div>
 			</>
 		);
@@ -180,14 +199,17 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 						</div>
 					);
 				})}
-				<div className="mt-8 flex justify-end items-center">
-					<Submit asChild>
-						<button
-							className="box-border text-white touch-manipulation bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 focus:outline-none"
-						>
-							Submit (PoC)
-						</button>
-					</Submit>
+				<div className="mt-8 space-y-4"> {/* Outer container for button and link */}
+					<div className="flex justify-end items-center"> {/* Submit button to the right */}
+						<Submit asChild>
+							<button
+								className={primaryButtonStyles}
+							>
+								Submit
+							</button>
+						</Submit>
+					</div>
+					<SaveAndFinishLater />
 				</div>
 			</>
 		);
@@ -207,15 +229,17 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 
 			{isMultipage ? renderMultipageFormContent() : renderSinglepageFormContent()}
 
-			<div className="mt-10 pt-6 border-t border-gray-300 flex justify-center">
-				<button
-					type="button"
-					onClick={handleClearFormData}
-					className="box-border text-sm text-red-700 bg-red-100 hover:bg-red-200 focus:ring-4 focus:ring-red-300 font-medium rounded-lg px-4 py-2 focus:outline-none"
-				>
-					Clear Form
-				</button>
-			</div>
+			{isClient && process.env.NODE_ENV === "development" && (
+				<div className="mt-8 text-center">
+					<button
+						type="button"
+						onClick={handleClearFormData}
+						className="text-xs text-red-500 hover:text-red-700 hover:underline"
+					>
+						Clear Form Data (Dev only)
+					</button>
+				</div>
+			)}
 		</Root>
 	);
 };
