@@ -4,9 +4,17 @@
   "private": true,
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
-    "build": "tsc",
-    "lint": "echo 'Lint script for form-engine package not yet implemented'"
+    "build": "npm run generate-schema && tsc",
+    "lint": "echo 'Lint script for form-engine package not yet implemented'",
+    "generate-schema": "tsx ./scripts/generate-form-schema.ts"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.3.1",
@@ -21,10 +29,8 @@
     "@types/json-logic-js": "^2.0.8",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5"
-  },
-  "peerDependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "tsx": "^4.19.4",
+    "typescript": "^5",
+    "zod-to-json-schema": "^3.24.5"
   }
 }

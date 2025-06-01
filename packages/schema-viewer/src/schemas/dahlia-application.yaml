@@ -28,10 +28,12 @@ children:
         type: text
         label: "First Name*"
         placeholder: "First Name"
+
       - id: middleName
         type: text
         label: "Middle Name (optional)"
         placeholder: "Middle Name (optional)"
+
       - id: lastName
         type: text
         label: "Last Name*"
@@ -44,11 +46,13 @@ children:
         label: "MM*" # Assuming Date of Birth is required
         placeholder: "MM"
         # Potential validation: { pattern: "^(0?[1-9]|1[0-2])$", maxLength: 2 }
+
       - id: dobDay
         type: text
         label: "DD*"
         placeholder: "DD"
         # Potential validation: { pattern: "^(0?[1-9]|[12][0-9]|3[01])$", maxLength: 2 }
+
       - id: dobYear
         type: text
         label: "YYYY*"
@@ -62,6 +66,7 @@ children:
         label: "YOUR EMAIL ADDRESS*" # Assuming email is required unless 'noEmail' is checked
         placeholder: "you@myemail.com"
         # description: "We will only use your email address to contact you about your application."
+
       - id: noEmail
         type: checkbox
         label: "I don't have an email address"
@@ -78,6 +83,7 @@ children:
         type: text # Consider 'tel' type for semantic HTML if styling is appropriate
         label: "Your Phone Number"
         placeholder: "(555) 555-5555"
+
       - id: phoneType
         type: select
         label: "What type of number is this?"
@@ -89,10 +95,12 @@ children:
           - label: "Work"
             value: "work"
         placeholder: "Select type"
+
       - id: noPhoneNumber
         type: checkbox
         label: "I don't have a phone number"
         # Form Engine Enhancement: Conditional Logic - if checked, phone fields might become optional/hidden.
+
       - id: additionalPhoneNumber
         type: checkbox
         label: "I have an additional phone number"
@@ -104,14 +112,17 @@ children:
         type: text
         label: "Street Address*"
         placeholder: "Street Address"
+
       - id: aptOrUnit
         type: text
         label: "Apt or Unit #"
         placeholder: "Apt or Unit #"
+
       - id: city
         type: text
         label: "City Name*"
         placeholder: "City Name"
+
       - id: state
         type: select
         label: "State*"
@@ -131,10 +142,12 @@ children:
           # ... (add all US states for a complete list)
           - label: "Wyoming"
             value: "WY"
+
       - id: zipcode
         type: text
         label: "Zipcode*"
         placeholder: "Zipcode"
+
       - id: mailToDifferentAddress
         type: checkbox
         label: "Send my mail to a different address"
@@ -174,6 +187,7 @@ children:
             value: "other"
           - label: "I don't have an alternate contact"
             value: "none"
+
       - id: alternateContactOtherDescription
         type: text
         label: "If other, please specify"
@@ -194,29 +208,3 @@ children:
   - id: income_info
     type: page
     title: "Income Information"
-    # Form Engine Task: Define fields for income sources, amounts, employment details for all relevant household members.
-    children:
-      - id: incomePlaceholder
-        type: text # Placeholder field
-        label: "Details about your household income will be collected here. (To be defined)"
-
-  # Placeholder for PREFERENCES Page
-  - id: preferences_info
-    type: page
-    title: "Preferences"
-    # Form Engine Task: Define fields for housing preferences, accessibility needs, lottery preferences, etc.
-    children:
-      - id: preferencesPlaceholder
-        type: text # Placeholder field
-        label: "Details about your housing preferences will be collected here. (To be defined)"
-
-  # Placeholder for REVIEW Page
-  - id: review_application
-    type: page
-    title: "Review Your Application"
-    # Form Engine Task: This page should display a summary of all data entered in previous steps.
-    # This likely requires a special 'summary' component or logic within the form engine to gather and display data.
-    children:
-      - id: reviewPlaceholder
-        type: text # Placeholder field
-        label: "A summary of your application will be displayed here for review before submission. (To be defined)"

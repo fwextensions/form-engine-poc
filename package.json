@@ -10,6 +10,7 @@
     "build": "npm run build --workspace=schema-viewer",
     "start": "npm run start --workspace=schema-viewer",
     "lint": "npm run lint --workspace=schema-viewer",
+    "generate-schema": "npm run generate-schema --workspace=form-engine",
     "lint:all": "npm run lint --workspaces --if-present",
     "build:all": "npm run build --workspaces --if-present"
   }
