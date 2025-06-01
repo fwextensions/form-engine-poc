@@ -23,10 +23,10 @@ This project is a monorepo, likely intended to be managed with `npm` workspaces 
 *   `packages/form-engine`:
     *   The core engine library.
     *   Contains schema parsing logic (`schemaParser.ts`), component registration (`componentRegistry.ts`), the main `ComponentRenderer.tsx`, `PageRenderer.tsx`, and individual field/HTML components.
-    *   Exports `PoCForm` as the primary component to render a form based on a schema.
+    *   Exports `SchemaForm` as the primary component to render a form based on a schema.
 *   `packages/schema-viewer`:
     *   A Next.js application that serves as a demonstration and testing environment for the `form-engine`.
-    *   It loads YAML schemas (e.g., `poc-simple-form.yaml`) and uses the `PoCForm` component from the `form-engine` to render them.
+    *   It loads YAML schemas (e.g., `poc-simple-form.yaml`) and uses the `SchemaForm` component from the `form-engine` to render them.
 
 ## Key Technologies
 

@@ -50,14 +50,14 @@
         *   Start with `type: "text"` and `type: "email"` rendering a Radix UI `TextField.Root` and `TextField.Input` (or simply `input type="text/email"` styled with Radix `Form.Field`, `Form.Label`, `Form.Control`).
         *   *LLM Prompt Example:* "Generate a React component using Radix UI's Form primitives that renders a label and an input field. The component should accept props for `id`, `label`, `type`, and `placeholder`."
 *   **Task 1.4: Form Rendering Component:** - [x] Done
-    *   Create a React component (e.g., `PoCForm`) that:
+    *   Create a React component (e.g., `SchemaForm`) that:
         *   Takes a parsed form schema object as a prop.
         *   Iterates over the `fields` array.
         *   For each field, uses the `FormFieldRenderer` to render it.
 *   **Task 1.5: Basic App Integration:** - [x] Done
     *   Load a sample YAML file (or string) in the main `App` component.
     *   Parse it using the service from Task 1.2.
-    *   Pass the parsed schema to the `PoCForm` component to display the single field.
+    *   Pass the parsed schema to the `SchemaForm` component to display the single field.
 
 **Deliverable for M1:** A webpage displaying a single form field (e.g., an email input) rendered from a YAML definition, using Radix UI components. - [x] Done
 
@@ -95,7 +95,7 @@
         *   `date`: `<input type="date">` (can be styled with Radix Form primitives).
         *   `textarea`: `<textarea>` (can be styled with Radix Form primitives).
 *   **Task 2.3: Implement Basic State Management & Validation Logic:** - [x] Done
-    *   Within `PoCForm` (or a new parent component), manage the form's data state (values of each field). Use `useState` for this PoC.
+    *   Within `SchemaForm` (or a new parent component), manage the form's data state (values of each field). Use `useState` for this PoC.
     *   On form submission attempt (add a basic submit button):
         *   Iterate through fields defined as `required`.
         *   If a required field is empty, display a simple error message next to the field (Radix `Form.Message` can be used here).
@@ -135,8 +135,8 @@
               - id: favorite_color # (as defined in M2)
                 # ...
         ```
-*   **Task 3.2: Enhance Form Rendering Logic (`PoCForm`):** - [x] Done
-    *   Update `PoCForm` to manage `currentPageIndex` based on `multipage` display mode.
+*   **Task 3.2: Enhance Form Rendering Logic (`SchemaForm`):** - [x] Done
+    *   Update `SchemaForm` to manage `currentPageIndex` based on `multipage` display mode.
     *   Render only the components (fields/content) of the current page.
     *   Implement `ComponentRenderer` to recursively render components.
 *   **Task 3.3: Navigation Controls:** - [x] Done
@@ -147,7 +147,7 @@
     *   "Previous" button moves to the previous page.
 *   **Task 3.4: Progress Indication (Optional but good for PoC):** - [ ] To Do (Low priority for now)
     *   Display a simple progress indicator (e.g., "Page 1 of 3" or dots representing pages).
-*   **Task 3.5: Preserve Field Values Across Steps/Pages:** - [x] Done (Handled by lifting state in `PoCForm`)
+*   **Task 3.5: Preserve Field Values Across Steps/Pages:** - [x] Done (Handled by lifting state in `SchemaForm`)
 
 **Deliverable for M3:** A multi-step form rendered from YAML, allowing users to navigate between pages with validation on "Next." Field values are preserved. Schema supports generic page/component structure. - [x] Done
 
@@ -192,8 +192,8 @@
 *   **Task 4.3: State Management for Conditional Fields:** - [x] Done (Implicitly)
     *   Conditionally hidden fields are not rendered. As a result, their data is not included in the form submission if they remain hidden at the time of submission. No explicit data clearing policy (e.g., clearing value when hidden) has been implemented beyond non-rendering for this PoC.
 *   **Task 4.4: Context Propagation System:** - [x] Done
-    *   The main form rendering component (`PoCForm`) was refactored to accept an arbitrary `context` object as a prop.
-    *   This `context` object is systematically propagated down through the component tree (e.g., `PoCForm` -> `ComponentRenderer` -> `PageRenderer` -> child `ComponentRenderer` instances).
+    *   The main form rendering component (`SchemaForm`) was refactored to accept an arbitrary `context` object as a prop.
+    *   This `context` object is systematically propagated down through the component tree (e.g., `SchemaForm` -> `ComponentRenderer` -> `PageRenderer` -> child `ComponentRenderer` instances).
     *   This ensures that the `context` data is available for condition evaluation at any depth within the form structure.
 
 **Deliverable for M4:** A form where components (fields, HTML content, etc.) are dynamically shown or hidden based on complex conditions. These conditions can involve other field values (`formData`) and/or external data (`context`), defined using JSON Logic rules within the YAML schema. - [x] Done

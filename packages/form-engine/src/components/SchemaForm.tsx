@@ -5,7 +5,7 @@ import { Submit, Root } from "@radix-ui/react-form";
 import type { FormSchema } from "../services/schemaParser";
 import ComponentRenderer from "./ComponentRenderer";
 
-interface PoCFormProps {
+interface SchemaFormProps {
 	schema: FormSchema;
 	context?: Record<string, any>;
 	onSubmit?: (formData: FormDataState) => void;
@@ -37,7 +37,11 @@ const primaryButtonStyles = "text-white bg-blue-500 hover:bg-blue-600 focus:outl
 const secondaryButtonStyles = "text-gray-700 bg-gray-100 hover:bg-gray-200 focus:outline-none focus:ring-4 focus:ring-offset-1 focus:ring-gray-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors duration-150";
 const linkStyles = "text-blue-600 hover:text-blue-700 hover:underline text-sm font-medium transition-colors duration-150";
 
-const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => {
+export default function SchemaForm({
+	schema,
+	context = {},
+	onSubmit }: SchemaFormProps)
+{
 	const [currentPageIndex, setCurrentPageIndex] = useState<number>(0); // Initial render always 0
 	const [formData, setFormData] = useState<FormDataState>({}); // Initial render always empty
 	const [isClient, setIsClient] = useState(false); // Flag to ensure sessionStorage access only on client
@@ -49,12 +53,14 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 	useEffect(() => {
 		setIsClient(true);
 
-		const storedPageIndex = sessionStorage.getItem(SESSION_STORAGE_PAGE_INDEX_KEY);
+		const storedPageIndex = sessionStorage.getItem(
+			SESSION_STORAGE_PAGE_INDEX_KEY);
 		if (storedPageIndex) {
 			setCurrentPageIndex(parseInt(storedPageIndex, 10));
 		}
 
-		const storedFormData = sessionStorage.getItem(SESSION_STORAGE_FORM_DATA_KEY);
+		const storedFormData = sessionStorage.getItem(
+			SESSION_STORAGE_FORM_DATA_KEY);
 		if (storedFormData) {
 			setFormData(JSON.parse(storedFormData));
 		}
@@ -63,18 +69,22 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 	// Effect to save formData to session storage whenever it changes
 	useEffect(() => {
 		if (isClient) { // Only run on client
-			sessionStorage.setItem(SESSION_STORAGE_FORM_DATA_KEY, JSON.stringify(formData));
+			sessionStorage.setItem(SESSION_STORAGE_FORM_DATA_KEY,
+				JSON.stringify(formData));
 		}
 	}, [formData, isClient]);
 
 	// Effect to save currentPageIndex to session storage whenever it changes
 	useEffect(() => {
 		if (isClient) { // Only run on client
-			sessionStorage.setItem(SESSION_STORAGE_PAGE_INDEX_KEY, currentPageIndex.toString());
+			sessionStorage.setItem(SESSION_STORAGE_PAGE_INDEX_KEY,
+				currentPageIndex.toString());
 		}
 	}, [currentPageIndex, isClient]);
 
-	const handleFieldChange = useCallback((fieldId: string, value: any) => {
+	const handleFieldChange = useCallback((
+		fieldId: string,
+		value: any) => {
 		setFormData((prevData) => ({
 			...prevData,
 			[fieldId]: value,
@@ -127,7 +137,8 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 
 	const renderMultipageFormContent = () => {
 		const currentComponentDefinition = schema.children[currentPageIndex];
-		if (!currentComponentDefinition || currentComponentDefinition.type !== "page") {
+		if (!currentComponentDefinition || currentComponentDefinition.type !==
+			"page") {
 			console.error(
 				"Multipage display expects a 'page' component at the current index.",
 				currentComponentDefinition,
@@ -140,7 +151,8 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 			<>
 				{schema.children.length > 1 && (
 					<p className="text-base mb-4 text-center text-gray-600">
-						Step {isClient ? currentPageIndex + 1 : 1} of {schema.children.length}
+						Step {isClient ? currentPageIndex + 1 :
+						1} of {schema.children.length}
 					</p>
 				)}
 
@@ -152,7 +164,8 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 				/>
 
 				<div className="mt-8 space-y-4"> {/* Outer container for buttons and link */}
-					<div className={`flex items-center ${isClient && currentPageIndex > 0 ? 'justify-between' : 'justify-end'}`}>
+					<div className={`flex items-center ${isClient && currentPageIndex >
+					0 ? "justify-between" : "justify-end"}`}>
 						{isClient && currentPageIndex > 0 && (
 							<button
 								type="button"
@@ -179,7 +192,9 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 	const renderSinglepageFormContent = () => {
 		return (
 			<>
-				{schema.children.map((componentDefinition, index) => {
+				{schema.children.map((
+					componentDefinition,
+					index) => {
 					if (componentDefinition.type !== "page") {
 						console.warn(
 							"Singlepage display encountered a non-page component at the top level. Rendering it directly.",
@@ -228,7 +243,8 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 			)}
 
 			<div key={renderMode}> {/* Add key here to ensure content remounts on mode change */}
-				{renderMode === "multipage" ? renderMultipageFormContent() : renderSinglepageFormContent()}
+				{renderMode === "multipage" ? renderMultipageFormContent() :
+					renderSinglepageFormContent()}
 			</div>
 
 			<div className="mt-8 pt-6 border-t border-gray-200 space-y-4">
@@ -248,7 +264,8 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 							type="checkbox"
 							id="showSinglePageCheckbox"
 							checked={renderMode === "singlepage"}
-							onChange={(e) => setRenderMode(e.target.checked ? "singlepage" : "multipage")}
+							onChange={(e) => setRenderMode(
+								e.target.checked ? "singlepage" : "multipage")}
 							className="mr-2 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
 						/>
 						<label htmlFor="showSinglePageCheckbox" className="text-sm text-gray-700">
@@ -259,6 +276,4 @@ const PoCForm: React.FC<PoCFormProps> = ({ schema, context = {}, onSubmit }) => 
 			</div>
 		</Root>
 	);
-};
-
-export default PoCForm;
+}
