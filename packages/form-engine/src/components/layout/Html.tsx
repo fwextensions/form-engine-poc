@@ -1,19 +1,19 @@
 import React, { JSX } from "react";
 import { z } from "zod";
-import { baseComponentConfigSchema } from "../baseSchemas"; 
-import { createComponent } from "../../core/componentFactory"; 
+import { baseComponentConfigSchema } from "../baseSchemas";
+import { createComponent } from "../../core/componentFactory";
 
-export const StaticHtmlConfigSchema = baseComponentConfigSchema.extend({
+export const HtmlConfigSchema = baseComponentConfigSchema.extend({
 	type: z.literal("html"),
 	content: z.string(),
 	tag: z.string().optional(),
 	className: z.string().optional(),
 	style: z.record(z.string(), z.any()).optional(),
 });
-export type StaticHtmlConfig = z.infer<typeof StaticHtmlConfigSchema>;
+export type HtmlConfig = z.infer<typeof HtmlConfigSchema>;
 
-export interface StaticHtmlProps extends Omit<StaticHtmlConfig, 'type' | 'condition'> {
-	// id is inherited from baseComponentConfigSchema via StaticHtmlConfig
+export interface HtmlProps extends Omit<HtmlConfig, 'type' | 'condition'> {
+	// id is inherited from baseComponentConfigSchema via HtmlConfig
 }
 
 const VoidElements = [
@@ -32,12 +32,12 @@ const VoidElements = [
 	"wbr"
 ];
 
-const StaticHtmlDisplayComponent: React.FC<StaticHtmlProps> = ({
+const Html: React.FC<HtmlProps> = ({
 	content,
 	tag,
 	className,
 	style,
-	id 
+	id
 }) => {
 	const Wrapper: keyof JSX.IntrinsicElements = (tag && tag.trim() !== "")
 		? tag.toLowerCase() as keyof JSX.IntrinsicElements
@@ -50,7 +50,7 @@ const StaticHtmlDisplayComponent: React.FC<StaticHtmlProps> = ({
 
 	return (
 		<Wrapper
-			id={id} 
+			id={id}
 			className={className}
 			style={style}
 			{...innerHTMLProps}
@@ -58,10 +58,10 @@ const StaticHtmlDisplayComponent: React.FC<StaticHtmlProps> = ({
 	);
 };
 
-createComponent<StaticHtmlConfig, StaticHtmlProps>({
+createComponent<HtmlConfig, HtmlProps>({
 	type: "html",
-	schema: StaticHtmlConfigSchema,
-	component: StaticHtmlDisplayComponent,
+	schema: HtmlConfigSchema,
+	component: Html,
 });
 
-export default StaticHtmlDisplayComponent;
+export default Html;

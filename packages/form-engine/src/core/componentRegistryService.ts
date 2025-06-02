@@ -14,8 +14,7 @@ import "../components/fields/FileField";
 
 import "../components/layout/Page";
 import "../components/layout/Form";
-
-import "../components/static/StaticHtmlDisplay";
+import "../components/layout/Html";
 
 // ... import all other component definition modules
 
