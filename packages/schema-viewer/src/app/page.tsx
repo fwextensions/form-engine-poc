@@ -1,6 +1,6 @@
 "use client";
 
-import { SchemaForm, parseFormSchema, FormSchema } from "form-engine";
+import { PoCForm, parseFormSchema, FormSchema } from "form-engine";
 //import schemaData from "@/schemas/dahlia-application.yaml";
 import schemaData from "@/schemas/poc-simple-form.yaml";
 import { useRouter } from "next/navigation";
@@ -36,7 +36,7 @@ export default function HomePage()
 
 	return (
 		<main className="flex min-h-screen flex-col items-start justify-start p-5 md:p-8 lg:p-12 bg-gray-100">
-			<SchemaForm schema={schema} context={formContext} onSubmit={handleSubmit} />
+			<PoCForm schema={schema} context={formContext} onSubmit={handleSubmit} />
 		</main>
 	);
 }

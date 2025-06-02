@@ -1,5 +1,5 @@
 // Main Form Component
-export { default as SchemaForm } from "./components/SchemaForm";
+export { default as PoCForm } from "./components/SchemaForm";
 
 // Schema Parsing
 export { parseFormSchema } from "./services/schemaParser";
