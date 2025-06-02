@@ -1,42 +1,75 @@
+// packages/form-engine/src/components/fields/DateField.tsx
 import React from "react";
-import { Control, Message } from "@radix-ui/react-form";
-import type { FormField } from "../../services/schemaParser";
-import type { RegisteredComponentProps } from "../componentRegistry";
-import { inputStyles, messageStyles } from "./styles";
-import FormFieldContainer from "./FormFieldContainer";
+import { z } from "zod";
+import { baseFieldConfigSchema } from "../baseSchemas";
+import { createComponent, FormEngineContext } from "../../core/componentFactory";
+import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
-export default function DateField(
-	props: RegisteredComponentProps)
-{
-	const fieldSchema = props.component as FormField;
-	const { formData, onFieldChange } = props;
+// 1. Define Configuration Schema
+export const DateConfigSchema = baseFieldConfigSchema.extend({
+	type: z.literal("date"),
+	defaultValue: z.string().optional(), // Expect YYYY-MM-DD format
+	// placeholder: z.string().optional(), // Placeholder is not very effective for type="date"
+	// validation: z.object({ required: z.boolean().optional() }).optional(),
+});
+export type DateConfig = z.infer<typeof DateConfigSchema>;
 
-	const value = formData[fieldSchema.id] || ""; // Date input expects YYYY-MM-DD string
-	const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		onFieldChange(fieldSchema.id, event.target.value);
-	};
+// 2. Define Props for the React Component
+export interface DateProps {
+	containerProps: Omit<FormFieldContainerProps, "children">;
+	inputProps: React.InputHTMLAttributes<HTMLInputElement>;
+}
 
+// 3. Create the React Component
+// Renamed to DateFieldComponent to avoid potential export name conflicts if file is DateField.tsx
+export const DateFieldComponent: React.FC<DateProps> = ({ containerProps, inputProps }) => {
 	return (
-		<FormFieldContainer component={fieldSchema}>
-			<Control asChild>
-				<input
-					type="date" // Explicitly set type to date
-					className={`${inputStyles} ${fieldSchema.className || ""}`}
-					value={value}
-					onChange={handleChange}
-					required={fieldSchema.validation?.required}
-					placeholder={fieldSchema.placeholder} // Placeholder might not be very effective for date type
-					disabled={fieldSchema.disabled}
-					readOnly={fieldSchema.readOnly}
-					autoFocus={fieldSchema.autoFocus}
-					tabIndex={fieldSchema.tabIndex}
-					// style prop is applied to the outer Field container
-				/>
-			</Control>
-			<Message className={messageStyles} name={fieldSchema.id} match="valueMissing">
-				{fieldSchema.label || "This field"} is required
-			</Message>
-			{/* TODO: Add other validation messages here if needed (e.g., typeMismatch for invalid date) */}
+		<FormFieldContainer {...containerProps}>
+			<input
+				type="date"
+				{...inputProps}
+				className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${inputProps.className || ""}`}
+			/>
 		</FormFieldContainer>
 	);
-}
+};
+
+// 4. Register the Component
+createComponent<DateConfig, DateProps>({
+	type: "date",
+	schema: DateConfigSchema,
+	component: DateFieldComponent,
+	transformProps: (config: DateConfig, context: FormEngineContext): DateProps => {
+		const { id, name, label, description, defaultValue, type, ...restConfig } = config;
+		const fieldId = id || name;
+
+		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+			context.onDataChange(name, event.target.value);
+		};
+
+		// Date input expects value in "yyyy-mm-dd" format.
+		const currentValue = context.formData[name] ?? defaultValue ?? "";
+
+		return {
+			containerProps: {
+				name: name,
+				label: label,
+				description: description,
+				htmlFor: fieldId,
+			},
+			inputProps: {
+				id: fieldId,
+				name: name,
+				type: "date",
+				value: currentValue,
+				onChange: handleChange,
+				"aria-describedby": description ? `${fieldId}-description` : undefined,
+				disabled: context.formMode === "view",
+				// required: config.validation?.required,
+			},
+		};
+	},
+});
+
+// To allow direct import if needed, though DynamicRenderer is the primary consumer
+// export const DateField = DateFieldComponent;

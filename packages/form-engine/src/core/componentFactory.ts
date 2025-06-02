@@ -6,12 +6,13 @@ export interface FormEngineContext {
 	onDataChange: (fieldName: string, value: any) => void;
 	formContext?: Record<string, any>; // For JSONLogic, etc., passed into SchemaForm
 	formMode?: "view" | "edit" | "print"; // Example modes
+	onSubmit?: (formData: Record<string, any>) => void; // Handler for form submission
 	// Potentially other global state or functions needed by components
 }
 
 export interface ComponentDefinition<ConfigType = any, PropsType = any> {
 	type: string;
-	schema: z.ZodSchema<ConfigType>; // Zod schema for the component's configuration
+	schema: z.ZodType<ConfigType, z.ZodTypeDef, any>; // Zod schema for the component's configuration
 	component: React.ComponentType<PropsType & { children?: React.ReactNode }>; // The React component
 	validateConfig: (data: unknown) => ConfigType; // Parses and validates the raw config data
 	transformProps?: (
@@ -28,7 +29,7 @@ export function createComponent<
 	PropsType extends object
 >(args: {
 	type: string;
-	schema: z.ZodSchema<ConfigType>;
+	schema: z.ZodType<ConfigType, z.ZodTypeDef, any>;
 	component: React.ComponentType<PropsType & { children?: React.ReactNode }>;
 	transformProps?: (
 		parsedConfig: ConfigType,
