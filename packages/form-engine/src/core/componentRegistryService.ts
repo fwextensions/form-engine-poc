@@ -9,8 +9,8 @@ import "../components/fields/Select";
 import "../components/fields/Textarea";
 import "../components/fields/Checkbox";
 import "../components/fields/RadioGroup";
-import "../components/fields/DateField";
-import "../components/fields/FileField";
+import "../components/fields/DatePicker";
+import "../components/fields/File";
 
 import "../components/layout/Page";
 import "../components/layout/Form";

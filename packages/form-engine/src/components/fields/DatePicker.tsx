@@ -6,13 +6,13 @@ import { createComponent, FormEngineContext } from "../../core/componentFactory"
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
 // 1. Define Configuration Schema
-export const DateConfigSchema = baseFieldConfigSchema.extend({
+export const DatePickerConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("date"),
 	defaultValue: z.string().optional(), // Expect YYYY-MM-DD format
 	// placeholder: z.string().optional(), // Placeholder is not very effective for type="date"
 	// validation: z.object({ required: z.boolean().optional() }).optional(),
 });
-export type DateConfig = z.infer<typeof DateConfigSchema>;
+export type DatePickerConfig = z.infer<typeof DatePickerConfigSchema>;
 
 // 2. Define Props for the React Component
 export interface DateProps {
@@ -21,8 +21,8 @@ export interface DateProps {
 }
 
 // 3. Create the React Component
-// Renamed to DateFieldComponent to avoid potential export name conflicts if file is DateField.tsx
-export const DateFieldComponent: React.FC<DateProps> = ({ containerProps, inputProps }) => {
+// Renamed to DatePicker to avoid potential export name conflicts if file is DateField.tsx
+export const DatePicker: React.FC<DateProps> = ({ containerProps, inputProps }) => {
 	return (
 		<FormFieldContainer {...containerProps}>
 			<input
@@ -35,11 +35,11 @@ export const DateFieldComponent: React.FC<DateProps> = ({ containerProps, inputP
 };
 
 // 4. Register the Component
-createComponent<DateConfig, DateProps>({
+createComponent<DatePickerConfig, DateProps>({
 	type: "date",
-	schema: DateConfigSchema,
-	component: DateFieldComponent,
-	transformProps: (config: DateConfig, context: FormEngineContext): DateProps => {
+	schema: DatePickerConfigSchema,
+	component: DatePicker,
+	transformProps: (config: DatePickerConfig, context: FormEngineContext): DateProps => {
 		const { id, label, description, defaultValue, type, ...restConfig } = config;
 
 		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -69,6 +69,3 @@ createComponent<DateConfig, DateProps>({
 		};
 	},
 });
-
-// To allow direct import if needed, though DynamicRenderer is the primary consumer
-// export const DateField = DateFieldComponent;

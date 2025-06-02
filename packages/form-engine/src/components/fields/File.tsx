@@ -22,8 +22,8 @@ export interface FileProps {
 }
 
 // 3. Create the React Component
-// Renamed to FileFieldComponent to avoid potential export name conflicts
-export const FileFieldComponent: React.FC<FileProps> = ({ containerProps, inputProps }) => {
+// Renamed to FileComponent to avoid potential export name conflicts
+export const FileComponent: React.FC<FileProps> = ({ containerProps, inputProps }) => {
 	return (
 		<FormFieldContainer {...containerProps}>
 			<input
@@ -39,7 +39,7 @@ export const FileFieldComponent: React.FC<FileProps> = ({ containerProps, inputP
 createComponent<FileConfig, FileProps>({
 	type: "file",
 	schema: FileConfigSchema,
-	component: FileFieldComponent,
+	component: FileComponent,
 	transformProps: (config: FileConfig, context: FormEngineContext): FileProps => {
 		const { id, label, description, accept, multiple, type, ...restConfig } = config;
 
