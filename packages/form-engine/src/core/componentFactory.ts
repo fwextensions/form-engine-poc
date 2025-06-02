@@ -1,5 +1,5 @@
 import { z } from "zod";
-import React from "react";
+import React, { createContext } from "react";
 
 export interface FormEngineContext {
 	formData: Record<string, any>;
@@ -9,6 +9,27 @@ export interface FormEngineContext {
 	onSubmit?: (formData: Record<string, any>) => void; // Handler for form submission
 	// Potentially other global state or functions needed by components
 }
+
+// Default context value - provides sensible defaults or stubs for when no provider is found
+// or for initial setup. Components should ideally always be under a Provider with actual values.
+const defaultFormEngineContext: FormEngineContext = {
+	formData: {},
+	onDataChange: (fieldName: string, value: any) => {
+		console.warn(
+			`onDataChange called for field "${fieldName}" with value "${value}" but no FormEngineContext.Provider was found.`,
+		);
+	},
+	formContext: {},
+	formMode: "edit",
+	onSubmit: (formData: Record<string, any>) => {
+		console.warn(
+			`onSubmit called with formData but no FormEngineContext.Provider was found.`, formData
+		);
+	},
+};
+
+// Create the actual React Context
+export const FormEngineContextObject = createContext<FormEngineContext>(defaultFormEngineContext);
 
 export interface ComponentDefinition<ConfigType = any, PropsType = any> {
 	type: string;
