@@ -40,7 +40,6 @@ createComponent<TextConfig, TextProps>({
 	component: Text,
 	transformProps: (config: TextConfig, context: FormEngineContext): TextProps => {
 		const { id, label, description, placeholder, defaultValue, type, ...restConfig } = config;
-		const fieldId = id; // Use id directly
 
 		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 			context.onDataChange(id, event.target.value);
@@ -58,21 +57,21 @@ createComponent<TextConfig, TextProps>({
 
 		return {
 			containerProps: {
-				name: id, // Use id instead of name
-				label: label,
+				name: id,
+				label,
 				description: description,
-				htmlFor: fieldId,
+				htmlFor: id,
 				messages: messages,
 				// className: restConfig.containerClassName, // Example if you add such props to schema
 			},
 			inputProps: {
-				id: fieldId,
-				name: id, // Use id instead of name
-				type: type, // "text"
-				placeholder: placeholder,
+				id,
+				name: id,
+				type,
+				placeholder,
 				value: context.formData[id] ?? defaultValue ?? "",
 				onChange: handleChange,
-				"aria-describedby": description ? `${fieldId}-description` : undefined,
+				"aria-describedby": description ? `${id}-description` : undefined,
 				disabled: context.formMode === "view",
 				// required: config.validation?.required // Set this if you want native HTML5 validation based on schema
 				// className: restConfig.inputClassName, // Example
