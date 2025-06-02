@@ -39,25 +39,25 @@ createComponent<TextareaConfig, TextareaProps>({
 	schema: TextareaConfigSchema,
 	component: Textarea,
 	transformProps: (config: TextareaConfig, context: FormEngineContext): TextareaProps => {
-		const { id, name, label, description, placeholder, defaultValue, rows, type, ...restConfig } = config;
-		const fieldId = id || name; // Ensure an ID for htmlFor and aria-describedby
+		const { id, label, description, placeholder, defaultValue, rows, type, ...restConfig } = config;
+		const fieldId = id; // Use id directly
 
 		const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-			context.onDataChange(name, event.target.value);
+			context.onDataChange(id, event.target.value);
 		};
 
 		return {
 			containerProps: {
-				name: name,
+				name: id, // Use id instead of name
 				label: label,
 				description: description,
 				htmlFor: fieldId,
 			},
 			textareaProps: {
 				id: fieldId,
-				name: name,
+				name: id, // Use id instead of name
 				placeholder: placeholder,
-				value: context.formData[name] ?? defaultValue ?? "",
+				value: context.formData[id] ?? defaultValue ?? "",
 				onChange: handleChange,
 				rows: rows || 3, // Default to 3 rows if not specified
 				"aria-describedby": description ? `${fieldId}-description` : undefined,

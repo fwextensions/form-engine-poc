@@ -15,23 +15,6 @@ const DefaultErrorComponent: React.FC<{ error: Error; config: unknown }> = ({ er
 	</div>
 );
 
-function createLoggableProps(
-	inputProps: any,
-	type: string)
-{
-	const loggable = { ...inputProps };
-	if (loggable.children && typeof loggable.children === "object") {
-		if (Symbol.iterator in loggable.children &&
-			Array.isArray(loggable.children)) {
-			loggable.children =
-				`[${loggable.children.length} React Elements for ${type}]`;
-		} else {
-			loggable.children = `[React Element for ${type}]`;
-		}
-	}
-	return loggable;
-}
-
 export interface DynamicRendererProps {
 	config: unknown;
 	context: FormEngineContext;
@@ -40,7 +23,6 @@ export interface DynamicRendererProps {
 
 export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, context, ErrorComponent = DefaultErrorComponent }) => {
 	const currentConfigTypeForLog = (config as any)?.type ?? 'unknown_config_type';
-	console.log(`DynamicRenderer (config type: ${currentConfigTypeForLog}): Instance created. Raw config:`, JSON.stringify(config, null, 2));
 
 	if (!config || typeof config !== "object" || !("type" in config) || typeof config.type !== "string") {
 		console.error(`DynamicRenderer (config type: ${currentConfigTypeForLog}): Invalid or missing component configuration or type.`, config);
@@ -48,7 +30,6 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, contex
 	}
 
 	const componentType = config.type;
-	console.log(`DynamicRenderer for '${componentType}': Starting processing.`);
 
 	try {
 		const componentDef = getComponentDefinition(componentType);
@@ -57,7 +38,6 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, contex
 			console.error(`DynamicRenderer for '${componentType}': ${error.message}`);
 			return <ErrorComponent error={error} config={config} />;
 		}
-		console.log(`DynamicRenderer for '${componentType}': Found component definition.`);
 
 		const validationResult = componentDef.schema.safeParse(config);
 		if (!validationResult.success) {
@@ -66,32 +46,25 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, contex
 			return <ErrorComponent error={error} config={config} />;
 		}
 		const validatedConfig = validationResult.data;
-		console.log(`DynamicRenderer for '${componentType}': Schema validation successful.`);
 
 		if (validatedConfig.condition && !evaluateCondition(validatedConfig.condition, context.formData, context)) {
 			console.log(`DynamicRenderer for '${componentType}': Condition not met, rendering null.`);
 			return null;
 		}
-		console.log(`DynamicRenderer for '${componentType}': Condition met or no condition.`);
 
 		const ComponentToRender = componentDef.component;
 
-		const renderChildrenCallback = (childrenConfig: unknown[] | undefined, currentContext: FormEngineContext): React.ReactNode => {
-			// console.log(`DynamicRenderer (for ${componentType}) renderChildrenCallback - childrenConfig array:`, JSON.stringify(childrenConfig, null, 2));
-			return childrenConfig?.map((childConfig: unknown, index: number) => {
-				// console.log(`DynamicRenderer (for ${componentType}) renderChildrenCallback - individual childConfig:`, JSON.stringify(childConfig, null, 2));
-				return <DynamicRenderer key={index} config={childConfig} context={currentContext} ErrorComponent={ErrorComponent} />;
-			});
-		};
+		const renderChildrenCallback = (childrenConfig: unknown[] | undefined, currentContext: FormEngineContext): React.ReactNode =>
+			childrenConfig?.map((childConfig: unknown, index: number) =>
+				<DynamicRenderer key={index} config={childConfig} context={currentContext} ErrorComponent={ErrorComponent} />
+			);
 
 		let props: any;
 
 		if (componentDef.transformProps) {
 			props = componentDef.transformProps(validatedConfig, context, renderChildrenCallback);
-			console.log(`DynamicRenderer for '${componentType}': Props from transformProps:`, JSON.stringify(createLoggableProps(props, componentType), null, 2));
 		} else {
 			props = (validatedConfig as any).props || validatedConfig;
-			console.log(`DynamicRenderer for '${componentType}': Props direct from config:`, JSON.stringify(createLoggableProps(props, componentType), null, 2));
 
 			if (validatedConfig && typeof validatedConfig === "object" && "children" in validatedConfig && Array.isArray((validatedConfig as any).children)) {
 				props = {
@@ -100,8 +73,6 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, contex
 				};
 			}
 		}
-
-		console.log(`DynamicRenderer for '${componentType}': Preparing to render <${ComponentToRender.displayName || ComponentToRender.name || 'Component'} />.`);
 
 		return <ComponentToRender {...props} />;
 	} catch (error: any) {

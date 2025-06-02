@@ -69,24 +69,24 @@ createComponent<RadioGroupConfig, RadioGroupProps>({
 	schema: RadioGroupConfigSchema,
 	component: RadioGroup,
 	transformProps: (config: RadioGroupConfig, context: FormEngineContext): RadioGroupProps => {
-		const { id, name, label, description, options, defaultValue, orientation, ...restConfig } = config;
-		const fieldId = id || name;
+		const { id, label, description, options, defaultValue, orientation, ...restConfig } = config;
+		const fieldId = id; // Use id directly
 
 		const handleValueChange = (value: string) => {
-			context.onDataChange(name, value);
+			context.onDataChange(id, value);
 		};
 
 		return {
 			containerProps: {
-				name: name,
+				name: id, // Use id instead of name
 				label: label,
 				description: description,
 				htmlFor: fieldId, // Associates FormFieldContainer's label with the group
 			},
 			radioGroupProps: {
 				id: fieldId,
-				name: name,
-				value: context.formData[name] ?? defaultValue ?? undefined,
+				name: id, // Use id instead of name
+				value: context.formData[id] ?? defaultValue ?? undefined,
 				onValueChange: handleValueChange,
 				disabled: context.formMode === "view",
 				orientation: orientation,

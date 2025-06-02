@@ -1,6 +1,7 @@
 // packages/form-engine/src/components/layout/Form.tsx
 import React from "react";
 import { z } from "zod";
+import { Submit, Root } from "@radix-ui/react-form";
 import { baseLayoutComponentConfigSchema } from "../baseSchemas";
 import { createComponent, FormEngineContext } from "../../core/componentFactory";
 
@@ -44,7 +45,7 @@ export const FormComponent: React.FC<FormProps> = ({
 	};
 
 	return (
-		<form
+		<Root
 			{...rest} // Passes through other HTML attributes like id
 			className={`form-root space-y-6 ${className || ''}`}
 			style={style}
@@ -53,16 +54,18 @@ export const FormComponent: React.FC<FormProps> = ({
 			{children}
 			{onFormSubmit && submitButtonText && (
 				<div className="form-actions mt-6 pt-4 border-t border-gray-200">
-					<button
-						type="submit"
-						className={`px-4 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed ${submitButtonClassName || ''}`}
-						disabled={isViewMode}
-					>
-						{submitButtonText}
-					</button>
+					<Submit asChild>
+						<button
+							type="submit"
+							className={`px-4 py-2 bg-indigo-600 text-white rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed ${submitButtonClassName || ''}`}
+							disabled={isViewMode}
+						>
+							{submitButtonText}
+						</button>
+					</Submit>
 				</div>
 			)}
-		</form>
+		</Root>
 	);
 };
 
@@ -73,10 +76,7 @@ createComponent<FormConfig, FormProps>({
 	component: FormComponent,
 	transformProps: (config: FormConfig, context: FormEngineContext, renderChildren): FormProps => {
 		const { id, type, condition, children, submitButtonText, submitButtonClassName, className, style, ...restOfConfig } = config;
-		console.log("Form.tsx transformProps - input config.children:", JSON.stringify(children, null, 2));
-
 		const renderedChildElements = renderChildren(children, context);
-		console.log("Form.tsx transformProps - output of renderChildren:", renderedChildElements);
 
 		return {
 			id: id || 'form-engine-root',

@@ -39,15 +39,15 @@ createComponent<TextConfig, TextProps>({
 	schema: TextConfigSchema,
 	component: Text,
 	transformProps: (config: TextConfig, context: FormEngineContext): TextProps => {
-		const { id, name, label, description, placeholder, defaultValue, type, ...restConfig } = config;
-		const fieldId = id || name; // Ensure an ID for htmlFor and aria-describedby
+		const { id, label, description, placeholder, defaultValue, type, ...restConfig } = config;
+		const fieldId = id; // Use id directly
 
 		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-			context.onDataChange(name, event.target.value);
+			context.onDataChange(id, event.target.value);
 		};
 
 		const messages: FormFieldContainerProps["messages"] = [];
-		// Example: if (config.validation?.required && !(context.formData[name])) {
+		// Example: if (config.validation?.required && !(context.formData[id])) {
 		// messages.push({ type: "custom", message: "This field is required by custom logic." });
 		// }
 
@@ -58,7 +58,7 @@ createComponent<TextConfig, TextProps>({
 
 		return {
 			containerProps: {
-				name: name,
+				name: id, // Use id instead of name
 				label: label,
 				description: description,
 				htmlFor: fieldId,
@@ -67,10 +67,10 @@ createComponent<TextConfig, TextProps>({
 			},
 			inputProps: {
 				id: fieldId,
-				name: name,
+				name: id, // Use id instead of name
 				type: type, // "text"
 				placeholder: placeholder,
-				value: context.formData[name] ?? defaultValue ?? "",
+				value: context.formData[id] ?? defaultValue ?? "",
 				onChange: handleChange,
 				"aria-describedby": description ? `${fieldId}-description` : undefined,
 				disabled: context.formMode === "view",
