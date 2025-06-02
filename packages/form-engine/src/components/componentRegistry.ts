@@ -49,7 +49,7 @@ import TextareaField from "./fields/TextareaField";
 import SelectField from "./fields/SelectField";
 import CheckboxField from "./fields/CheckboxField";
 import RadioField from "./fields/RadioField";
-import DateField from "./fields/DateField";
+//import DateField from "./fields/DateField";
 //import FormFieldContainer from "./fields/FormFieldContainer"; // Assuming this is for layout, not a registered component type
 
 // Import the new static HTML component
@@ -73,7 +73,7 @@ registerComponent("textarea", TextareaField);
 registerComponent("select", SelectField);
 registerComponent("checkbox", CheckboxField);
 registerComponent("radio", RadioField);
-registerComponent("date", DateField);
+//registerComponent("date", DateField);
 
 // static components
 registerComponent("html", StaticHtmlDisplay);

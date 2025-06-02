@@ -14,6 +14,9 @@ import "../components/fields/FileField";
 
 import "../components/layout/Page";
 import "../components/layout/Form";
+
+import "../components/static/StaticHtmlDisplay";
+
 // ... import all other component definition modules
 
 // Option 2: Automated registration (see section VII of the spec)

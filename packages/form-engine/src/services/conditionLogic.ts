@@ -9,13 +9,15 @@ export function evaluateCondition(
 	if (condition === undefined || condition === null) {
 		return true; // No condition means always render
 	}
+
+	// Ensure context is an object, even if undefined in parameters
+	const dataForLogic = {
+		formData: formData || {},
+		context: formContext || {},
+		// Potentially add other data sources for JSONLogic if needed
+	};
+
 	try {
-		// Ensure context is an object, even if undefined in parameters
-		const dataForLogic = {
-			formData: formData || {},
-			context: formContext || {},
-			// Potentially add other data sources for JSONLogic if needed
-		};
 		return jsonLogic.apply(condition, dataForLogic);
 	} catch (error) {
 		console.error("Error evaluating condition:", error, "\nCondition:", JSON.stringify(condition), "\nData:", JSON.stringify(dataForLogic));

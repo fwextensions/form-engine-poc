@@ -36,20 +36,19 @@ export const PageComponent: React.FC<PageProps> = ({ title, children, className,
 };
 
 // 4. Register the Component
-createComponent<PageConfig, Omit<PageProps, 'children'>>({
+createComponent<PageConfig, PageProps>({
 	type: "page",
 	schema: PageConfigSchema,
 	component: PageComponent, // The actual React component to render
-	transformProps: (config: PageConfig, context: FormEngineContext): Omit<PageProps, 'children'> => {
+	transformProps: (config: PageConfig, context: FormEngineContext, renderChildren): PageProps => {
 		const { id, type, condition, children, title, className, style, ...restOfConfig } = config;
-		// DynamicRenderer will handle rendering 'children' from the config
-		// and pass them as a 'children' prop to PageComponent.
-		// This transformProps maps other config values to PageComponent's props.
+		
 		return {
 			id,
 			title,
 			className,
 			style,
+			children: renderChildren(children, context), // Call renderChildren and pass its result
 			// any other props derived from restOfConfig can be added here if PageProps supports them
 		};
 	},
