@@ -29,7 +29,7 @@ export const FormComponent: React.FC<FormProps> = ({
 	children,
 	className,
 	style,
-	submitButtonText,
+	submitButtonText = "Submit",
 	submitButtonClassName,
 	onFormSubmit,
 	formData,
@@ -67,12 +67,16 @@ export const FormComponent: React.FC<FormProps> = ({
 };
 
 // 4. Register the Component
-createComponent<FormConfig, Omit<FormProps, 'children'>>({
+createComponent<FormConfig, FormProps>({
 	type: "form",
 	schema: FormConfigSchema,
 	component: FormComponent,
-	transformProps: (config: FormConfig, context: FormEngineContext): Omit<FormProps, 'children'> => {
+	transformProps: (config: FormConfig, context: FormEngineContext, renderChildren): FormProps => {
 		const { id, type, condition, children, submitButtonText, submitButtonClassName, className, style, ...restOfConfig } = config;
+		console.log("Form.tsx transformProps - input config.children:", JSON.stringify(children, null, 2));
+
+		const renderedChildElements = renderChildren(children, context);
+		console.log("Form.tsx transformProps - output of renderChildren:", renderedChildElements);
 
 		return {
 			id: id || 'form-engine-root',
@@ -83,6 +87,7 @@ createComponent<FormConfig, Omit<FormProps, 'children'>>({
 			onFormSubmit: context.onSubmit,
 			formData: context.formData,
 			isViewMode: context.formMode === "view",
+			children: renderedChildElements,
 		};
 	},
 });
