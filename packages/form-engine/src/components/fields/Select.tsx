@@ -82,24 +82,24 @@ createComponent<SelectConfig, SelectProps>({
 	schema: SelectConfigSchema,
 	component: Select,
 	transformProps: (config: SelectConfig, context: FormEngineContext): SelectProps => {
-		const { id, name, label, description, options, placeholder, defaultValue, ...restConfig } = config;
-		const fieldId = id || name;
+		const { id, label, description, options, placeholder, defaultValue, ...restConfig } = config;
+		const fieldId = id; // Use id directly
 
 		const handleValueChange = (value: string) => {
-			context.onDataChange(name, value);
+			context.onDataChange(id, value);
 		};
 
 		return {
 			containerProps: {
-				name: name,
+				name: id, // Use id instead of name
 				label: label,
 				description: description,
 				htmlFor: fieldId,
 			},
 			selectProps: {
 				id: fieldId,
-				name: name,
-				value: context.formData[name] ?? defaultValue ?? undefined,
+				name: id, // Use id instead of name
+				value: context.formData[id] ?? defaultValue ?? undefined,
 				onValueChange: handleValueChange,
 				disabled: context.formMode === "view",
 				// required: config.validation?.required, // For Radix Form to pick up for native validation message

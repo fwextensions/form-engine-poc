@@ -9,7 +9,7 @@ export const baseComponentConfigSchema = z.object({
 
 // This is the base schema that all field components (Text, Checkbox, etc.) will extend.
 // It makes 'id' required, as fields need a unique identifier which will also serve as their 'name' attribute.
-export const extendableBaseFieldSchema = baseComponentConfigSchema.extend({
+export const baseFieldConfigSchema = baseComponentConfigSchema.extend({
 	// Override id from baseComponentConfigSchema to make it required and non-empty for fields.
 	// This id will be used as the 'name' attribute for the HTML input element.
 	id: z.string().min(1, { message: "Field ID is required and cannot be empty." }),

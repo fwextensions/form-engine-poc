@@ -40,26 +40,26 @@ createComponent<DateConfig, DateProps>({
 	schema: DateConfigSchema,
 	component: DateFieldComponent,
 	transformProps: (config: DateConfig, context: FormEngineContext): DateProps => {
-		const { id, name, label, description, defaultValue, type, ...restConfig } = config;
-		const fieldId = id || name;
+		const { id, label, description, defaultValue, type, ...restConfig } = config;
+		const fieldId = id; // Use id directly
 
 		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-			context.onDataChange(name, event.target.value);
+			context.onDataChange(id, event.target.value);
 		};
 
 		// Date input expects value in "yyyy-mm-dd" format.
-		const currentValue = context.formData[name] ?? defaultValue ?? "";
+		const currentValue = context.formData[id] ?? defaultValue ?? "";
 
 		return {
 			containerProps: {
-				name: name,
+				name: id, // Use id instead of name
 				label: label,
 				description: description,
 				htmlFor: fieldId,
 			},
 			inputProps: {
 				id: fieldId,
-				name: name,
+				name: id, // Use id instead of name
 				type: "date",
 				value: currentValue,
 				onChange: handleChange,

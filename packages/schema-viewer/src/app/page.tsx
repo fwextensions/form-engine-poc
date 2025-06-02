@@ -24,7 +24,8 @@ export default function HomePage() {
 	useEffect(() => {
 		// Assuming schemaData is the raw configuration object for the root component (e.g., a "form" component)
 		const result = parseRootFormSchema(schemaData);
-		console.log("SchemaViewerPage - Parsed Root Config:", JSON.stringify(result.config, null, 2));
+//		console.log("SchemaViewerPage - Parsed Root Config:", JSON.stringify(result.config, null, 2));
+
 		if (result.config) {
 			setParsedRootConfig(result.config as FormConfig); // Cast to FormConfig
 			setSchemaErrors(null);
@@ -100,7 +101,6 @@ export default function HomePage() {
 
 	return (
 		<FormEngineContextObject.Provider value={formEngineContextValue}>
-			<h1>wtf</h1>
 			<main className="flex min-h-screen flex-col items-start justify-start p-5 md:p-8 lg:p-12 bg-gray-100">
 				{/* Render the DynamicRenderer with the parsed root config and context */}
 				<DynamicRenderer config={parsedRootConfig} context={formEngineContextValue} />

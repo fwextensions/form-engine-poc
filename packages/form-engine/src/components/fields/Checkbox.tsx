@@ -57,24 +57,24 @@ createComponent<CheckboxConfig, CheckboxProps>({
 	schema: CheckboxConfigSchema,
 	component: Checkbox,
 	transformProps: (config: CheckboxConfig, context: FormEngineContext): CheckboxProps => {
-		const { id, name, label, description, checkboxLabel, defaultValue, ...restConfig } = config;
-		const fieldId = id || name;
+		const { id, label, description, checkboxLabel, defaultValue, ...restConfig } = config;
+		const fieldId = id; // Use id directly
 
 		const handleCheckedChange = (checked: CheckboxPrimitive.CheckedState) => {
-			context.onDataChange(name, checked === true);
+			context.onDataChange(id, checked === true);
 		};
 
 		return {
 			containerProps: {
-				name: name,
+				name: id, // Use id instead of name
 				label: label, // This is the main field label
 				description: description,
 				htmlFor: fieldId, // Associates FormFieldContainer's label with the checkbox
 			},
 			checkboxProps: {
 				id: fieldId,
-				name: name, // Radix Checkbox can also take a name
-				checked: context.formData[name] ?? defaultValue ?? false,
+				name: id, // Radix Checkbox can also take a name. Use id.
+				checked: context.formData[id] ?? defaultValue ?? false,
 				onCheckedChange: handleCheckedChange,
 				disabled: context.formMode === "view",
 				// required: config.validation?.required, // If checkbox must be checked

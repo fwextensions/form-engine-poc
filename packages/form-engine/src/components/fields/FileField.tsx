@@ -41,27 +41,27 @@ createComponent<FileConfig, FileProps>({
 	schema: FileConfigSchema,
 	component: FileFieldComponent,
 	transformProps: (config: FileConfig, context: FormEngineContext): FileProps => {
-		const { id, name, label, description, accept, multiple, type, ...restConfig } = config;
-		const fieldId = id || name;
+		const { id, label, description, accept, multiple, type, ...restConfig } = config;
+		const fieldId = id; // Use id directly
 
 		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 			// For file inputs, we pass the FileList object
-			context.onDataChange(name, event.target.files);
+			context.onDataChange(id, event.target.files);
 		};
 
 		// The 'value' or 'checked' state for file inputs is managed by the browser.
-		// We don't set 'value' here. The context.formData[name] would hold the FileList or file metadata.
+		// We don't set 'value' here. The context.formData[id] would hold the FileList or file metadata.
 
 		return {
 			containerProps: {
-				name: name,
+				name: id, // Use id instead of name
 				label: label,
 				description: description,
 				htmlFor: fieldId,
 			},
 			inputProps: {
 				id: fieldId,
-				name: name,
+				name: id, // Use id instead of name
 				accept: accept,
 				multiple: multiple,
 				onChange: handleChange,
