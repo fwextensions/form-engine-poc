@@ -1,6 +1,6 @@
 title: PoC Multi-Step Form
 type: form
-#display: singlepage
+display: multipage
 children:
   - id: pagePersonalInfo
     type: page
