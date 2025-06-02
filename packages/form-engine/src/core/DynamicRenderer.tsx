@@ -48,7 +48,7 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, contex
 		const validatedConfig = validationResult.data;
 
 		if (validatedConfig.condition && !evaluateCondition(validatedConfig.condition, context.formData, context)) {
-			console.log(`DynamicRenderer for '${componentType}': Condition not met, rendering null.`);
+//			console.log(`DynamicRenderer for '${componentType}': Condition not met, rendering null.`);
 			return null;
 		}
 

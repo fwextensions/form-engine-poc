@@ -5,23 +5,61 @@ import { baseFieldConfigSchema } from "../baseSchemas";
 import { createComponent, FormEngineContext } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
-// 1. Define Configuration Schema
+// --- TEXT ---
+// 1. Define Configuration Schema for Text
 export const TextConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("text"),
 	placeholder: z.string().optional(),
 	defaultValue: z.string().optional(),
-	// If 'required' is to be part of the config, add it here:
-	// validation: z.object({ required: z.boolean().optional() }).optional(),
 });
 export type TextConfig = z.infer<typeof TextConfigSchema>;
 
-// 2. Define Props for the React Component
+// --- EMAIL ---
+// 1. Define Configuration Schema for Email
+export const EmailConfigSchema = baseFieldConfigSchema.extend({
+	type: z.literal("email"),
+	placeholder: z.string().optional(),
+	defaultValue: z.string().optional(),
+});
+export type EmailConfig = z.infer<typeof EmailConfigSchema>;
+
+// --- PASSWORD ---
+// 1. Define Configuration Schema for Password
+export const PasswordConfigSchema = baseFieldConfigSchema.extend({
+	type: z.literal("password"),
+	placeholder: z.string().optional(),
+	defaultValue: z.string().optional(), // Note: defaultValue for password might not be common
+});
+export type PasswordConfig = z.infer<typeof PasswordConfigSchema>;
+
+// --- TEL ---
+// 1. Define Configuration Schema for Tel
+export const TelConfigSchema = baseFieldConfigSchema.extend({
+	type: z.literal("tel"),
+	placeholder: z.string().optional(),
+	defaultValue: z.string().optional(),
+});
+export type TelConfig = z.infer<typeof TelConfigSchema>;
+
+// --- NUMBER ---
+// 1. Define Configuration Schema for Number
+export const NumberConfigSchema = baseFieldConfigSchema.extend({
+	type: z.literal("number"),
+	placeholder: z.string().optional(),
+	defaultValue: z.number().optional(),
+	min: z.number().optional(),
+	max: z.number().optional(),
+	step: z.number().optional(),
+});
+export type NumberConfig = z.infer<typeof NumberConfigSchema>;
+
+// 2. Define Props for the React Component (shared for Text, Email, Password, Tel, Number)
 export interface TextProps {
 	containerProps: Omit<FormFieldContainerProps, "children">;
-	inputProps: React.InputHTMLAttributes<HTMLInputElement>;
+	inputProps: React.InputHTMLAttributes<HTMLInputElement> & { type: "text" | "email" | "password" | "tel" | "number" };
 }
 
-// 3. Create the React Component
+// 3. Create the React Component (shared)
 export const Text: React.FC<TextProps> = ({ containerProps, inputProps }) => {
 	return (
 		<FormFieldContainer {...containerProps}>
@@ -33,27 +71,16 @@ export const Text: React.FC<TextProps> = ({ containerProps, inputProps }) => {
 	);
 };
 
-// 4. Register the Component
-createComponent<TextConfig, TextProps>({
-	type: "text",
-	schema: TextConfigSchema,
-	component: Text,
-	transformProps: (config: TextConfig, context: FormEngineContext): TextProps => {
-		const { id, label, description, placeholder, defaultValue, type, ...restConfig } = config;
+// Helper function to create transformProps for string-based text-like inputs
+const createStringTransformProps = (inputType: "text" | "email" | "password" | "tel") => {
+	return (config: TextConfig | EmailConfig | PasswordConfig | TelConfig, context: FormEngineContext): TextProps => {
+		const { id, label, description, placeholder, defaultValue } = config;
 
 		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 			context.onDataChange(id, event.target.value);
 		};
 
 		const messages: FormFieldContainerProps["messages"] = [];
-		// Example: if (config.validation?.required && !(context.formData[id])) {
-		// messages.push({ type: "custom", message: "This field is required by custom logic." });
-		// }
-
-		// Determine if the field should be marked as required for native HTML5 validation
-		// This could be based on a `config.validation.required` or other logic (e.g. label ending with '*')
-		// For now, we are not explicitly setting inputProps.required based on config here.
-		// The FormFieldContainer's <Form.Message match="valueMissing"> will work if inputProps.required is true.
 
 		return {
 			containerProps: {
@@ -62,19 +89,96 @@ createComponent<TextConfig, TextProps>({
 				description: description,
 				htmlFor: id,
 				messages: messages,
-				// className: restConfig.containerClassName, // Example if you add such props to schema
 			},
 			inputProps: {
 				id,
 				name: id,
-				type,
+				type: inputType,
 				placeholder,
-				value: context.formData[id] ?? defaultValue ?? "",
+				value: (context.formData[id] as string) ?? defaultValue ?? "",
 				onChange: handleChange,
 				"aria-describedby": description ? `${id}-description` : undefined,
 				disabled: context.formMode === "view",
-				// required: config.validation?.required // Set this if you want native HTML5 validation based on schema
-				// className: restConfig.inputClassName, // Example
+			},
+		};
+	};
+};
+
+// 4. Register the TEXT Component
+createComponent<TextConfig, TextProps>({
+	type: "text",
+	schema: TextConfigSchema,
+	component: Text,
+	transformProps: createStringTransformProps("text"),
+});
+
+// 4. Register the EMAIL Component
+createComponent<EmailConfig, TextProps>({
+	type: "email",
+	schema: EmailConfigSchema,
+	component: Text, // Reusing the Text component
+	transformProps: createStringTransformProps("email"),
+});
+
+// 4. Register the PASSWORD Component
+createComponent<PasswordConfig, TextProps>({
+	type: "password",
+	schema: PasswordConfigSchema,
+	component: Text, // Reusing the Text component
+	transformProps: createStringTransformProps("password"),
+});
+
+// 4. Register the TEL Component
+createComponent<TelConfig, TextProps>({
+	type: "tel",
+	schema: TelConfigSchema,
+	component: Text, // Reusing the Text component
+	transformProps: createStringTransformProps("tel"),
+});
+
+// 4. Register the NUMBER Component
+createComponent<NumberConfig, TextProps>({
+	type: "number",
+	schema: NumberConfigSchema,
+	component: Text, // Reusing the Text component
+	transformProps: (config: NumberConfig, context: FormEngineContext): TextProps => {
+		const { id, label, description, placeholder, defaultValue, min, max, step } = config;
+
+		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+			const rawValue = event.target.value;
+			const numValue = rawValue === "" || isNaN(parseFloat(rawValue)) ? undefined : parseFloat(rawValue);
+			context.onDataChange(id, numValue);
+		};
+
+		const messages: FormFieldContainerProps["messages"] = [];
+
+		let displayValue = "";
+		if (context.formData[id] !== undefined && context.formData[id] !== null) {
+			displayValue = String(context.formData[id]);
+		} else if (defaultValue !== undefined) {
+			displayValue = String(defaultValue);
+		}
+
+		return {
+			containerProps: {
+				name: id,
+				label,
+				description: description,
+				htmlFor: id,
+				messages: messages,
+			},
+			inputProps: {
+				id,
+				name: id,
+				type: "number",
+				placeholder,
+				value: displayValue,
+				onChange: handleChange,
+				min,
+				max,
+				step,
+				"aria-describedby": description ? `${id}-description` : undefined,
+				disabled: context.formMode === "view",
 			},
 		};
 	},
