@@ -83,7 +83,6 @@ createComponent<SelectConfig, SelectProps>({
 	component: Select,
 	transformProps: (config: SelectConfig, context: FormEngineContext): SelectProps => {
 		const { id, label, description, options, placeholder, defaultValue, ...restConfig } = config;
-		const fieldId = id; // Use id directly
 
 		const handleValueChange = (value: string) => {
 			context.onDataChange(id, value);
@@ -91,14 +90,14 @@ createComponent<SelectConfig, SelectProps>({
 
 		return {
 			containerProps: {
-				name: id, // Use id instead of name
-				label: label,
+				name: id,
+				label,
 				description: description,
-				htmlFor: fieldId,
+				htmlFor: id,
 			},
 			selectProps: {
-				id: fieldId,
-				name: id, // Use id instead of name
+				id,
+				name: id,
 				value: context.formData[id] ?? defaultValue ?? undefined,
 				onValueChange: handleValueChange,
 				disabled: context.formMode === "view",

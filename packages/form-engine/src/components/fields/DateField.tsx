@@ -41,7 +41,6 @@ createComponent<DateConfig, DateProps>({
 	component: DateFieldComponent,
 	transformProps: (config: DateConfig, context: FormEngineContext): DateProps => {
 		const { id, label, description, defaultValue, type, ...restConfig } = config;
-		const fieldId = id; // Use id directly
 
 		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 			context.onDataChange(id, event.target.value);
@@ -52,18 +51,18 @@ createComponent<DateConfig, DateProps>({
 
 		return {
 			containerProps: {
-				name: id, // Use id instead of name
-				label: label,
+				name: id,
+				label,
 				description: description,
-				htmlFor: fieldId,
+				htmlFor: id,
 			},
 			inputProps: {
-				id: fieldId,
-				name: id, // Use id instead of name
+				id,
+				name: id,
 				type: "date",
 				value: currentValue,
 				onChange: handleChange,
-				"aria-describedby": description ? `${fieldId}-description` : undefined,
+				"aria-describedby": description ? `${id}-description` : undefined,
 				disabled: context.formMode === "view",
 				// required: config.validation?.required,
 			},

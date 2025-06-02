@@ -42,7 +42,6 @@ createComponent<FileConfig, FileProps>({
 	component: FileFieldComponent,
 	transformProps: (config: FileConfig, context: FormEngineContext): FileProps => {
 		const { id, label, description, accept, multiple, type, ...restConfig } = config;
-		const fieldId = id; // Use id directly
 
 		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
 			// For file inputs, we pass the FileList object
@@ -54,18 +53,18 @@ createComponent<FileConfig, FileProps>({
 
 		return {
 			containerProps: {
-				name: id, // Use id instead of name
-				label: label,
+				name: id,
+				label,
 				description: description,
-				htmlFor: fieldId,
+				htmlFor: id,
 			},
 			inputProps: {
-				id: fieldId,
-				name: id, // Use id instead of name
+				id,
+				name: id,
 				accept: accept,
 				multiple: multiple,
 				onChange: handleChange,
-				"aria-describedby": description ? `${fieldId}-description` : undefined,
+				"aria-describedby": description ? `${id}-description` : undefined,
 				disabled: context.formMode === "view",
 				// required: config.validation?.required,
 			},

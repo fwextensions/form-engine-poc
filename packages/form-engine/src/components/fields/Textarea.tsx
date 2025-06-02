@@ -40,7 +40,6 @@ createComponent<TextareaConfig, TextareaProps>({
 	component: Textarea,
 	transformProps: (config: TextareaConfig, context: FormEngineContext): TextareaProps => {
 		const { id, label, description, placeholder, defaultValue, rows, type, ...restConfig } = config;
-		const fieldId = id; // Use id directly
 
 		const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
 			context.onDataChange(id, event.target.value);
@@ -48,19 +47,19 @@ createComponent<TextareaConfig, TextareaProps>({
 
 		return {
 			containerProps: {
-				name: id, // Use id instead of name
-				label: label,
+				name: id,
+				label,
 				description: description,
-				htmlFor: fieldId,
+				htmlFor: id,
 			},
 			textareaProps: {
-				id: fieldId,
-				name: id, // Use id instead of name
+				id,
+				name: id,
 				placeholder: placeholder,
 				value: context.formData[id] ?? defaultValue ?? "",
 				onChange: handleChange,
 				rows: rows || 3, // Default to 3 rows if not specified
-				"aria-describedby": description ? `${fieldId}-description` : undefined,
+				"aria-describedby": description ? `${id}-description` : undefined,
 				disabled: context.formMode === "view",
 				// required: config.validation?.required,
 			},
