@@ -41,29 +41,33 @@ children:
 
       # Form Engine Enhancement: Need a way to group fields for "YOUR DATE OF BIRTH".
       # Consider a composite date field component (MM/DD/YYYY) or better styling for grouped simple fields.
-      - id: dobMonth
-        type: text
-        label: "MM*" # Assuming Date of Birth is required
-        placeholder: "MM"
-        # Potential validation: { pattern: "^(0?[1-9]|1[0-2])$", maxLength: 2 }
+      - id: dob
+        type: date
+        label: "Your Date of Birth"
 
-      - id: dobDay
-        type: text
-        label: "DD*"
-        placeholder: "DD"
-        # Potential validation: { pattern: "^(0?[1-9]|[12][0-9]|3[01])$", maxLength: 2 }
-
-      - id: dobYear
-        type: text
-        label: "YYYY*"
-        placeholder: "YYYY"
-        # Potential validation: { pattern: "^(19|20)\\d{2}$", maxLength: 4 }
+#      - id: dobMonth
+#        type: text
+#        label: "MM*" # Assuming Date of Birth is required
+#        placeholder: "MM"
+#        # Potential validation: { pattern: "^(0?[1-9]|1[0-2])$", maxLength: 2 }
+#
+#      - id: dobDay
+#        type: text
+#        label: "DD*"
+#        placeholder: "DD"
+#        # Potential validation: { pattern: "^(0?[1-9]|[12][0-9]|3[01])$", maxLength: 2 }
+#
+#      - id: dobYear
+#        type: text
+#        label: "YYYY*"
+#        placeholder: "YYYY"
+#        # Potential validation: { pattern: "^(19|20)\\d{2}$", maxLength: 4 }
 
       # Form Engine Enhancement: Need a dedicated 'description' property for fields to hold helper text like
       # "We will only use your email address to contact you about your application."
       - id: email
         type: email
-        label: "YOUR EMAIL ADDRESS*" # Assuming email is required unless 'noEmail' is checked
+        label: "Your Email Address*" # Assuming email is required unless 'noEmail' is checked
         placeholder: "you@myemail.com"
         # description: "We will only use your email address to contact you about your application."
 
@@ -208,3 +212,7 @@ children:
   - id: income_info
     type: page
     title: "Income Information"
+    children:
+      - id: incomePlaceholder
+        type: text # Placeholder field
+        label: "Details about your income will be collected here. (To be defined)"
