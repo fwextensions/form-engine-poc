@@ -1,7 +1,10 @@
 // packages/form-engine/src/components/fields/Textarea.tsx
 import React from "react";
 import { z } from "zod";
-import { baseFieldConfigSchema } from "../baseSchemas";
+import {
+	baseFieldConfigSchema,
+	commonFieldTransform,
+} from "../baseSchemas";
 import { createComponent, FormEngineContext } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
@@ -11,7 +14,6 @@ export const TextareaConfigSchema = baseFieldConfigSchema.extend({
 	placeholder: z.string().optional(),
 	defaultValue: z.string().optional(),
 	rows: z.number().optional(),
-	// validation: z.object({ required: z.boolean().optional() }).optional(),
 });
 export type TextareaConfig = z.infer<typeof TextareaConfigSchema>;
 
@@ -38,30 +40,20 @@ createComponent<TextareaConfig, TextareaProps>({
 	type: "textarea",
 	schema: TextareaConfigSchema,
 	component: Textarea,
-	transformProps: (config: TextareaConfig, context: FormEngineContext): TextareaProps => {
-		const { id, label, description, placeholder, defaultValue, rows, type, ...restConfig } = config;
-
-		const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-			context.onDataChange(id, event.target.value);
-		};
-
+	transformConfig: commonFieldTransform,
+	transformProps: (config, context) => {
+		const { id, label, description, placeholder, defaultValue, validation, rows } = config;
 		return {
-			containerProps: {
-				name: id,
-				label,
-				description: description,
-				htmlFor: id,
-			},
+			containerProps: { name: id, label, description, htmlFor: id },
 			textareaProps: {
 				id,
 				name: id,
-				placeholder: placeholder,
+				placeholder,
 				value: context.formData[id] ?? defaultValue ?? "",
-				onChange: handleChange,
-				rows: rows || 3, // Default to 3 rows if not specified
-				"aria-describedby": description ? `${id}-description` : undefined,
+				onChange: (e) => context.onDataChange(id, e.target.value),
 				disabled: context.formMode === "view",
-				// required: config.validation?.required,
+				required: validation?.required,
+				rows,
 			},
 		};
 	},

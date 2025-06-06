@@ -1,7 +1,10 @@
 // packages/form-engine/src/components/fields/Text.tsx
 import React from "react";
 import { z } from "zod";
-import { baseFieldConfigSchema } from "../baseSchemas";
+import {
+	baseFieldConfigSchema,
+	commonFieldTransform,
+} from "../baseSchemas";
 import { createComponent, FormEngineContext } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
@@ -20,6 +23,12 @@ export const EmailConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("email"),
 	placeholder: z.string().optional(),
 	defaultValue: z.string().optional(),
+	// Email specific validation can be added here if needed,
+	// or rely on Zod's string().email() in a more complex validation object.
+	validation: z.object({
+		required: z.boolean().optional(), // from base
+		email: z.union([z.string(), z.boolean()]).optional(), // For custom email validation message or true
+	}).passthrough().optional(),
 });
 export type EmailConfig = z.infer<typeof EmailConfigSchema>;
 
@@ -28,7 +37,7 @@ export type EmailConfig = z.infer<typeof EmailConfigSchema>;
 export const PasswordConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("password"),
 	placeholder: z.string().optional(),
-	defaultValue: z.string().optional(), // Note: defaultValue for password might not be common
+	defaultValue: z.string().optional(),
 });
 export type PasswordConfig = z.infer<typeof PasswordConfigSchema>;
 
@@ -38,6 +47,10 @@ export const TelConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("tel"),
 	placeholder: z.string().optional(),
 	defaultValue: z.string().optional(),
+	validation: z.object({
+		required: z.boolean().optional(), // from base
+		// tel specific validation if any, e.g. pattern
+	}).passthrough().optional(),
 });
 export type TelConfig = z.infer<typeof TelConfigSchema>;
 
@@ -50,16 +63,22 @@ export const NumberConfigSchema = baseFieldConfigSchema.extend({
 	min: z.number().optional(),
 	max: z.number().optional(),
 	step: z.number().optional(),
+	validation: z.object({
+		required: z.boolean().optional(), // from base
+		min: z.union([z.number(), z.string()]).optional(), // Allow message for min
+		max: z.union([z.number(), z.string()]).optional(), // Allow message for max
+	}).passthrough().optional(),
 });
 export type NumberConfig = z.infer<typeof NumberConfigSchema>;
 
-// 2. Define Props for the React Component (shared for Text, Email, Password, Tel, Number)
+
+// 2. Define Props for the React Component (shared by Text, Email, Password, Tel, Number)
 export interface TextProps {
 	containerProps: Omit<FormFieldContainerProps, "children">;
-	inputProps: React.InputHTMLAttributes<HTMLInputElement> & { type: "text" | "email" | "password" | "tel" | "number" };
+	inputProps: React.InputHTMLAttributes<HTMLInputElement>;
 }
 
-// 3. Create the React Component (shared)
+// 3. Create the React Component (shared by Text, Email, Password, Tel, Number)
 export const Text: React.FC<TextProps> = ({ containerProps, inputProps }) => {
 	return (
 		<FormFieldContainer {...containerProps}>
@@ -71,114 +90,130 @@ export const Text: React.FC<TextProps> = ({ containerProps, inputProps }) => {
 	);
 };
 
-// Helper function to create transformProps for string-based text-like inputs
-const createStringTransformProps = (inputType: "text" | "email" | "password" | "tel") => {
-	return (config: TextConfig | EmailConfig | PasswordConfig | TelConfig, context: FormEngineContext): TextProps => {
-		const { id, label, description, placeholder, defaultValue } = config;
+// 4. Register Components
 
-		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-			context.onDataChange(id, event.target.value);
-		};
-
-		const messages: FormFieldContainerProps["messages"] = [];
-
-		return {
-			containerProps: {
-				name: id,
-				label,
-				description: description,
-				htmlFor: id,
-				messages: messages,
-			},
-			inputProps: {
-				id,
-				name: id,
-				type: inputType,
-				placeholder,
-				value: (context.formData[id] as string) ?? defaultValue ?? "",
-				onChange: handleChange,
-				"aria-describedby": description ? `${id}-description` : undefined,
-				disabled: context.formMode === "view",
-			},
-		};
-	};
-};
-
-// 4. Register the TEXT Component
+// TEXT
 createComponent<TextConfig, TextProps>({
 	type: "text",
 	schema: TextConfigSchema,
 	component: Text,
-	transformProps: createStringTransformProps("text"),
+	transformConfig: commonFieldTransform,
+	transformProps: (config, context) => {
+		const { id, label, description, placeholder, defaultValue, validation, type } = config;
+		return {
+			containerProps: { name: id, label, description, htmlFor: id },
+			inputProps: {
+				type,
+				id,
+				name: id,
+				placeholder,
+				value: context.formData[id] ?? defaultValue ?? "",
+				onChange: (e) => context.onDataChange(id, e.target.value),
+				disabled: context.formMode === "view",
+				required: validation?.required,
+			},
+		};
+	},
 });
 
-// 4. Register the EMAIL Component
+// EMAIL
 createComponent<EmailConfig, TextProps>({
 	type: "email",
 	schema: EmailConfigSchema,
-	component: Text, // Reusing the Text component
-	transformProps: createStringTransformProps("email"),
+	component: Text,
+	transformConfig: commonFieldTransform,
+	transformProps: (config, context) => {
+		const { id, label, description, placeholder, defaultValue, validation, type } = config;
+		return {
+			containerProps: { name: id, label, description, htmlFor: id },
+			inputProps: {
+				type,
+				id,
+				name: id,
+				placeholder,
+				value: context.formData[id] ?? defaultValue ?? "",
+				onChange: (e) => context.onDataChange(id, e.target.value),
+				disabled: context.formMode === "view",
+				required: validation?.required,
+			},
+		};
+	},
 });
 
-// 4. Register the PASSWORD Component
+// PASSWORD
 createComponent<PasswordConfig, TextProps>({
 	type: "password",
 	schema: PasswordConfigSchema,
-	component: Text, // Reusing the Text component
-	transformProps: createStringTransformProps("password"),
+	component: Text,
+	transformConfig: commonFieldTransform,
+	transformProps: (config, context) => {
+		const { id, label, description, placeholder, defaultValue, validation, type } = config;
+		return {
+			containerProps: { name: id, label, description, htmlFor: id },
+			inputProps: {
+				type,
+				id,
+				name: id,
+				placeholder,
+				value: context.formData[id] ?? defaultValue ?? "",
+				onChange: (e) => context.onDataChange(id, e.target.value),
+				disabled: context.formMode === "view",
+				required: validation?.required,
+			},
+		};
+	},
 });
 
-// 4. Register the TEL Component
+// TEL
 createComponent<TelConfig, TextProps>({
 	type: "tel",
 	schema: TelConfigSchema,
-	component: Text, // Reusing the Text component
-	transformProps: createStringTransformProps("tel"),
+	component: Text,
+	transformConfig: commonFieldTransform,
+	transformProps: (config, context) => {
+		const { id, label, description, placeholder, defaultValue, validation, type } = config;
+		return {
+			containerProps: { name: id, label, description, htmlFor: id },
+			inputProps: {
+				type,
+				id,
+				name: id,
+				placeholder,
+				value: context.formData[id] ?? defaultValue ?? "",
+				onChange: (e) => context.onDataChange(id, e.target.value),
+				disabled: context.formMode === "view",
+				required: validation?.required,
+			},
+		};
+	},
 });
 
-// 4. Register the NUMBER Component
+// NUMBER
 createComponent<NumberConfig, TextProps>({
 	type: "number",
 	schema: NumberConfigSchema,
-	component: Text, // Reusing the Text component
-	transformProps: (config: NumberConfig, context: FormEngineContext): TextProps => {
-		const { id, label, description, placeholder, defaultValue, min, max, step } = config;
-
-		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-			const rawValue = event.target.value;
-			const numValue = rawValue === "" || isNaN(parseFloat(rawValue)) ? undefined : parseFloat(rawValue);
-			context.onDataChange(id, numValue);
-		};
-
-		const messages: FormFieldContainerProps["messages"] = [];
-
-		let displayValue = "";
-		if (context.formData[id] !== undefined && context.formData[id] !== null) {
-			displayValue = String(context.formData[id]);
-		} else if (defaultValue !== undefined) {
-			displayValue = String(defaultValue);
-		}
-
+	component: Text,
+	transformConfig: commonFieldTransform,
+	transformProps: (config, context) => {
+		const { id, label, description, placeholder, defaultValue, validation, type, min, max, step } = config;
 		return {
-			containerProps: {
-				name: id,
-				label,
-				description: description,
-				htmlFor: id,
-				messages: messages,
-			},
+			containerProps: { name: id, label, description, htmlFor: id },
 			inputProps: {
+				type,
 				id,
 				name: id,
-				type: "number",
 				placeholder,
-				value: displayValue,
-				onChange: handleChange,
+				value: context.formData[id] ?? defaultValue ?? "", // Number input handles empty string for no value
+				onChange: (e) => {
+					// For number, ensure we store a number or undefined if empty
+					const numValue = e.target.valueAsNumber;
+					context.onDataChange(id, isNaN(numValue) ? undefined : numValue);
+				},
 				min,
 				max,
 				step,
-				"aria-describedby": description ? `${id}-description` : undefined,
 				disabled: context.formMode === "view",
+				required: validation?.required,
 			},
 		};
 	},

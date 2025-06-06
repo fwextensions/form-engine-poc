@@ -2,15 +2,18 @@
 import React from "react";
 import { z } from "zod";
 import * as SelectPrimitive from "@radix-ui/react-select";
-import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons"; // Assuming these are available from previous setup
-import { baseFieldConfigSchema } from "../baseSchemas";
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
+import {
+	baseFieldConfigSchema,
+	commonFieldTransform,
+} from "../baseSchemas";
 import { createComponent, FormEngineContext } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
 // 1. Define Configuration Schema
 const optionSchema = z.object({
-	value: z.string(),
 	label: z.string(),
+	value: z.string(),
 	disabled: z.boolean().optional(),
 });
 export type Option = z.infer<typeof optionSchema>;
@@ -20,55 +23,60 @@ export const SelectConfigSchema = baseFieldConfigSchema.extend({
 	options: z.array(optionSchema),
 	placeholder: z.string().optional(),
 	defaultValue: z.string().optional(),
-	// validation: z.object({ required: z.boolean().optional() }).optional(),
 });
 export type SelectConfig = z.infer<typeof SelectConfigSchema>;
 
 // 2. Define Props for the React Component
 export interface SelectProps {
 	containerProps: Omit<FormFieldContainerProps, "children">;
-	selectProps: SelectPrimitive.SelectProps & { id?: string; className?: string };
+	selectRootProps: SelectPrimitive.SelectProps & { id?: string; required?: boolean };
 	options: Option[];
 	placeholder?: string;
 }
 
 // 3. Create the React Component
-export const Select: React.FC<SelectProps> = ({ containerProps, selectProps, options, placeholder }) => {
+export const Select: React.FC<SelectProps> = ({
+	containerProps,
+	selectRootProps,
+	options,
+	placeholder,
+}) => {
 	return (
 		<FormFieldContainer {...containerProps}>
-			<SelectPrimitive.Root {...selectProps}>
+			<SelectPrimitive.Root {...selectRootProps}>
 				<SelectPrimitive.Trigger
-					id={selectProps.id}
-					className={`flex h-10 w-full items-center justify-between rounded-md border border-gray-300 bg-transparent px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${selectProps.className || ""}`}
-					aria-describedby={containerProps.description ? `${selectProps.id}-description` : undefined}
+					id={selectRootProps.id} // Ensure id is on the trigger for label association
+					className="mt-1 inline-flex items-center justify-between rounded-md px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
+					aria-required={selectRootProps.required}
 				>
 					<SelectPrimitive.Value placeholder={placeholder} />
-					<SelectPrimitive.Icon asChild>
-						<CaretSortIcon className="h-4 w-4 opacity-50" />
+					<SelectPrimitive.Icon className="ml-2">
+						<ChevronDownIcon />
 					</SelectPrimitive.Icon>
 				</SelectPrimitive.Trigger>
 				<SelectPrimitive.Portal>
-					<SelectPrimitive.Content
-						position="popper"
-						className="relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-white text-gray-900 shadow-md animate-in fade-in-80"
-						sideOffset={5}
-						style={{ width: "var(--radix-select-trigger-width)" }} // Ensure content width matches trigger
-					>
+					<SelectPrimitive.Content className="overflow-hidden bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+						<SelectPrimitive.ScrollUpButton className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default">
+							<ChevronUpIcon />
+						</SelectPrimitive.ScrollUpButton>
 						<SelectPrimitive.Viewport className="p-1">
 							{options.map((option) => (
 								<SelectPrimitive.Item
 									key={option.value}
 									value={option.value}
 									disabled={option.disabled}
-									className="relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-gray-100 data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
+									className="relative flex items-center px-8 py-2 rounded-sm text-sm text-gray-900 select-none hover:bg-indigo-500 hover:text-white focus:bg-indigo-500 focus:text-white data-[disabled]:text-gray-400 data-[disabled]:pointer-events-none"
 								>
 									<SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
-									<SelectPrimitive.ItemIndicator asChild>
-										<CheckIcon className="absolute left-2 h-4 w-4" />
+									<SelectPrimitive.ItemIndicator className="absolute left-2 inline-flex items-center">
+										<CheckIcon />
 									</SelectPrimitive.ItemIndicator>
 								</SelectPrimitive.Item>
 							))}
 						</SelectPrimitive.Viewport>
+						<SelectPrimitive.ScrollDownButton className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default">
+							<ChevronDownIcon />
+						</SelectPrimitive.ScrollDownButton>
 					</SelectPrimitive.Content>
 				</SelectPrimitive.Portal>
 			</SelectPrimitive.Root>
@@ -81,30 +89,21 @@ createComponent<SelectConfig, SelectProps>({
 	type: "select",
 	schema: SelectConfigSchema,
 	component: Select,
-	transformProps: (config: SelectConfig, context: FormEngineContext): SelectProps => {
-		const { id, label, description, options, placeholder, defaultValue, ...restConfig } = config;
-
-		const handleValueChange = (value: string) => {
-			context.onDataChange(id, value);
-		};
-
+	transformConfig: commonFieldTransform,
+	transformProps: (config, context) => {
+		const { id, label, description, options, placeholder, defaultValue, validation } = config;
 		return {
-			containerProps: {
-				name: id,
-				label,
-				description: description,
-				htmlFor: id,
-			},
-			selectProps: {
-				id,
+			containerProps: { name: id, label, description, htmlFor: id },
+			selectRootProps: {
+				id, // Pass id for label association with trigger
 				name: id,
 				value: context.formData[id] ?? defaultValue ?? undefined,
-				onValueChange: handleValueChange,
+				onValueChange: (value) => context.onDataChange(id, value),
 				disabled: context.formMode === "view",
-				// required: config.validation?.required, // For Radix Form to pick up for native validation message
+				required: validation?.required,
 			},
-			options: options,
-			placeholder: placeholder,
+			options,
+			placeholder,
 		};
 	},
 });

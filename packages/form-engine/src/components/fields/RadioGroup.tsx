@@ -2,14 +2,17 @@
 import React from "react";
 import { z } from "zod";
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
-import { baseFieldConfigSchema } from "../baseSchemas";
+import {
+	baseFieldConfigSchema,
+	commonFieldTransform,
+} from "../baseSchemas";
 import { createComponent, FormEngineContext } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
 // 1. Define Configuration Schema
 const radioOptionSchema = z.object({
-	value: z.string(),
 	label: z.string(),
+	value: z.string(),
 	disabled: z.boolean().optional(),
 });
 export type RadioOption = z.infer<typeof radioOptionSchema>;
@@ -19,40 +22,44 @@ export const RadioGroupConfigSchema = baseFieldConfigSchema.extend({
 	options: z.array(radioOptionSchema),
 	defaultValue: z.string().optional(),
 	orientation: z.enum(["horizontal", "vertical"]).optional().default("vertical"),
-	// validation: z.object({ required: z.boolean().optional() }).optional(),
 });
 export type RadioGroupConfig = z.infer<typeof RadioGroupConfigSchema>;
 
 // 2. Define Props for the React Component
 export interface RadioGroupProps {
-	containerProps: Omit<FormFieldContainerProps, "children">;
-	radioGroupProps: RadioGroupPrimitive.RadioGroupProps & { id?: string };
+	containerProps: Omit<FormFieldContainerProps, "children" | "htmlFor">; // RadioGroup itself doesn't need htmlFor
+	radioGroupRootProps: RadioGroupPrimitive.RadioGroupProps & { required?: boolean };
 	options: RadioOption[];
 }
 
 // 3. Create the React Component
-export const RadioGroup: React.FC<RadioGroupProps> = ({ containerProps, radioGroupProps, options }) => {
+export const RadioGroup: React.FC<RadioGroupProps> = ({ containerProps, radioGroupRootProps, options }) => {
+	const orientationClass = radioGroupRootProps.orientation === "horizontal" ? "flex space-x-4" : "space-y-2";
+
 	return (
 		<FormFieldContainer {...containerProps}>
 			<RadioGroupPrimitive.Root
-				{...radioGroupProps}
-				className={`mt-1 ${radioGroupProps.orientation === "horizontal" ? "flex space-x-4" : "space-y-2"} ${radioGroupProps.className || ""}`}
+				{...radioGroupRootProps}
+				className={`mt-1 ${orientationClass} ${radioGroupRootProps.className || ""}`}
+				aria-required={radioGroupRootProps.required}
+				// Radix RadioGroup uses the 'name' prop on items for grouping, but Form.Field uses 'name' for data path.
+				// The 'name' on RadioGroupPrimitive.Root is for form submission if not using Radix Form.
 			>
 				{options.map((option) => (
-					<div key={option.value} className="flex items-center space-x-2">
+					<div key={option.value} className="flex items-center">
 						<RadioGroupPrimitive.Item
 							value={option.value}
-							id={`${radioGroupProps.id}-${option.value}`}
+							id={`${radioGroupRootProps.name}-${option.value}`} // Unique ID for each radio item
 							disabled={option.disabled}
-							className="aspect-square h-4 w-4 rounded-full border border-gray-300 text-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+							className="h-4 w-4 rounded-full border border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed data-[state=checked]:bg-indigo-600"
 						>
 							<RadioGroupPrimitive.Indicator className="flex items-center justify-center">
-								<div className="h-2.5 w-2.5 rounded-full bg-current" />
+								<div className="h-1.5 w-1.5 rounded-full bg-white"></div>
 							</RadioGroupPrimitive.Indicator>
 						</RadioGroupPrimitive.Item>
 						<label
-							htmlFor={`${radioGroupProps.id}-${option.value}`}
-							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+							htmlFor={`${radioGroupRootProps.name}-${option.value}`}
+							className="ml-2 block text-sm text-gray-700"
 						>
 							{option.label}
 						</label>
@@ -68,30 +75,24 @@ createComponent<RadioGroupConfig, RadioGroupProps>({
 	type: "radiogroup",
 	schema: RadioGroupConfigSchema,
 	component: RadioGroup,
-	transformProps: (config: RadioGroupConfig, context: FormEngineContext): RadioGroupProps => {
-		const { id, label, description, options, defaultValue, orientation, ...restConfig } = config;
-
-		const handleValueChange = (value: string) => {
-			context.onDataChange(id, value);
-		};
-
+	transformConfig: commonFieldTransform,
+	transformProps: (config, context) => {
+		const { id, label, description, options, defaultValue, validation, orientation } = config;
 		return {
 			containerProps: {
 				name: id,
 				label,
-				description: description,
-				htmlFor: id, // Associates FormFieldContainer's label with the group
+				description,
 			},
-			radioGroupProps: {
-				id,
-				name: id,
+			radioGroupRootProps: {
+				name: id, // This name is used for the form data path and for item IDs
 				value: context.formData[id] ?? defaultValue ?? undefined,
-				onValueChange: handleValueChange,
+				onValueChange: (value) => context.onDataChange(id, value),
 				disabled: context.formMode === "view",
-				orientation: orientation,
-				// required: config.validation?.required,
+				required: validation?.required,
+				orientation,
 			},
-			options: options,
+			options,
 		};
 	},
 });
