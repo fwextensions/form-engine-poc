@@ -1,30 +1,58 @@
 // packages/form-engine/src/components/baseSchemas.ts
 import { z } from "zod";
 
+// Shared transform function for common field config preprocessing (e.g., label asterisk)
+export function commonFieldTransform(data: Record<string, any>)
+{
+    // It's crucial to work on a copy to avoid mutating the original object from the form config,
+    // especially if the form config is memoized or part of React state.
+    const mutableData = { ...data };
+
+    if (mutableData.label && typeof mutableData.label === "string") {
+        const trimmedLabel = mutableData.label.trim();
+        if (trimmedLabel.endsWith("*")) {
+            mutableData.label = trimmedLabel.slice(0, -1).trim();
+            // Ensure validation object exists and merge
+            mutableData.validation = {
+                ...(mutableData.validation || {}),
+                required: true,
+            };
+        }
+    }
+
+    return mutableData;
+}
+
+// Base ZodObject for all UI components (layouts, static, fields)
 export const baseComponentConfigSchema = z.object({
-	id: z.string().optional(), // id is optional for base components (like static HTML)
-	type: z.string(),
-	condition: z.any().optional(), // JSONLogic rule
+	id: z.string().optional(), // Optional for non-interactive elements like static HTML or layout containers
+	type: z.string(), // Will be refined by specific component schemas (e.g., z.literal("text"))
+	// Add other truly universal component properties here, e.g., conditional visibility
 });
 
-// This is the base schema that all field components (Text, Checkbox, etc.) will extend.
-// It makes 'id' required, as fields need a unique identifier which will also serve as their 'name' attribute.
+// Base ZodObject for all field configurations to extend.
+// This is a simple Zod object without any preprocessing directly attached to it.
+// The preprocessing (like asterisk handling) is done by `commonFieldTransform`
+// passed to `createComponent` in the component's definition file.
 export const baseFieldConfigSchema = baseComponentConfigSchema.extend({
-	// Override id from baseComponentConfigSchema to make it required and non-empty for fields.
-	// This id will be used as the 'name' attribute for the HTML input element.
-	id: z.string().min(1, { message: "Field ID is required and cannot be empty." }),
-	// 'name' property is removed. 'id' will be used for field identification and submission.
-	label: z.string().optional(),
+	id: z.string().min(1, "Field ID cannot be empty"), // id is required and non-empty for fields
+	label: z.string().optional(), // Label is optional at the schema level; transform will handle '*' if present
 	description: z.string().optional(),
-	// Note: 'required' for field values (e.g., making a text input non-empty) is handled by individual field schemas
-	// using Zod's .min(1) on their value validation, or by a specific validation schema extension.
+	validation: z
+		.object({
+			required: z.boolean().optional(),
+			// Add other common validation properties here (e.g., minLength, pattern)
+			// These would be validated by Zod after the transformConfig potentially sets them.
+		})
+		.passthrough() // Allows other validation props not explicitly defined here
+		.optional(),
 });
 
-// Example of a layout component base schema (remains unchanged)
+export type BaseFieldConfig = z.infer<typeof baseFieldConfigSchema>;
+
+// Base schema for layout components that can have children
 export const baseLayoutComponentConfigSchema = baseComponentConfigSchema.extend({
-	children: z.array(z.any()).optional(), // Typically, an array of other component configurations
+	children: z.array(z.any()).optional(), // Children will be parsed by a more generic schema or dispatcher
 });
 
-// This schema can be used by the root "form" component or a "page" component
-// to validate its children. It's a passthrough for any valid component config. (remains unchanged)
-export const anyValidComponentConfigSchema = baseComponentConfigSchema.passthrough();
+export type BaseLayoutComponentConfig = z.infer<typeof baseLayoutComponentConfigSchema>;

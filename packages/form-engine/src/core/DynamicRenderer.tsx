@@ -39,13 +39,8 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, contex
 			return <ErrorComponent error={error} config={config} />;
 		}
 
-		const validationResult = componentDef.schema.safeParse(config);
-		if (!validationResult.success) {
-			const error = new ZodError(validationResult.error.issues);
-			console.error(`DynamicRenderer for '${componentType}': Schema validation failed.`, validationResult.error.format());
-			return <ErrorComponent error={error} config={config} />;
-		}
-		const validatedConfig = validationResult.data;
+		// Use validateConfig to ensure transforms are applied before parsing
+		const validatedConfig = componentDef.validateConfig(config);
 
 		if (validatedConfig.condition && !evaluateCondition(validatedConfig.condition, context.formData, context)) {
 //			console.log(`DynamicRenderer for '${componentType}': Condition not met, rendering null.`);
@@ -76,6 +71,11 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, contex
 
 		return <ComponentToRender {...props} />;
 	} catch (error: any) {
+		// Handle ZodError specifically if it's thrown by validateConfig
+		if (error instanceof ZodError) {
+			console.error(`DynamicRenderer for '${componentType}': Schema validation failed.`, error.format());
+			return <ErrorComponent error={error} config={config} />;
+		}
 		console.error(`DynamicRenderer for '${componentType}': Caught error during rendering. Message: ${error.message}`, error);
 		return <ErrorComponent error={error} config={config} />;
 	}

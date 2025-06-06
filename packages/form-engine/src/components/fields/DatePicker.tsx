@@ -1,70 +1,63 @@
-// packages/form-engine/src/components/fields/DateField.tsx
+// packages/form-engine/src/components/fields/DatePicker.tsx
 import React from "react";
 import { z } from "zod";
-import { baseFieldConfigSchema } from "../baseSchemas";
+import {
+	baseFieldConfigSchema,
+	commonFieldTransform,
+} from "../baseSchemas";
 import { createComponent, FormEngineContext } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
 // 1. Define Configuration Schema
 export const DatePickerConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("date"),
-	defaultValue: z.string().optional(), // Expect YYYY-MM-DD format
-	// placeholder: z.string().optional(), // Placeholder is not very effective for type="date"
-	// validation: z.object({ required: z.boolean().optional() }).optional(),
+	placeholder: z.string().optional(), // HTML date input doesn't really use placeholder
+	defaultValue: z.string().optional(), // Should be in 'YYYY-MM-DD' format
+	min: z.string().optional(), // Should be in 'YYYY-MM-DD' format
+	max: z.string().optional(), // Should be in 'YYYY-MM-DD' format
 });
 export type DatePickerConfig = z.infer<typeof DatePickerConfigSchema>;
 
 // 2. Define Props for the React Component
-export interface DateProps {
+export interface DatePickerProps {
 	containerProps: Omit<FormFieldContainerProps, "children">;
 	inputProps: React.InputHTMLAttributes<HTMLInputElement>;
 }
 
 // 3. Create the React Component
-// Renamed to DatePicker to avoid potential export name conflicts if file is DateField.tsx
-export const DatePicker: React.FC<DateProps> = ({ containerProps, inputProps }) => {
+export const DatePicker: React.FC<DatePickerProps> = ({ containerProps, inputProps }) => {
 	return (
 		<FormFieldContainer {...containerProps}>
 			<input
-				type="date"
 				{...inputProps}
+				type="date"
 				className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${inputProps.className || ""}`}
+				required={inputProps.required} // Added required prop
 			/>
 		</FormFieldContainer>
 	);
 };
 
 // 4. Register the Component
-createComponent<DatePickerConfig, DateProps>({
+createComponent<DatePickerConfig, DatePickerProps>({
 	type: "date",
 	schema: DatePickerConfigSchema,
 	component: DatePicker,
-	transformProps: (config: DatePickerConfig, context: FormEngineContext): DateProps => {
-		const { id, label, description, defaultValue, type, ...restConfig } = config;
-
-		const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-			context.onDataChange(id, event.target.value);
-		};
-
-		// Date input expects value in "yyyy-mm-dd" format.
-		const currentValue = context.formData[id] ?? defaultValue ?? "";
-
+	transformConfig: commonFieldTransform,
+	transformProps: (config, context) => {
+		const { id, label, description, placeholder, defaultValue, validation, min, max } = config;
 		return {
-			containerProps: {
-				name: id,
-				label,
-				description: description,
-				htmlFor: id,
-			},
+			containerProps: { name: id, label, description, htmlFor: id },
 			inputProps: {
 				id,
 				name: id,
-				type: "date",
-				value: currentValue,
-				onChange: handleChange,
-				"aria-describedby": description ? `${id}-description` : undefined,
+				placeholder, // Though date input doesn't show it, can be useful for other props
+				value: context.formData[id] ?? defaultValue ?? "", // Expects YYYY-MM-DD
+				onChange: (e) => context.onDataChange(id, e.target.value),
 				disabled: context.formMode === "view",
-				// required: config.validation?.required,
+				required: validation?.required,
+				min,
+				max,
 			},
 		};
 	},

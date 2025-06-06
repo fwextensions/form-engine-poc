@@ -47,9 +47,10 @@ export interface ComponentDefinition<ConfigType = any, PropsType = any> {
 		context: FormEngineContext,
 		renderChildren: (childrenConfig: unknown[] | undefined, context: FormEngineContext) => React.ReactNode
 	) => PropsType; // Transforms validated config and context into React props
+	transformConfig?: (data: Record<string, any>) => Record<string, any>; // New optional function
 }
 
-export const componentRegistry = new Map<string, ComponentDefinition<any, any>>();
+const componentRegistry = new Map<string, ComponentDefinition>();
 
 type CreateComponentArgs<
 	ConfigType extends { type: string; [key: string]: any },
@@ -63,6 +64,7 @@ type CreateComponentArgs<
 		context: FormEngineContext,
 		renderChildren: (childrenConfig: unknown[] | undefined, context: FormEngineContext) => React.ReactNode
 	) => PropsType;
+	transformConfig?: (data: Record<string, any>) => Record<string, any>; // New optional function
 };
 
 export function createComponent<
@@ -72,20 +74,25 @@ export function createComponent<
 	args: CreateComponentArgs<ConfigType, PropsType>): ComponentDefinition<ConfigType, PropsType>
 {
 	const definition: ComponentDefinition<ConfigType, PropsType> = {
-		type: args.type,
-		schema: args.schema,
-		component: args.component,
-		validateConfig: (data: unknown): ConfigType => {
-			if (typeof data === "object" && data && "type" in data && (data as any).type !== args.type) {
+		...args,
+		validateConfig: (rawData: unknown): ConfigType => {
+			if (typeof rawData === "object" && rawData && "type" in rawData && (rawData as any).type !== args.type) {
 				throw new z.ZodError([{
 					code: z.ZodIssueCode.custom,
 					path: ["type"],
-					message: `Expected component type "${args.type}" but received "${(data as any).type}"`,
+					message: `Expected component type "${args.type}" but received "${(rawData as any).type}"`,
 				}]);
 			}
-			return args.schema.parse(data) as ConfigType;
+
+			let dataToParse = rawData;
+
+			// If a transformConfig function is provided, and rawData is an object, apply it
+			if (args.transformConfig && typeof rawData === "object" && rawData !== null) {
+				dataToParse = args.transformConfig(rawData as Record<string, any>);
+			}
+
+			return args.schema.parse(dataToParse) as ConfigType;
 		},
-		transformProps: args.transformProps,
 	};
 
 	componentRegistry.set(args.type, definition);
@@ -93,10 +100,10 @@ export function createComponent<
 	return definition; // Though not strictly necessary to return, it can be useful
 }
 
-export function getComponentDefinition(type: string): ComponentDefinition | undefined {
+export function getComponentDefinition(type: string) {
 	return componentRegistry.get(type);
 }
 
-export function getAllComponentDefinitions(): Map<string, ComponentDefinition> {
+export function getAllComponentDefinitions() {
 	return componentRegistry;
 }
