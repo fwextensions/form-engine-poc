@@ -4,10 +4,16 @@ import React, { createContext } from "react";
 export interface FormEngineContext {
 	formData: Record<string, any>;
 	onDataChange: (fieldName: string, value: any) => void;
-	formContext?: Record<string, any>; // For JSONLogic, etc., passed into SchemaForm
-	formMode?: "view" | "edit" | "print"; // Example modes
-	onSubmit?: (formData: Record<string, any>) => void; // Handler for form submission
-	// Potentially other global state or functions needed by components
+	formContext: Record<string, any>; // Arbitrary context from the host application
+	formMode: "edit" | "view" | "print"; // Current mode of the form
+	onSubmit?: (formData: Record<string, any>) => void; // Handler for final form submission
+
+	// New properties for multi-page navigation
+	isMultiPage?: boolean;
+	currentPageIndex?: number;
+	totalPages?: number;
+	onNavigateNext?: () => void;
+	onNavigatePrev?: () => void;
 }
 
 // Default context value - provides sensible defaults or stubs for when no provider is found
@@ -29,7 +35,7 @@ const defaultFormEngineContext: FormEngineContext = {
 };
 
 // Create the actual React Context
-export const FormEngineContextObject = createContext<FormEngineContext>(defaultFormEngineContext);
+export const FormEngineContextObject = createContext<FormEngineContext | undefined>(defaultFormEngineContext);
 
 export interface ComponentDefinition<ConfigType = any, PropsType = any> {
 	type: string;
@@ -45,10 +51,10 @@ export interface ComponentDefinition<ConfigType = any, PropsType = any> {
 
 export const componentRegistry = new Map<string, ComponentDefinition<any, any>>();
 
-export function createComponent<
+type CreateComponentArgs<
 	ConfigType extends { type: string; [key: string]: any },
 	PropsType extends object
->(args: {
+> = {
 	type: string;
 	schema: z.ZodType<ConfigType, z.ZodTypeDef, any>;
 	component: React.ComponentType<PropsType & { children?: React.ReactNode }>;
@@ -57,7 +63,14 @@ export function createComponent<
 		context: FormEngineContext,
 		renderChildren: (childrenConfig: unknown[] | undefined, context: FormEngineContext) => React.ReactNode
 	) => PropsType;
-}): ComponentDefinition<ConfigType, PropsType> {
+};
+
+export function createComponent<
+	ConfigType extends { type: string; [key: string]: any },
+	PropsType extends object
+>(
+	args: CreateComponentArgs<ConfigType, PropsType>): ComponentDefinition<ConfigType, PropsType>
+{
 	const definition: ComponentDefinition<ConfigType, PropsType> = {
 		type: args.type,
 		schema: args.schema,
@@ -74,7 +87,9 @@ export function createComponent<
 		},
 		transformProps: args.transformProps,
 	};
+
 	componentRegistry.set(args.type, definition);
+
 	return definition; // Though not strictly necessary to return, it can be useful
 }
 
