@@ -7,14 +7,13 @@ import {
 	baseFieldConfigSchema,
 	commonFieldTransform,
 } from "../baseSchemas";
-import { createComponent, FormEngineContext } from "../../core/componentFactory";
+import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
 // 1. Define Configuration Schema
 const optionSchema = z.object({
 	label: z.string(),
 	value: z.string(),
-	disabled: z.boolean().optional(),
 });
 export type Option = z.infer<typeof optionSchema>;
 
@@ -29,7 +28,7 @@ export type SelectConfig = z.infer<typeof SelectConfigSchema>;
 // 2. Define Props for the React Component
 export interface SelectProps {
 	containerProps: Omit<FormFieldContainerProps, "children">;
-	selectRootProps: SelectPrimitive.SelectProps & { id?: string; required?: boolean };
+	selectRootProps: SelectPrimitive.SelectProps & { id?: string; required?: boolean; disabled?: boolean };
 	options: Option[];
 	placeholder?: string;
 }
@@ -46,8 +45,9 @@ export const Select: React.FC<SelectProps> = ({
 			<SelectPrimitive.Root {...selectRootProps}>
 				<SelectPrimitive.Trigger
 					id={selectRootProps.id} // Ensure id is on the trigger for label association
-					className="mt-1 inline-flex items-center justify-between rounded-md px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
+					className="mt-1 inline-flex items-center justify-between rounded-md px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:border-indigo-500 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
 					aria-required={selectRootProps.required}
+					disabled={selectRootProps.disabled}
 				>
 					<SelectPrimitive.Value placeholder={placeholder} />
 					<SelectPrimitive.Icon className="ml-2">
@@ -55,7 +55,17 @@ export const Select: React.FC<SelectProps> = ({
 					</SelectPrimitive.Icon>
 				</SelectPrimitive.Trigger>
 				<SelectPrimitive.Portal>
-					<SelectPrimitive.Content className="overflow-hidden bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+					<SelectPrimitive.Content
+						position="popper"
+						sideOffset={5}
+						className="w-[var(--radix-select-trigger-width)] overflow-hidden bg-white rounded-md shadow-lg ring-1 ring-gray-300 z-50"
+						onKeyDown={(event: React.KeyboardEvent) => {
+							if (event.key === 'Enter') {
+								// Prevent Enter from submitting the form when selecting an item
+								event.preventDefault();
+							}
+						}}
+					>
 						<SelectPrimitive.ScrollUpButton className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default">
 							<ChevronUpIcon />
 						</SelectPrimitive.ScrollUpButton>
@@ -64,8 +74,7 @@ export const Select: React.FC<SelectProps> = ({
 								<SelectPrimitive.Item
 									key={option.value}
 									value={option.value}
-									disabled={option.disabled}
-									className="relative flex items-center px-8 py-2 rounded-sm text-sm text-gray-900 select-none hover:bg-indigo-500 hover:text-white focus:bg-indigo-500 focus:text-white data-[disabled]:text-gray-400 data-[disabled]:pointer-events-none"
+									className="relative flex items-center px-8 py-2 rounded-sm text-sm text-gray-900 select-none hover:bg-indigo-500 hover:text-white focus:bg-indigo-500 focus:text-white"
 								>
 									<SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
 									<SelectPrimitive.ItemIndicator className="absolute left-2 inline-flex items-center">
@@ -91,15 +100,17 @@ createComponent<SelectConfig, SelectProps>({
 	component: Select,
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
-		const { id, label, description, options, placeholder, defaultValue, validation } = config;
+		const { id, label, description, options, placeholder, defaultValue, validation, disabled } = config;
+		const value = context.formData[id] ?? "";
+
 		return {
 			containerProps: { name: id, label, description, htmlFor: id },
 			selectRootProps: {
 				id, // Pass id for label association with trigger
 				name: id,
-				value: context.formData[id] ?? defaultValue ?? undefined,
+				value,
 				onValueChange: (value) => context.onDataChange(id, value),
-				disabled: context.formMode === "view",
+				disabled: context.formMode === "view" || disabled,
 				required: validation?.required,
 			},
 			options,

@@ -1,5 +1,5 @@
 // packages/form-engine/src/components/layout/Form.tsx
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useRef } from "react";
 import { z } from "zod";
 import { Submit, Root } from "@radix-ui/react-form";
 import { baseLayoutComponentConfigSchema } from "../baseSchemas";
@@ -37,6 +37,7 @@ export const FormComponent: React.FC<FormProps> = ({
 	...rest
 }) => {
 	const context = useContext(FormEngineContextObject);
+	const pageContentRef = useRef<HTMLDivElement>(null);
 
 	if (!context) {
 		console.error("FormComponent must be rendered within a FormEngineContextObject.Provider");
@@ -53,8 +54,26 @@ export const FormComponent: React.FC<FormProps> = ({
 		onNavigatePrev,
 		formMode
 	} = context;
-
 	const isViewMode = formMode === "view";
+	let currentChildren = children;
+	const showSubmit = !isMultiPage && onFinalSubmit;
+	const showNext = isMultiPage && currentPageIndex !== undefined && totalPages !== undefined && currentPageIndex < totalPages - 1;
+	const showFinalSubmitMultiPage = isMultiPage && currentPageIndex !== undefined && totalPages !== undefined && currentPageIndex === totalPages - 1 && onFinalSubmit;
+	const showPrevious = isMultiPage && currentPageIndex !== undefined && currentPageIndex > 0 && onNavigatePrev;
+
+	useEffect(() => {
+		if (!isViewMode && pageContentRef.current) {
+			// Find the first focusable element. This query can be adjusted as needed.
+			const focusableElements = pageContentRef.current.querySelectorAll<HTMLElement>(
+				'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'
+			);
+			const firstFocusableElement = Array.from(focusableElements).find(el => el.offsetParent !== null); // Check if visible
+
+			if (firstFocusableElement) {
+				firstFocusableElement.focus();
+			}
+		}
+	}, [currentPageIndex, currentChildren, isViewMode]);
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -67,7 +86,6 @@ export const FormComponent: React.FC<FormProps> = ({
 		}
 	};
 
-	let currentChildren = children;
 	if (isMultiPage && currentPageIndex !== undefined && Array.isArray(children)) {
 		// In multi-page, children of the 'form' are 'page' components.
 		// We need to find all 'page' type children from the original config to determine the current page.
@@ -76,11 +94,6 @@ export const FormComponent: React.FC<FormProps> = ({
 		currentChildren = children[currentPageIndex] ? [children[currentPageIndex]] : [];
 	}
 
-	const showSubmit = !isMultiPage && onFinalSubmit;
-	const showNext = isMultiPage && currentPageIndex !== undefined && totalPages !== undefined && currentPageIndex < totalPages - 1;
-	const showFinalSubmitMultiPage = isMultiPage && currentPageIndex !== undefined && totalPages !== undefined && currentPageIndex === totalPages - 1 && onFinalSubmit;
-	const showPrevious = isMultiPage && currentPageIndex !== undefined && currentPageIndex > 0 && onNavigatePrev;
-
 	return (
 		<Root
 			{...rest} // Passes through other HTML attributes like id
@@ -88,7 +101,9 @@ export const FormComponent: React.FC<FormProps> = ({
 			style={style}
 			onSubmit={handleSubmit}
 		>
-			{currentChildren}
+			<div ref={pageContentRef}>
+				{currentChildren}
+			</div>
 
 			{(!isViewMode && (showSubmit || showNext || showFinalSubmitMultiPage || showPrevious)) && (
 				<div className={`form-actions mt-6 pt-4 border-t border-gray-200 flex ${showPrevious ? 'justify-between' : 'justify-end'} items-center ${config.buttonsClassName || ''}`}>
@@ -141,7 +156,7 @@ createComponent<FormConfig, FormProps>({
 		const renderedChildElements = renderChildren(children, context);
 
 		return {
-			id: id || 'form-engine-root',
+			id: id || "form-engine-root",
 			config, // Pass the full config
 			className, // Pass className from config
 			style,     // Pass style from config
