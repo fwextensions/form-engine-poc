@@ -1,11 +1,12 @@
 // packages/form-engine/src/components/fields/File.tsx
 import React from "react";
 import { z } from "zod";
+import { Control } from "@radix-ui/react-form";
 import {
 	baseFieldConfigSchema,
 	commonFieldTransform,
 } from "../baseSchemas";
-import { createComponent, FormEngineContext } from "../../core/componentFactory";
+import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
 // 1. Define Configuration Schema
@@ -13,8 +14,7 @@ export const FileConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("file"),
 	accept: z.string().optional(), // e.g., "image/*,.pdf"
 	multiple: z.boolean().optional(),
-	// Note: File input value is FileList, not string. defaultValue is tricky for file inputs.
-	// Radix Form handles FileList directly.
+	// 'disabled' is now inherited from baseFieldConfigSchema
 });
 export type FileConfig = z.infer<typeof FileConfigSchema>;
 
@@ -28,11 +28,13 @@ export interface FileProps {
 export const FileComponent: React.FC<FileProps> = ({ containerProps, inputProps }) => {
 	return (
 		<FormFieldContainer {...containerProps}>
-			<input
-				{...inputProps}
-				type="file"
-				className={`mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${inputProps.className || ""}`}
-			/>
+			<Control asChild>
+				<input
+					{...inputProps}
+					type="file"
+					className={`mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${inputProps.className || ""}`}
+				/>
+			</Control>
 		</FormFieldContainer>
 	);
 };
@@ -42,9 +44,8 @@ createComponent<FileConfig, FileProps>({
 	type: "file",
 	schema: FileConfigSchema,
 	component: FileComponent,
-	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
-		const { id, label, description, validation, accept, multiple } = config;
+		const { id, label, description, validation, accept, multiple, disabled: configDisabled } = config;
 
 		// For file inputs, Radix Form expects the 'value' to be a FileList.
 		// We don't manage 'value' or 'defaultValue' directly here for controlled component behavior
@@ -61,11 +62,12 @@ createComponent<FileConfig, FileProps>({
 				id,
 				name: id,
 				onChange: handleChange,
-				disabled: context.formMode === "view",
+				disabled: context.formMode === "view" || configDisabled,
 				required: validation?.required,
 				accept,
 				multiple,
 			},
 		};
 	},
+	transformConfig: commonFieldTransform,
 });

@@ -39,9 +39,7 @@ export const FormFieldContainer: React.FC<FormFieldContainerProps> = ({
 					{description}
 				</p>
 			)}
-			<Form.Control asChild>
-				{children}
-			</Form.Control>
+			{children}
 			{messages && messages.map((msg, index) => (
 				<Form.Message key={index} className="text-xs text-red-500 mt-1">
 					{typeof msg === "string" ? msg : msg.message}

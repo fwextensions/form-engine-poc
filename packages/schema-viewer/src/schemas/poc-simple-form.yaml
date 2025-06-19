@@ -60,6 +60,7 @@ children:
       - id: streetAddress
         type: text
         label: Street Address*
+        disabled: true
 
       - id: city
         type: text

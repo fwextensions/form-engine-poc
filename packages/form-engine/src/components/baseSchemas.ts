@@ -38,6 +38,7 @@ export const baseFieldConfigSchema = baseComponentConfigSchema.extend({
 	id: z.string().min(1, "Field ID cannot be empty"), // id is required and non-empty for fields
 	label: z.string().optional(), // Label is optional at the schema level; transform will handle '*' if present
 	description: z.string().optional(),
+	disabled: z.boolean().optional(), // Add disabled property
 	validation: z
 		.object({
 			required: z.boolean().optional(),

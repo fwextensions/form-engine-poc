@@ -1,6 +1,7 @@
-# DAHLIA Form Engine - Proof of Concept
+# Form Engine - Proof of Concept
 
 This project is a proof-of-concept for a schema-driven dynamic form engine. It's designed to parse form definitions written in YAML and render them as interactive, multi-step web forms using React.
+
 
 ## Core Features
 
@@ -16,9 +17,10 @@ This project is a proof-of-concept for a schema-driven dynamic form engine. It's
 *   **Context Propagation:** The `context` object is systematically passed down to all components, making it available for complex conditional rules.
 *   **Basic Validation:** Supports "required" field validation.
 
+
 ## Project Structure
 
-This project is a monorepo, likely intended to be managed with `npm` workspaces (though setup can be adapted). It consists of the following main packages:
+This project is a monorepo, which can be managed with `npm` workspaces. It consists of the following main packages:
 
 *   `packages/form-engine`:
     *   The core engine library.
@@ -27,6 +29,7 @@ This project is a monorepo, likely intended to be managed with `npm` workspaces 
 *   `packages/schema-viewer`:
     *   A Next.js application that serves as a demonstration and testing environment for the `form-engine`.
     *   It loads YAML schemas (e.g., `poc-simple-form.yaml`) and uses the `SchemaForm` component from the `form-engine` to render them.
+
 
 ## Key Technologies
 
@@ -37,12 +40,14 @@ This project is a monorepo, likely intended to be managed with `npm` workspaces 
 *   **Styling:** Tailwind CSS (for `schema-viewer` and basic component styling)
 *   **UI Primitives:** Radix UI, styled with Tailwind CSS
 
+
 ## Getting Started
 
 ### Prerequisites
 
 *   Node.js (latest LTS version recommended)
 *   `npm`
+
 
 ### Installation
 
@@ -52,6 +57,7 @@ This project is a monorepo, likely intended to be managed with `npm` workspaces 
     ```bash
     npm install
     ```
+
 
 ### Running the Schema Viewer (Demo App)
 
@@ -66,6 +72,7 @@ This project is a monorepo, likely intended to be managed with `npm` workspaces 
     ```
 2.  Open [http://localhost:3000](http://localhost:3000) in your browser to see the demo form.
 
+
 ## Schema Overview
 
 The form schema is defined in YAML. Key aspects include:
@@ -76,6 +83,7 @@ The form schema is defined in YAML. Key aspects include:
 *   The `condition` property uses JSON Logic syntax.
 
 An example schema can be found at `packages/schema-viewer/src/schemas/poc-simple-form.yaml`.
+
 
 ## Future Development
 

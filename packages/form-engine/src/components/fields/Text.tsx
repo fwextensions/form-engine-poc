@@ -1,11 +1,12 @@
 // packages/form-engine/src/components/fields/Text.tsx
 import React from "react";
 import { z } from "zod";
+import { Control } from "@radix-ui/react-form";
 import {
 	baseFieldConfigSchema,
 	commonFieldTransform,
 } from "../baseSchemas";
-import { createComponent, FormEngineContext } from "../../core/componentFactory";
+import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
 // --- TEXT ---
@@ -14,6 +15,7 @@ export const TextConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("text"),
 	placeholder: z.string().optional(),
 	defaultValue: z.string().optional(),
+	inputType: z.enum(["text", "email", "password", "tel", "url", "number", "date", "datetime-local", "month", "week", "time"]).optional().default("text"),
 });
 export type TextConfig = z.infer<typeof TextConfigSchema>;
 
@@ -82,10 +84,12 @@ export interface TextProps {
 export const Text: React.FC<TextProps> = ({ containerProps, inputProps }) => {
 	return (
 		<FormFieldContainer {...containerProps}>
-			<input
-				{...inputProps}
-				className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${inputProps.className || ""}`}
-			/>
+			<Control asChild>
+				<input
+					{...inputProps}
+					className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${inputProps.className || ""}`}
+				/>
+			</Control>
 		</FormFieldContainer>
 	);
 };
@@ -99,7 +103,7 @@ createComponent<TextConfig, TextProps>({
 	component: Text,
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type } = config;
+		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
 		return {
 			containerProps: { name: id, label, description, htmlFor: id },
 			inputProps: {
@@ -109,7 +113,7 @@ createComponent<TextConfig, TextProps>({
 				placeholder,
 				value: context.formData[id] ?? defaultValue ?? "",
 				onChange: (e) => context.onDataChange(id, e.target.value),
-				disabled: context.formMode === "view",
+				disabled: context.formMode === "view" || disabled,
 				required: validation?.required,
 			},
 		};
@@ -123,7 +127,7 @@ createComponent<EmailConfig, TextProps>({
 	component: Text,
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type } = config;
+		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
 		return {
 			containerProps: { name: id, label, description, htmlFor: id },
 			inputProps: {
@@ -133,7 +137,7 @@ createComponent<EmailConfig, TextProps>({
 				placeholder,
 				value: context.formData[id] ?? defaultValue ?? "",
 				onChange: (e) => context.onDataChange(id, e.target.value),
-				disabled: context.formMode === "view",
+				disabled: context.formMode === "view" || disabled,
 				required: validation?.required,
 			},
 		};
@@ -147,7 +151,7 @@ createComponent<PasswordConfig, TextProps>({
 	component: Text,
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type } = config;
+		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
 		return {
 			containerProps: { name: id, label, description, htmlFor: id },
 			inputProps: {
@@ -157,7 +161,7 @@ createComponent<PasswordConfig, TextProps>({
 				placeholder,
 				value: context.formData[id] ?? defaultValue ?? "",
 				onChange: (e) => context.onDataChange(id, e.target.value),
-				disabled: context.formMode === "view",
+				disabled: context.formMode === "view" || disabled,
 				required: validation?.required,
 			},
 		};
@@ -171,7 +175,7 @@ createComponent<TelConfig, TextProps>({
 	component: Text,
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type } = config;
+		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
 		return {
 			containerProps: { name: id, label, description, htmlFor: id },
 			inputProps: {
@@ -181,7 +185,7 @@ createComponent<TelConfig, TextProps>({
 				placeholder,
 				value: context.formData[id] ?? defaultValue ?? "",
 				onChange: (e) => context.onDataChange(id, e.target.value),
-				disabled: context.formMode === "view",
+				disabled: context.formMode === "view" || disabled,
 				required: validation?.required,
 			},
 		};
@@ -195,7 +199,7 @@ createComponent<NumberConfig, TextProps>({
 	component: Text,
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type, min, max, step } = config;
+		const { id, label, description, placeholder, defaultValue, validation, type, min, max, step, disabled } = config;
 		return {
 			containerProps: { name: id, label, description, htmlFor: id },
 			inputProps: {
@@ -212,7 +216,7 @@ createComponent<NumberConfig, TextProps>({
 				min,
 				max,
 				step,
-				disabled: context.formMode === "view",
+				disabled: context.formMode === "view" || disabled,
 				required: validation?.required,
 			},
 		};

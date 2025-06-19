@@ -5,7 +5,7 @@ import {
 	baseFieldConfigSchema,
 	commonFieldTransform,
 } from "../baseSchemas";
-import { createComponent, FormEngineContext } from "../../core/componentFactory";
+import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
 // 1. Define Configuration Schema

@@ -1,11 +1,12 @@
 // packages/form-engine/src/components/fields/Textarea.tsx
 import React from "react";
 import { z } from "zod";
+import { Control } from "@radix-ui/react-form";
 import {
 	baseFieldConfigSchema,
 	commonFieldTransform,
 } from "../baseSchemas";
-import { createComponent, FormEngineContext } from "../../core/componentFactory";
+import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
 // 1. Define Configuration Schema
@@ -27,10 +28,12 @@ export interface TextareaProps {
 export const Textarea: React.FC<TextareaProps> = ({ containerProps, textareaProps }) => {
 	return (
 		<FormFieldContainer {...containerProps}>
-			<textarea
-				{...textareaProps}
-				className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${textareaProps.className || ""}`}
-			/>
+			<Control asChild>
+				<textarea
+					{...textareaProps}
+					className={`mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm ${textareaProps.className || ""}`}
+				/>
+			</Control>
 		</FormFieldContainer>
 	);
 };
@@ -42,16 +45,18 @@ createComponent<TextareaConfig, TextareaProps>({
 	component: Textarea,
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, rows } = config;
+		const { id, label, description, placeholder, defaultValue, validation, rows, disabled } = config;
+		const value = context.formData[id] ?? defaultValue ?? "";
+
 		return {
 			containerProps: { name: id, label, description, htmlFor: id },
 			textareaProps: {
 				id,
 				name: id,
 				placeholder,
-				value: context.formData[id] ?? defaultValue ?? "",
+				value,
 				onChange: (e) => context.onDataChange(id, e.target.value),
-				disabled: context.formMode === "view",
+				disabled: context.formMode === "view" || disabled,
 				required: validation?.required,
 				rows,
 			},
