@@ -35,7 +35,7 @@
         ```yaml
         formName: PoC Simple Form
         fields:
-          - id: user_email
+          - id: userEmail
             type: email
             label: Your Email Address
             placeholder: "name@example.com"
@@ -76,7 +76,7 @@
         ```yaml
         fields:
           # ... existing fields
-          - id: favorite_color
+          - id: favoriteColor
             type: select
             label: Favorite Color
             options:
@@ -124,7 +124,7 @@
             type: page
             title: Personal Information
             children:
-              - id: full_name
+              - id: fullName
                 type: text
                 label: Full Name
                 validation: { required: true }
@@ -132,7 +132,7 @@
             type: page
             title: Preferences
             children:
-              - id: favorite_color # (as defined in M2)
+              - id: favoriteColor # (as defined in M2)
                 # ...
         ```
 *   **Task 3.2: Enhance Form Rendering Logic (`SchemaForm`):** - [x] Done
@@ -153,50 +153,61 @@
 
 ---
 
-### Milestone 4: Basic Conditional Logic (Show/Hide Field)
+### Milestone 4: Conditional Rules via Centralized Prop Merging
 
-**Goal:** Implement conditional logic to show/hide components based on form data and external context. - [x] Done
+**Goal:** Implement a flexible rules engine that dynamically updates component properties (like `hidden`, `required`, `label`, `disabled`) based on form data. The implementation will use a centralized prop merging strategy to keep field components simple.
 
-*   **Task 4.1: Update YAML Schema (v0.4 - Conditional Logic & Context):** - [x] Done
-    *   Added a `condition` property to components (fields, pages, HTML elements, etc.).
-    *   The `condition` property accepts a [JSON Logic](https://jsonlogic.com/) rule object, allowing for complex conditional expressions.
-    *   Conditions can reference:
-        *   `formData`: Values from other fields in the form (e.g., `formData.fieldName`).
-        *   `context`: An external data object passed into the form (e.g., `context.listingId`, `context.userRole`).
-    *   *Example YAML Snippet (using JSON Logic):*
+*   **Task 4.1: Update YAML Schema (v0.4 - `rules` block):**
+    *   Introduce a new optional `rules` property on components. This property will be an array of individual `rule` objects.
+    *   Each rule has a `when` clause (the condition) and a `then` clause (the effects).
+    *   The `when` clause defines the condition (e.g., based on a field's value).
+    *   The `then` clause is an array of action objects. Each object has a single key that defines the action type (e.g., `set`, `log`), and the value contains the parameters for that action.
+    *   *Example YAML Snippet:*
         ```yaml
-        children: # (within a page or form)
-          - id: city
-            type: text
-            label: City
-          - id: cityWarning
-            type: html
-            content: "<p style='color: orange;'>Warning: Services primarily for San Francisco.</p>"
-            condition:
-              and:
-                - "!==": [{ var: "formData.city" }, ""]
-                - "!==": [{ var: "formData.city" }, "San Francisco"]
-          - id: listingSpecificQuestion
-            type: text
-            label: Listing Specific Question (Contextual)
-            condition:
-              "===": [{ var: "context.listingId" }, "listing-123-abc"]
+        - id: isApplying
+          type: checkbox
+          label: "Are you applying for the program?"
+        - id: reasonForApplying
+          type: textarea
+          label: "Reason for applying"
+          rules:
+            - when:
+                field: isApplying
+                is: true
+              then:
+                - set:
+                    required: true
+                    label: "Please explain why you are applying"
+                - log:
+                    - "User is applying, reason field is now required."
         ```
-*   **Task 4.2: Implement Conditional Logic in Rendering:** - [x] Done
-    *   Updated `ComponentRenderer` to:
-        *   Check if a component has a `condition`.
-        *   If so, evaluate the JSON Logic rule using the `json-logic-js` library.
-        *   The evaluation context provides both `formData` (current form values) and `context` (external data) to the JSON Logic engine.
-        *   Only render the component if the condition evaluates to a truthy value or if no condition is specified.
-        *   Includes basic error handling for issues during condition evaluation.
-*   **Task 4.3: State Management for Conditional Fields:** - [x] Done (Implicitly)
-    *   Conditionally hidden fields are not rendered. As a result, their data is not included in the form submission if they remain hidden at the time of submission. No explicit data clearing policy (e.g., clearing value when hidden) has been implemented beyond non-rendering for this PoC.
-*   **Task 4.4: Context Propagation System:** - [x] Done
-    *   The main form rendering component (`SchemaForm`) was refactored to accept an arbitrary `context` object as a prop.
-    *   This `context` object is systematically propagated down through the component tree (e.g., `SchemaForm` -> `ComponentRenderer` -> `PageRenderer` -> child `ComponentRenderer` instances).
-    *   This ensures that the `context` data is available for condition evaluation at any depth within the form structure.
 
-**Deliverable for M4:** A form where components (fields, HTML content, etc.) are dynamically shown or hidden based on complex conditions. These conditions can involve other field values (`formData`) and/or external data (`context`), defined using JSON Logic rules within the YAML schema. - [x] Done
+*   **Task 4.2: Create the Rules Engine (`useFormRules` hook):**
+    *   Implement a new React hook, `useFormRules(schema, formData)`.
+    *   This hook will be the brain of the system. On every render (i.e., whenever `formData` changes), it will:
+        1.  Iterate through all fields in the `schema` that have a `rules` block.
+        2.  For each field, evaluate its rules against the current `formData`.
+        3.  Process the `then` clause for any triggered rules, accumulating property changes from `set` actions.
+        4.  Build and return an object mapping field names to their calculated dynamic properties.
+        *   *Example output:* `{ "reasonForApplying": { "required": true, "label": "Please explain..." } }`
+
+*   **Task 4.3: Integrate Rules Engine into Form Renderer:**
+    *   In the main form rendering component (`FormRenderer` or similar), call the `useFormRules` hook to get the dynamic properties.
+    *   In the loop that renders the form fields, merge the static props from the schema with the dynamic props from the rules engine. The dynamic props should take precedence.
+    *   *Example Integration:*
+        ```tsx
+        const dynamicPropsByField = useFormRules(schema, formData);
+        // ... inside render loop for each fieldConfig ...
+        const dynamicProps = dynamicPropsByField[fieldConfig.name] || {};
+        const finalProps = { ...fieldConfig, ...dynamicProps };
+        // Pass finalProps to the componentFactory
+        ```
+
+*   **Task 4.4: Ensure Component Compliance:**
+    *   Verify that field components (`Text`, `Select`, etc.) correctly use the props that can be dynamically changed (e.g., `hidden`, `required`, `disabled`, `label`).
+    *   Since the props are merged centrally, no changes should be needed inside the components themselves, but this is a verification step. A component should correctly hide itself if it receives `hidden: true`.
+
+**Deliverable for M4:** A form where component properties are dynamically updated based on user input in other fields. The logic is defined in a concise and powerful `rules` format in the YAML schema and executed by a central hook.
 
 ---
 
@@ -209,7 +220,7 @@
     *   Create a renderer for this component that safely renders the provided HTML (e.g., using `dangerouslySetInnerHTML` with appropriate sanitization if necessary, or a safer alternative).
     *   *Example YAML:*
         ```yaml
-        - id: intro_text
+        - id: introText
           type: html
           content: "<p>Welcome to the form. Please read these instructions carefully.</p>"
         ```
@@ -218,7 +229,7 @@
     *   Update field renderers to display this description text (e.g., below the label or input).
     *   *Example YAML:*
         ```yaml
-        - id: user_email
+        - id: userEmail
           type: email
           label: Your Email Address
           description: "We will never share your email with anyone else."
@@ -232,9 +243,9 @@
         children: # (within a page)
           - type: sectionHeader
             title: "Personal Details"
-          - id: first_name
+          - id: firstName
             # ...
-          - id: last_name
+          - id: lastName
             # ...
           - type: sectionHeader
             title: "Contact Information"
