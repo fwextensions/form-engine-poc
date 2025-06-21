@@ -1,9 +1,10 @@
 // packages/form-engine/src/components/layout/Form.tsx
-import React, { useContext, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { z } from "zod";
 import { Submit, Root } from "@radix-ui/react-form";
 import { baseLayoutComponentConfigSchema } from "../baseSchemas";
-import { createComponent, FormEngineContext, FormEngineContextObject } from "../../core/componentFactory";
+import { createComponent } from "../../core/componentFactory";
+import { FormEngineContext, useFormEngine } from "../../core/FormEngineContext";
 
 // 1. Define Configuration Schema
 export const FormConfigSchema = baseLayoutComponentConfigSchema.extend({
@@ -36,7 +37,7 @@ export const FormComponent: React.FC<FormProps> = ({
 	style,     // This will be from config.style via transformProps
 	...rest
 }) => {
-	const context = useContext(FormEngineContextObject);
+	const context = useFormEngine();
 	const pageContentRef = useRef<HTMLDivElement>(null);
 
 	if (!context) {

@@ -3,9 +3,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
 	DynamicRenderer,
-	FormEngineContextObject,
+	FormEngineProvider,
 	parseRootFormSchema,
-	FormConfig, 
+	FormConfig,
 	FormEngineContext
 } from "form-engine";
 import { z } from "zod";
@@ -20,7 +20,7 @@ export default function HomePage() {
 	const [formData, setFormData] = useState<Record<string, unknown>>({});
 	const [isClient, setIsClient] = useState(false);
 	const [currentPageIndex, setCurrentPageIndex] = useState(0);
-	const [isMultiPageFromToggle, setIsMultiPageFromToggle] = useState(true); 
+	const [isMultiPageFromToggle, setIsMultiPageFromToggle] = useState(true);
 
 	useEffect(() => {
 		setIsClient(true);
@@ -59,7 +59,7 @@ export default function HomePage() {
 
 	const handleToggleMultiPage = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setIsMultiPageFromToggle(event.target.checked);
-		setCurrentPageIndex(0); 
+		setCurrentPageIndex(0);
 	};
 
 	const initialContext = {
@@ -93,7 +93,7 @@ export default function HomePage() {
 		onDataChange: handleDataChange,
 		formContext: initialContext,
 		formMode: "edit",
-		onSubmit: handleFinalSubmit, 
+		onSubmit: handleFinalSubmit,
 		isMultiPage: actualIsMultiPage,
 		currentPageIndex: actualIsMultiPage ? currentPageIndex : undefined,
 		totalPages: actualIsMultiPage ? totalPages : undefined,
@@ -127,14 +127,14 @@ export default function HomePage() {
 	}
 
 	return (
-		<FormEngineContextObject.Provider value={formEngineContextValue}>
+		<FormEngineProvider value={formEngineContextValue}>
 			<main className="flex min-h-screen flex-col items-start justify-start p-5 md:p-8 lg:p-12 bg-gray-100 w-full">
 				{isClient && parsedRootConfig && parsedRootConfig.type === "form" && totalPages > 1 && (
 					<div className="mb-4 p-4 border border-gray-300 rounded-md bg-white w-full max-w-3xl mx-auto">
 						<label className="flex items-center space-x-2">
 							<input
 								type="checkbox"
-								checked={isMultiPageFromToggle} 
+								checked={isMultiPageFromToggle}
 								onChange={handleToggleMultiPage}
 								className="form-checkbox h-5 w-5 text-indigo-600"
 							/>
@@ -149,10 +149,10 @@ export default function HomePage() {
 				)}
 
 				<div className="w-full max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-md">
-					<DynamicRenderer config={configToRender} context={formEngineContextValue} /> 
+					<DynamicRenderer config={configToRender} context={formEngineContextValue} />
 				</div>
 
 			</main>
-		</FormEngineContextObject.Provider>
+		</FormEngineProvider>
 	);
 }
