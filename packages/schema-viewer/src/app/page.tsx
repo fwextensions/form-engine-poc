@@ -1,14 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
-import {
-	DynamicRenderer,
-	FormEngineProvider,
-	parseRootFormSchema,
-	FormConfig,
-	FormEngineContext
-} from "form-engine";
+import React, { useState, useEffect } from "react";
 import { z } from "zod";
+import { FormConfig, parseRootFormSchema, FormEngine } from "form-engine";
 import schemaData from "@/schemas/poc-simple-form.yaml";
 import { useRouter } from "next/navigation";
 
@@ -17,9 +11,11 @@ export default function HomePage() {
 
 	const [parsedRootConfig, setParsedRootConfig] = useState<FormConfig | null>(null);
 	const [schemaErrors, setSchemaErrors] = useState<z.ZodFormattedError<unknown> | null>(null);
-	const [formData, setFormData] = useState<Record<string, unknown>>({});
 	const [isClient, setIsClient] = useState(false);
-	const [currentPageIndex, setCurrentPageIndex] = useState(0);
+
+	// State for the controlled component pattern
+	const [currentPage, setCurrentPage] = useState(0);
+	const [totalPages, setTotalPages] = useState(0);
 	const [isMultiPageFromToggle, setIsMultiPageFromToggle] = useState(true);
 
 	useEffect(() => {
@@ -35,40 +31,15 @@ export default function HomePage() {
 		}
 	}, []);
 
-	const pageComponents = React.useMemo(() => {
-		if (parsedRootConfig && parsedRootConfig.type === "form" && Array.isArray(parsedRootConfig.children)) {
-			return parsedRootConfig.children.filter(child => child.type === "page");
-		}
-		return [];
-	}, [parsedRootConfig]);
-
-	const totalPages = pageComponents.length;
-	const actualIsMultiPage = isMultiPageFromToggle && totalPages > 1;
-
-	const handleNextPage = useCallback(() => {
-		if (currentPageIndex < totalPages - 1) {
-			setCurrentPageIndex(currentPageIndex + 1);
-		}
-	}, [currentPageIndex, totalPages]);
-
-	const handlePrevPage = () => {
-		if (currentPageIndex > 0) {
-			setCurrentPageIndex(currentPageIndex - 1);
-		}
-	};
-
 	const handleToggleMultiPage = (event: React.ChangeEvent<HTMLInputElement>) => {
 		setIsMultiPageFromToggle(event.target.checked);
-		setCurrentPageIndex(0);
-	};
-
-	const initialContext = {
-		listingId: "listing-123-abc",
-		userRole: "applicant",
+		setCurrentPage(0); // Reset to first page when toggling
 	};
 
 	const handleFinalSubmit = (submittedFormData: Record<string, unknown>) => {
-		console.log("Form submitted:", submittedFormData);
+		console.log("Form submitted from Schema Viewer:", submittedFormData);
+
+		// Navigate to a submission page with query params
 		const stringifiedData: Record<string, string> = {};
 		for (const key in submittedFormData) {
 			if (Object.prototype.hasOwnProperty.call(submittedFormData, key)) {
@@ -84,26 +55,13 @@ export default function HomePage() {
 		router.push(`/submission?${queryParams}`);
 	};
 
-	const handleDataChange = useCallback((fieldName: string, value: unknown) => {
-		setFormData((prevData) => ({ ...prevData, [fieldName]: value }));
-	}, []);
-
-	const formEngineContextValue: FormEngineContext = {
-		formData,
-		onDataChange: handleDataChange,
-		formContext: initialContext,
-		formMode: "edit",
-		onSubmit: handleFinalSubmit,
-		isMultiPage: actualIsMultiPage,
-		currentPageIndex: actualIsMultiPage ? currentPageIndex : undefined,
-		totalPages: actualIsMultiPage ? totalPages : undefined,
-		onNavigateNext: actualIsMultiPage ? handleNextPage : undefined,
-		onNavigatePrev: actualIsMultiPage ? handlePrevPage : undefined,
+	const handlePageChange = (pageIndex: number, total: number) => {
+		console.log(`Page changed to ${pageIndex + 1} of ${total}`);
+		setCurrentPage(pageIndex);
+		setTotalPages(total);
 	};
 
-	const configToRender = parsedRootConfig;
-
-	if (!configToRender) {
+	if (!parsedRootConfig) {
 		return (
 			<main className="flex min-h-screen flex-col items-center justify-center p-24 bg-gray-100">
 				<div className="text-gray-700 font-bold text-xl">
@@ -126,33 +84,42 @@ export default function HomePage() {
 		);
 	}
 
+	const actualIsMultiPage = isMultiPageFromToggle && totalPages > 1;
+
 	return (
-		<FormEngineProvider value={formEngineContextValue}>
-			<main className="flex min-h-screen flex-col items-start justify-start p-5 md:p-8 lg:p-12 bg-gray-100 w-full">
-				{isClient && parsedRootConfig && parsedRootConfig.type === "form" && totalPages > 1 && (
-					<div className="mb-4 p-4 border border-gray-300 rounded-md bg-white w-full max-w-3xl mx-auto">
-						<label className="flex items-center space-x-2">
-							<input
-								type="checkbox"
-								checked={isMultiPageFromToggle}
-								onChange={handleToggleMultiPage}
-								className="form-checkbox h-5 w-5 text-indigo-600"
-							/>
-							<span>Navigate pages one by one</span>
-						</label>
-						{actualIsMultiPage && (
-							<p className="text-sm text-gray-600 mt-1">
-								Page {currentPageIndex + 1} of {totalPages}
-							</p>
-						)}
-					</div>
-				)}
-
-				<div className="w-full max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-md">
-					<DynamicRenderer config={configToRender} context={formEngineContextValue} />
+		<main className="flex min-h-screen flex-col items-start justify-start p-5 md:p-8 lg:p-12 bg-gray-100 w-full">
+			{isClient && totalPages > 1 && (
+				<div className="mb-4 p-4 border border-gray-300 rounded-md bg-white w-full max-w-3xl mx-auto">
+					<label className="flex items-center space-x-2">
+						<input
+							type="checkbox"
+							checked={isMultiPageFromToggle}
+							onChange={handleToggleMultiPage}
+							className="form-checkbox h-5 w-5 text-indigo-600"
+						/>
+						<span>Navigate pages one by one</span>
+					</label>
+					{actualIsMultiPage && (
+						<p className="text-sm text-gray-600 mt-1">
+							Page {currentPage + 1} of {totalPages}
+						</p>
+					)}
 				</div>
+			)}
 
-			</main>
-		</FormEngineProvider>
+			<div className="w-full max-w-3xl mx-auto bg-white p-6 md:p-8 rounded-lg shadow-md">
+				<FormEngine
+					schema={parsedRootConfig}
+					formContext={{
+						listingId: "listing-123-abc",
+						userRole: "applicant",
+					}}
+					displayMode={isMultiPageFromToggle ? "multipage" : "singlepage"}
+					currentPage={currentPage}
+					onSubmit={handleFinalSubmit}
+					onPageChange={handlePageChange}
+				/>
+			</div>
+		</main>
 	);
 }

@@ -1,5 +1,6 @@
 // Core components and utilities for the new component-driven architecture
 export { DynamicRenderer } from "./core/DynamicRenderer";
+export { FormEngine, type FormEngineProps } from "./core/FormEngine";
 export { FormEngineProvider, type FormEngineContext } from "./core/FormEngineContext";
 export { createComponent } from "./core/componentFactory";
 export { getComponentDefinition, getAllComponentDefinitions } from "./core/componentRegistryService";
