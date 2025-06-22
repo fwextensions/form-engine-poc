@@ -153,8 +153,6 @@ createComponent<FormConfig, FormProps>({
 		// if renderChildren is too eager.
 		// For now, let's assume FormComponent receives the *React Elements* of its direct children.
 
-		// The `pageComponents` logic from `page.tsx` is effectively what `FormComponent` will do internally now.
-		// `DynamicRenderer` will render the `FormComponent` and pass its defined children (the page components) to it.
 		const renderedChildElements = renderChildren(children, context);
 
 		return {

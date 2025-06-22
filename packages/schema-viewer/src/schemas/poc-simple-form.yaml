@@ -102,6 +102,19 @@ children:
         type: checkbox
         label: Subscribe to newsletter
 
+      - id: subscriptionReason
+        type: text
+        label: "What topics are you interested in?"
+        description: "This field appears when you subscribe."
+        hidden: true
+        rules:
+          - when:
+              field: newsletterSubscription
+              is: true
+            then:
+              - set:
+                  hidden: false
+
       - id: contactMethod
         type: radiogroup
         label: Preferred Contact Method*

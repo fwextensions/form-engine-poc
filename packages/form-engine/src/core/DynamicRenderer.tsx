@@ -2,7 +2,7 @@
 import React from "react";
 import { ZodError } from "zod";
 import { getComponentDefinition } from "./componentRegistryService";
-import { FormEngineContext } from "./componentFactory";
+import { FormEngineContext } from "./FormEngineContext";
 import { evaluateCondition } from "../services/conditionLogic";
 
 // Default Error Component
@@ -40,9 +40,23 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, contex
 		}
 
 		// Use validateConfig to ensure transforms are applied before parsing
-		const validatedConfig = componentDef.validateConfig(config);
+		let validatedConfig = componentDef.validateConfig(config);
 
-		if (validatedConfig.condition && !evaluateCondition(validatedConfig.condition, context.formData, context)) {
+		// --- START: Merge dynamic props from rules engine ---
+		const componentId = (validatedConfig as any)?.id;
+
+		if (context?.dynamicProps?.[componentId]) {
+			const dynamicPropsForComponent = context.dynamicProps[componentId];
+
+			// Merge dynamic props. Dynamic props take precedence.
+			validatedConfig = {
+				...validatedConfig,
+				...dynamicPropsForComponent,
+			};
+		}
+		// --- END: Merge dynamic props ---
+
+		if (validatedConfig.hidden || validatedConfig.condition && !evaluateCondition(validatedConfig.condition, context.formData, context)) {
 //			console.log(`DynamicRenderer for '${componentType}': Condition not met, rendering null.`);
 			return null;
 		}

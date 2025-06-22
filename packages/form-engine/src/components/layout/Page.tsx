@@ -2,7 +2,8 @@
 import React from "react";
 import { z } from "zod";
 import { baseLayoutComponentConfigSchema } from "../baseSchemas";
-import { createComponent, FormEngineContext } from "../../core/componentFactory";
+import { createComponent } from "../../core/componentFactory";
+import { FormEngineContext } from "../../core/FormEngineContext";
 
 // 1. Define Configuration Schema
 export const PageConfigSchema = baseLayoutComponentConfigSchema.extend({
@@ -41,8 +42,8 @@ createComponent<PageConfig, PageProps>({
 	schema: PageConfigSchema,
 	component: PageComponent, // The actual React component to render
 	transformProps: (config: PageConfig, context: FormEngineContext, renderChildren): PageProps => {
-		const { id, type, condition, children, title, className, style, ...restOfConfig } = config;
-		
+		const { id, children, title, className, style } = config;
+
 		return {
 			id,
 			title,
