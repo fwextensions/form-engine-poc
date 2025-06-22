@@ -2,6 +2,7 @@ import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import type { FormConfig } from '../components/layout/Form';
 import { FormEngineProvider, type FormEngineContext } from './FormEngineContext';
 import { DynamicRenderer } from './DynamicRenderer';
+import { useFormRules } from '../hooks/useFormRules';
 
 export interface FormEngineProps {
   schema: FormConfig;
@@ -26,6 +27,8 @@ export function FormEngine({
 }: FormEngineProps) {
   const [formData, setFormData] = useState<Record<string, unknown>>(initialData);
   const [internalCurrentPageIndex, setInternalCurrentPageIndex] = useState(0);
+
+  const dynamicProps = useFormRules(schema, formData);
 
   const pageComponents = useMemo(() => {
     if (schema?.type === 'form' && Array.isArray(schema.children)) {
@@ -96,6 +99,7 @@ export function FormEngine({
     totalPages: isMultiPage ? totalPages : undefined,
     onNavigateNext: isMultiPage ? handleNextPage : undefined,
     onNavigatePrev: isMultiPage ? handlePrevPage : undefined,
+    dynamicProps, // Pass the dynamic props through the context
   };
 
   return (

@@ -13,6 +13,7 @@ export interface FormEngineContext {
 	totalPages?: number;
 	onNavigateNext?: () => void;
 	onNavigatePrev?: () => void;
+	dynamicProps?: Record<string, Record<string, any>>;
 }
 
 // Default context value - provides sensible defaults or stubs for when no provider is found
@@ -31,6 +32,7 @@ const defaultFormEngineContext: FormEngineContext = {
 			`onSubmit called with formData but no FormEngineContext.Provider was found.`, formData
 		);
 	},
+	dynamicProps: {},
 };
 
 // Create the actual React Context

@@ -23,10 +23,39 @@ export function commonFieldTransform(data: Record<string, any>)
     return mutableData;
 }
 
+// Defines the condition for a rule to be triggered.
+// e.g., when: { field: 'someFieldId', is: true }
+const ruleWhenSchema = z.object({
+	field: z.string().min(1),
+	is: z.any(), // The value to check against. Can be string, number, boolean, etc.
+});
+
+// Defines the 'set' action, which updates component properties.
+// e.g., set: { required: true, label: 'A new dynamic label' }
+const setActionSchema = z.object({
+	set: z.record(z.any()),
+});
+
+// Defines the 'log' action for debugging purposes.
+// e.g., log: ['User is applying, reason field is now required.']
+const logActionSchema = z.object({
+	log: z.array(z.string()),
+});
+
+// A rule can have different types of actions.
+const ruleActionSchema = z.union([setActionSchema, logActionSchema]);
+
+// A single rule object, containing the condition and the resulting actions.
+const ruleSchema = z.object({
+	when: ruleWhenSchema,
+	then: z.array(ruleActionSchema).min(1, "A rule must have at least one action in its 'then' clause."),
+});
+
 // Base ZodObject for all UI components (layouts, static, fields)
 export const baseComponentConfigSchema = z.object({
 	id: z.string().optional(), // Optional for non-interactive elements like static HTML or layout containers
 	type: z.string(), // Will be refined by specific component schemas (e.g., z.literal("text"))
+	rules: z.array(ruleSchema).optional(),
 	// Add other truly universal component properties here, e.g., conditional visibility
 });
 
@@ -39,6 +68,7 @@ export const baseFieldConfigSchema = baseComponentConfigSchema.extend({
 	label: z.string().optional(), // Label is optional at the schema level; transform will handle '*' if present
 	description: z.string().optional(),
 	disabled: z.boolean().optional(), // Add disabled property
+	hidden: z.boolean().optional(), // Add hidden property for conditional visibility
 	validation: z
 		.object({
 			required: z.boolean().optional(),
