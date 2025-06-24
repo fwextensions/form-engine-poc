@@ -75,7 +75,7 @@ export const FormComponent: React.FC<FormProps> = ({
 				firstFocusableElement.focus();
 			}
 		}
-	}, [currentPageIndex, currentChildren, isViewMode]);
+	}, [currentPageIndex, isViewMode]);
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
