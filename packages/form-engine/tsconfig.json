@@ -6,7 +6,6 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "rootDir": "./src",
     "moduleResolution": "node",
     "noEmit": false,
     "baseUrl": ".",
@@ -17,7 +16,8 @@
     }
   },
   "include": [
-    "src"
+    "src",
+    "scripts"
   ],
   "exclude": [
     "node_modules",
