@@ -1,22 +1,7 @@
-// packages/form-engine/src/core/componentRegistryService.ts
-
 // Option 1: Manual imports (triggers createComponent calls within each component file)
-// These imports will be for component definition modules (e.g., .tsx files that call createComponent).
-// They are commented out for now as the actual component files will be created/refactored in later steps.
+// This index file imports all the component definition modules (e.g., .tsx files that call createComponent).
 
-import "../components/fields/Text";
-import "../components/fields/Select";
-import "../components/fields/Textarea";
-import "../components/fields/Checkbox";
-import "../components/fields/RadioGroup";
-import "../components/fields/DatePicker";
-import "../components/fields/File";
-
-import "../components/layout/Page";
-import "../components/layout/Form";
-import "../components/layout/Html";
-
-// ... import all other component definition modules
+import "../components";
 
 // Option 2: Automated registration (see section VII of the spec)
 // import "./autoRegister";

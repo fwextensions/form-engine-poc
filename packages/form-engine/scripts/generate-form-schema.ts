@@ -3,17 +3,8 @@ import * as path from "path";
 import { z, ZodObject, ZodTypeAny } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
 import { getAllComponentDefinitions } from "../src/core/componentFactory";
-
 // Import all component definitions to ensure they are registered in the factory
-import "../src/components/fields/Checkbox";
-import "../src/components/fields/DatePicker";
-import "../src/components/fields/File";
-import "../src/components/fields/RadioGroup";
-import "../src/components/fields/Select";
-import "../src/components/fields/Text";
-import "../src/components/fields/Textarea";
-import "../src/components/layout/Html";
-import "../src/components/layout/Page";
+import "../src/components";
 
 console.log("Generating JSON schema from Zod types...");
 
