@@ -6,7 +6,7 @@ import { useFormRules } from '../hooks/useFormRules';
 
 export interface FormEngineProps {
   schema: FormConfig;
-  onSubmit: (formData: Record<string, unknown>) => void;
+  onSubmit?: (formData: Record<string, unknown>) => void;
   onDataChange?: (formData: Record<string, unknown>) => void;
   onPageChange?: (pageIndex: number, totalPages: number) => void;
   currentPage?: number; // For controlled component
@@ -83,7 +83,7 @@ export function FormEngine({
 
   const handleFinalSubmit = useCallback(
     (submittedData: Record<string, unknown>) => {
-      onSubmit(submittedData);
+      onSubmit?.(submittedData);
     },
     [onSubmit]
   );

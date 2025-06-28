@@ -6,10 +6,14 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=schema-viewer",
-    "build": "npm run build --workspace=schema-viewer",
-    "start": "npm run start --workspace=schema-viewer",
-    "lint": "npm run lint --workspace=schema-viewer",
+    "dev": "npm run dev --workspace=form-editor",
+    "build": "npm run build --workspace=form-editor",
+    "start": "npm run start --workspace=form-editor",
+    "lint": "npm run lint --workspace=form-editor",
+    "dev:schema-viewer": "npm run dev --workspace=schema-viewer",
+    "build:schema-viewer": "npm run build --workspace=schema-viewer",
+    "start:schema-viewer": "npm run start --workspace=schema-viewer",
+    "lint:schema-viewer": "npm run lint --workspace=schema-viewer",
     "generate-schema": "npm run generate-schema --workspace=form-engine",
     "lint:all": "npm run lint --workspaces --if-present",
     "build:all": "npm run build --workspaces --if-present"
