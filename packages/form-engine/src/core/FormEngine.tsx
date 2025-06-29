@@ -88,11 +88,12 @@ export function FormEngine({
     [onSubmit]
   );
 
+	const { formMode = "edit", ...restOfFormContext } = formContext;
   const formEngineContextValue: FormEngineContext = {
     formData,
     onDataChange: handleDataChange,
-    formContext,
-    formMode: 'edit',
+    formContext: restOfFormContext,
+    formMode: formMode as "edit" | "preview" | "view" | "print",
     onSubmit: handleFinalSubmit,
     isMultiPage,
     currentPageIndex: isMultiPage ? currentPageIndex : undefined,

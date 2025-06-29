@@ -4,7 +4,7 @@ export interface FormEngineContext {
 	formData: Record<string, any>;
 	onDataChange: (fieldName: string, value: any) => void;
 	formContext: Record<string, any>; // Arbitrary context from the host application
-	formMode: "edit" | "view" | "print"; // Current mode of the form
+	formMode: "edit" | "preview" | "view" | "print"; // Current mode of the form
 	onSubmit?: (formData: Record<string, any>) => void; // Handler for final form submission
 
 	// New properties for multi-page navigation

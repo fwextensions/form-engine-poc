@@ -57,6 +57,7 @@ export const FormComponent: React.FC<FormProps> = ({
 		formMode
 	} = context;
 	const isViewMode = formMode === "view";
+	const isEditMode = formMode === "edit";
 	let currentChildren = children;
 	const showSubmit = !isMultiPage && onFinalSubmit;
 	const showNext = isMultiPage && currentPageIndex !== undefined && totalPages !== undefined && currentPageIndex < totalPages - 1;
@@ -64,7 +65,7 @@ export const FormComponent: React.FC<FormProps> = ({
 	const showPrevious = isMultiPage && currentPageIndex !== undefined && currentPageIndex > 0 && onNavigatePrev;
 
 	useEffect(() => {
-		if (!isViewMode && pageContentRef.current) {
+		if (isEditMode && pageContentRef.current) {
 			// Find the first focusable element. This query can be adjusted as needed.
 			const focusableElements = pageContentRef.current.querySelectorAll<HTMLElement>(
 				'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])'
@@ -75,7 +76,7 @@ export const FormComponent: React.FC<FormProps> = ({
 				firstFocusableElement.focus();
 			}
 		}
-	}, [currentPageIndex, isViewMode]);
+	}, [currentPageIndex, isEditMode]);
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();

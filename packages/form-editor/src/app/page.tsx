@@ -37,6 +37,7 @@ export default function FormEditorPage() {
 	const [yamlInput, setYamlInput] = useState(defaultYaml.trim());
 	const [formConfig, setFormConfig] = useState<any>(null);
 	const [error, setError] = useState("");
+	let formOutput = null;
 
 	useEffect(() => {
 		if (!yamlInput) {
@@ -60,10 +61,23 @@ export default function FormEditorPage() {
 				setFormConfig(null);
 			}
 		} catch (e: any) {
+			// if an exception is thrown during YAML parsing, we'll show the error
+			// below, but also keep whatever formConfig we have so far, so the user
+			// doesn't completely lose the context
 			setError(e.message);
-			setFormConfig(null);
 		}
 	}, [yamlInput]);
+
+	if (formConfig) {
+		// set formMode to preview so that the form won't try to focus the first field
+		// every time it's edited
+		formOutput = <FormEngine schema={formConfig} formContext={{ formMode: "preview" }} />;
+
+		if (error) {
+			// FormEngine doesn't take a className prop yet, so wrap it to show an error state
+			formOutput = <div className="opacity-50">{formOutput}</div>;
+		}
+	}
 
 	return (
 		<PanelGroup direction="horizontal" className="h-screen w-screen">
@@ -82,7 +96,7 @@ export default function FormEditorPage() {
 			<Panel defaultSize={50}>
 				<div className="p-6 h-full overflow-auto">
 					{error && <pre className="error-message">{error}</pre>}
-					{formConfig && !error && <FormEngine schema={formConfig} />}
+					{formOutput}
 				</div>
 			</Panel>
 		</PanelGroup>
