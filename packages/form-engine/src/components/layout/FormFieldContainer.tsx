@@ -2,6 +2,13 @@
 import React from "react";
 import * as Form from "@radix-ui/react-form";
 
+// some gnarly Tailwind arbitrary variant selectors to add a red asterisk to
+// required fields inside FormFieldContainer
+const RequiredFieldStyles = `
+[&:has(input[required],select[required],textarea[required])_label]:after:content-['_*']
+[&:has(input[required],select[required],textarea[required])_label]:after:text-red-600
+`;
+
 // Props for FormFieldContainer
 export interface FormFieldContainerProps {
 	name: string;
@@ -26,7 +33,7 @@ export const FormFieldContainer: React.FC<FormFieldContainerProps> = ({
 	messages,
 }) => {
 	return (
-		<Form.Field name={name} className={`mb-4 ${className || ""}`} style={style}>
+		<Form.Field name={name} className={`mb-4 ${RequiredFieldStyles} ${className || ""}`} style={style}>
 			{label && (
 				<div className="flex items-baseline justify-between mb-1">
 					<Form.Label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700">

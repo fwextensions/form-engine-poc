@@ -33,10 +33,14 @@ function flattenComponents(components: FormComponentConfig[]): FormComponentConf
 	function traverse(comps: FormComponentConfig[])
 	{
 		for (const component of comps) {
-			allComponents.push(component);
+			// ignore nullish values, which can happen when there are parse errors in the
+			// schema.  possibly we'd want to throw or log an error here during runtime.
+			if (component) {
+				allComponents.push(component);
 
-			if (component.children) {
-				traverse(component.children);
+				if (component.children) {
+					traverse(component.children);
+				}
 			}
 		}
 	}
