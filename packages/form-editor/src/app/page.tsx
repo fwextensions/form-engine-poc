@@ -6,7 +6,7 @@ import Editor from "@monaco-editor/react";
 import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
 import { FormEngine, parseRootFormSchema } from "form-engine";
 import EditorToolbar from "@/components/EditorToolbar";
-import { getSavedForms, getFormContent, saveFormContent } from "@/lib/storage";
+import { getSavedForms, getFormContent, saveFormContent, deleteFormContent } from "@/lib/storage";
 import { defaultForm, newForm } from "./default-yaml";
 
 export default function FormEditorPage() {
@@ -103,6 +103,34 @@ export default function FormEditorPage() {
 		}
 	};
 
+	const handleDeleteForm = () => {
+		if (!selectedForm) return;
+
+		if (
+			window.confirm(
+				`Are you sure you want to delete the form "${selectedForm}"? This cannot be undone.`
+			)
+		) {
+			deleteFormContent(selectedForm);
+
+			const remainingForms = forms.filter((f) => f !== selectedForm);
+			setForms(remainingForms);
+
+			if (remainingForms.length > 0) {
+				const newSelectedForm = remainingForms[0];
+				setSelectedForm(newSelectedForm);
+				setYamlInput(getFormContent(newSelectedForm) || "");
+			} else {
+				// No forms left, create a new default one
+				const name = "sample-form";
+				saveFormContent(name, defaultForm);
+				setForms([name]);
+				setSelectedForm(name);
+				setYamlInput(defaultForm);
+			}
+		}
+	};
+
 	return (
 		<div className="flex flex-col h-screen w-screen">
 			<EditorToolbar
@@ -110,6 +138,7 @@ export default function FormEditorPage() {
 				selectedForm={selectedForm}
 				onNewForm={handleNewForm}
 				onSelectForm={handleSelectForm}
+				onDeleteForm={handleDeleteForm}
 			/>
 			<PanelGroup direction="horizontal" className="flex-grow">
 				<Panel defaultSize={50}>

@@ -5,6 +5,7 @@ interface EditorToolbarProps {
 	selectedForm: string;
 	onNewForm: () => void;
 	onSelectForm: (name: string) => void;
+	onDeleteForm: () => void;
 }
 
 const EditorToolbar = ({
@@ -12,6 +13,7 @@ const EditorToolbar = ({
 	selectedForm,
 	onNewForm,
 	onSelectForm,
+	onDeleteForm,
 }: EditorToolbarProps) => {
 	return (
 		<div className="bg-slate-100 border-b border-slate-300 p-2 flex items-center gap-4 w-full">
@@ -32,6 +34,12 @@ const EditorToolbar = ({
 					className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm"
 				>
 					New
+				</button>
+				<button
+					onClick={onDeleteForm}
+					className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm"
+				>
+					Delete
 				</button>
 			</div>
 		</div>

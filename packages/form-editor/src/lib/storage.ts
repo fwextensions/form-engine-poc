@@ -40,3 +40,11 @@ export function saveFormContent(
 
 	localStorage.setItem(getFormKey(name), yaml);
 }
+
+export function deleteFormContent(name: string) {
+	if (typeof window === "undefined") {
+		return;
+	}
+
+	localStorage.removeItem(getFormKey(name));
+}
