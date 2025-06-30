@@ -1,5 +1,5 @@
-title: PoC Multi-Step Form
-id: poc
+title: Multi-Step Form Example
+id: example
 type: form
 # display: multipage
 children:
@@ -14,16 +14,6 @@ children:
           <h3>Hello from Static HTML!</h3>
           <p>This content is rendered via <strong>dangerouslySetInnerHTML</strong>
           from the YAML schema. It supports <em>basic</em> HTML tags.  booyah</p>
-
-#      - type: html
-#        tag: br
-#
-#      - type: html
-#        className: text-red-500
-#        tag: hr
-#
-#      - type: html
-#        tag: br
 
       - id: firstName
         type: text
