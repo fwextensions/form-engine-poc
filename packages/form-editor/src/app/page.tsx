@@ -15,6 +15,9 @@ export default function FormEditorPage() {
 	const [yamlInput, setYamlInput] = useState("");
 	const [formOutput, setFormOutput] = useState<React.ReactNode>(null);
 	const [error, setError] = useState<string | null>(null);
+	const [currentPage, setCurrentPage] = useState(0);
+	const [totalPages, setTotalPages] = useState(1);
+	const [currentPageTitle, setCurrentPageTitle] = useState("");
 
 	// Load forms and select the first one on initial render
 	useEffect(() => {
@@ -54,13 +57,39 @@ export default function FormEditorPage() {
 
 		let output = formOutput;
 		let error = "";
+		let newCurrentPage = currentPage;
+		let newTotalPages = totalPages;
+		let newCurrentPageTitle = currentPageTitle;
 
 		try {
 			const parsedYaml = yaml.load(yamlInput);
 			const { config, errors } = parseRootFormSchema(parsedYaml);
 
 			if (config) {
-				output = <FormEngine schema={config} formContext={{ formMode: "preview" }} />;
+				const pages = Array.isArray(config.children)
+					? config.children.filter((c: { type: string; }) => c?.type === "page")
+					: [];
+
+				newTotalPages = pages.length > 0 ? pages.length : 1;
+				setTotalPages(newTotalPages);
+
+				if (newCurrentPage >= newTotalPages) {
+					newCurrentPage = newTotalPages - 1;
+				}
+
+				if (pages.length > 0 && pages[newCurrentPage]) {
+					newCurrentPageTitle = pages[newCurrentPage].title || `Page ${newCurrentPage + 1}`;
+				} else {
+					newCurrentPageTitle = config.label || config.name || "Form";
+				}
+
+				output =
+					<FormEngine
+						schema={config}
+						formContext={{ formMode: "preview" }}
+						currentPage={newCurrentPage}
+						onPageChange={setCurrentPage}
+					/>;
 			} else if (errors) {
 				error = JSON.stringify(errors.flatten(), null, 2);
 				output = null;
@@ -77,7 +106,10 @@ export default function FormEditorPage() {
 
 		setFormOutput(output);
 		setError(error);
-	}, [yamlInput]);
+		setCurrentPage(newCurrentPage);
+		setTotalPages(newTotalPages);
+		setCurrentPageTitle(newCurrentPageTitle);
+	}, [yamlInput, currentPage]);
 
 	const handleNewForm = () => {
 		const name = prompt("Enter new form name:");
@@ -131,6 +163,10 @@ export default function FormEditorPage() {
 		}
 	};
 
+	const handlePrevPage = () => setCurrentPage((p) => Math.max(0, p - 1));
+
+	const handleNextPage = () => setCurrentPage((p) => Math.min(totalPages - 1, p + 1));
+
 	return (
 		<div className="flex flex-col h-screen w-screen">
 			<EditorToolbar
@@ -139,6 +175,11 @@ export default function FormEditorPage() {
 				onNewForm={handleNewForm}
 				onSelectForm={handleSelectForm}
 				onDeleteForm={handleDeleteForm}
+				currentPage={currentPage}
+				totalPages={totalPages}
+				pageTitle={currentPageTitle}
+				onPrevPage={handlePrevPage}
+				onNextPage={handleNextPage}
 			/>
 			<PanelGroup direction="horizontal" className="flex-grow">
 				<Panel defaultSize={50}>

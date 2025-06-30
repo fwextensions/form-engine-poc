@@ -5,7 +5,7 @@ name: Sample Form
 children:
   - type: page
     id: page1
-    name: Page 1
+    title: Page 1
     children:
       - type: text
         id: first_name
@@ -32,7 +32,7 @@ name: ${name}
 children:
   - type: page
     id: page1
-    name: Page 1
+    title: Page 1
     children:
       - type: text
         id: name
