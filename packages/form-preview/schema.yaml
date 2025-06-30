@@ -1,0 +1,132 @@
+title: PoC Multi-Step Form
+id: poc
+type: form
+# display: multipage
+children:
+  - id: pagePersonalInfo
+    type: page
+    title: Personal Information
+    children:
+      - type: html
+        tag: div
+        className: mb-4 p-4 bg-gray-100 rounded-md shadow
+        content: |
+          <h3>Hello from Static HTML!</h3>
+          <p>This content is rendered via <strong>dangerouslySetInnerHTML</strong>
+          from the YAML schema. It supports <em>basic</em> HTML tags.  booyah</p>
+
+#      - type: html
+#        tag: br
+#
+#      - type: html
+#        className: text-red-500
+#        tag: hr
+#
+#      - type: html
+#        tag: br
+
+      - id: firstName
+        type: text
+        label: First Name*
+
+      - id: lastName
+        type: text
+        label: Last Name*
+
+      - id: birthDate
+        type: date
+        label: Date of Birth
+
+      - id: email
+        type: email
+        label: Email Address*
+        placeholder: user@example.com
+
+      - id: conditionalExtraInfo
+        type: text
+        label: Conditional Extra Info (if First Name is filled)
+        condition:
+          "!=": [{ "var": "data.firstName" }, ""]
+
+      - id: listingSpecificQuestion
+        type: text
+        label: Listing Specific Question (for listing-123-abc)
+        condition:
+          "===": [{ "var": "context.listingId" }, "listing-123-abc"]
+
+  - id: pageAddressInfo
+    type: page
+    title: Address Information
+    children:
+      - id: streetAddress
+        type: text
+        label: Street Address*
+        disabled: true
+
+      - id: city
+        type: text
+        label: City*
+
+      - type: html
+        id: cityWarning
+        content: |
+          <div style="padding: 10px; margin-top: 5px; border: 1px solid #f0ad4e; background-color: #fcf8e3; color: #8a6d3b; border-radius: 4px;">
+            <strong>Warning:</strong> Services are primarily available for residents of San Francisco.
+          </div>
+        condition:
+          and:
+            - '!==': [{ var: data.city }, ""]
+            - '!==': [{ var: data.city }, "San Francisco"]
+
+      - id: country
+        type: select
+        label: Country*
+        options:
+          - value: "us"
+            label: "United States"
+          - value: "ca"
+            label: "Canada"
+          - value: "gb"
+            label: "United Kingdom"
+
+      - id: listingSpecificQuestion
+        type: text
+        label: Listing Specific Question (for listing-123-abc)
+        condition:
+          "===": [{ "var": "context.listingId" }, "listing-123-abc"]
+
+  - id: pagePreferences
+    type: page
+    title: Preferences
+    children:
+      - id: newsletterSubscription
+        type: checkbox
+        label: Subscribe to newsletter
+
+      - id: subscriptionReason
+        type: text
+        label: "What topics are you interested in?"
+        description: "This field appears when you subscribe."
+        hidden: true
+        rules:
+          - when:
+              field: newsletterSubscription
+              is: true
+            then:
+              - set:
+                  hidden: false
+
+      - id: contactMethod
+        type: radiogroup
+        label: Preferred Contact Method*
+        options:
+          - value: "email"
+            label: "Email"
+          - value: "phone"
+            label: "Phone"
+
+      - id: comments
+        type: textarea
+        label: Comments
+        placeholder: Enter any comments...
+        rows: 4

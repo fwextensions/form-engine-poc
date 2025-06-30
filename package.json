@@ -14,6 +14,10 @@
     "build:schema-viewer": "npm run build --workspace=schema-viewer",
     "start:schema-viewer": "npm run start --workspace=schema-viewer",
     "lint:schema-viewer": "npm run lint --workspace=schema-viewer",
+    "dev:form-preview": "npm run dev --workspace=form-preview",
+    "build:form-preview": "npm run build --workspace=form-preview",
+    "start:form-preview": "npm run start --workspace=form-preview",
+    "lint:form-preview": "npm run lint --workspace=form-preview",
     "generate-schema": "npm run generate-schema --workspace=form-engine",
     "lint:all": "npm run lint --workspaces --if-present",
     "build:all": "npm run build --workspaces --if-present"
