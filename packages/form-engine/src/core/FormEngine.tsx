@@ -32,7 +32,7 @@ export function FormEngine({
 
   const pageComponents = useMemo(() => {
     if (schema?.type === 'form' && Array.isArray(schema.children)) {
-      return schema.children.filter((child) => child.type === 'page');
+      return schema.children.filter((child) => child?.type === 'page');
     }
     return [];
   }, [schema]);
@@ -72,19 +72,21 @@ export function FormEngine({
     }
   };
 
-  const handleNextPage = useCallback(() => {
-    // TODO: Add validation logic before navigating
-    handleNavigate(currentPageIndex + 1);
-  }, [currentPageIndex, totalPages, isPageControlled, onPageChange]);
+  const handleNextPage = useCallback(
+		() => {
+			// TODO: Add validation logic before navigating
+			handleNavigate(currentPageIndex + 1);
+		},
+		[currentPageIndex, totalPages, isPageControlled, onPageChange]
+	);
 
-  const handlePrevPage = useCallback(() => {
-    handleNavigate(currentPageIndex - 1);
-  }, [currentPageIndex, isPageControlled, onPageChange]);
+  const handlePrevPage = useCallback(
+		() => handleNavigate(currentPageIndex - 1),
+		[currentPageIndex, isPageControlled, onPageChange]
+	);
 
   const handleFinalSubmit = useCallback(
-    (submittedData: Record<string, unknown>) => {
-      onSubmit?.(submittedData);
-    },
+		(submittedData: Record<string, unknown>) => onSubmit?.(submittedData),
     [onSubmit]
   );
 
