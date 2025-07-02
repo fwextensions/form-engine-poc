@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import * as z from "zod";
-import { getComponentDefinition } from "../core/componentFactory";
+import { getComponentDefinition } from "./componentFactory";
 
 // This is the schema for the raw input to parseRootFormSchema
 // It expects at least a 'type' field to determine the root component.

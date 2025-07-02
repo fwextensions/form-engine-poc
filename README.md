@@ -41,6 +41,8 @@ npm run dev:schema-viewer    # Demo application
 
 ## ✨ Core Features
 
+See [DeepWiki](https://deepwiki.com/fwextensions/form-engine-poc/1-overview) for more details about the package's architecture.
+
 ### Schema-Driven Forms
 - **YAML Configuration**: Declarative form definitions
 - **Component Factory**: Dynamic component registration via [`createComponent()`](/packages/form-engine/src/core/componentFactory.ts#L35-66)

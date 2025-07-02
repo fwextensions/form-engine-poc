@@ -1,6 +1,6 @@
 import React, { JSX } from "react";
 import { z } from "zod";
-import { baseComponentConfigSchema } from "../baseSchemas";
+import { baseComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 
 export const HtmlConfigSchema = baseComponentConfigSchema.extend({

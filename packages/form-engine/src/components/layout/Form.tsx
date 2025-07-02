@@ -2,9 +2,9 @@
 import React, { useEffect, useRef } from "react";
 import { z } from "zod";
 import { Submit, Root } from "@radix-ui/react-form";
-import { baseLayoutComponentConfigSchema } from "../baseSchemas";
+import { baseLayoutComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
-import { FormEngineContext, useFormEngine } from "../../core/FormEngineContext";
+import { FormEngineContext, useFormEngine } from "../core/FormEngineContext";
 
 // 1. Define Configuration Schema
 export const FormConfigSchema = baseLayoutComponentConfigSchema.extend({

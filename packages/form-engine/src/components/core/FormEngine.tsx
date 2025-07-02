@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import type { FormConfig } from '../components/layout/Form';
+import type { FormConfig } from '../layout/Form';
 import { FormEngineProvider, type FormEngineContext } from './FormEngineContext';
 import { DynamicRenderer } from './DynamicRenderer';
-import { useFormRules } from '../hooks/useFormRules';
+import { useFormRules } from '../../hooks/useFormRules';
 
 export interface FormEngineProps {
   schema: FormConfig;

@@ -1,9 +1,9 @@
 // packages/form-engine/src/components/layout/Page.tsx
 import React from "react";
 import { z } from "zod";
-import { baseLayoutComponentConfigSchema } from "../baseSchemas";
+import { baseLayoutComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
-import { FormEngineContext } from "../../core/FormEngineContext";
+import { FormEngineContext } from "../core/FormEngineContext";
 
 // 1. Define Configuration Schema
 export const PageConfigSchema = baseLayoutComponentConfigSchema.extend({

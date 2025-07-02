@@ -5,7 +5,7 @@ import { Control } from "@radix-ui/react-form";
 import {
 	baseFieldConfigSchema,
 	commonFieldTransform,
-} from "../baseSchemas";
+} from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 

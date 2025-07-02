@@ -1,9 +1,9 @@
 // packages/form-engine/src/core/DynamicRenderer.tsx
 import React from "react";
 import { ZodError } from "zod";
-import { getComponentDefinition } from "./componentFactory";
+import { getComponentDefinition } from "../../core/componentFactory";
 import { FormEngineContext } from "./FormEngineContext";
-import { evaluateCondition } from "../services/conditionLogic";
+import { evaluateCondition } from "../../core/conditionLogic";
 
 // Default Error Component
 const DefaultErrorComponent: React.FC<{ error: Error; config: unknown }> = ({ error, config }) => (

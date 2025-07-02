@@ -5,7 +5,7 @@ import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
 import {
 	baseFieldConfigSchema,
 	commonFieldTransform,
-} from "../baseSchemas";
+} from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 

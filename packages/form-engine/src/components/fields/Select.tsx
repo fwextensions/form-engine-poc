@@ -6,7 +6,7 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons
 import {
 	baseFieldConfigSchema,
 	commonFieldTransform,
-} from "../baseSchemas";
+} from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
 
