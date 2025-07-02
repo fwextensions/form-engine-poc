@@ -1,6 +1,6 @@
 import { z } from "zod";
 import React from "react";
-import { FormEngineContext } from "../components/core/FormEngineContext";
+import { FormEngineContext } from "../engine/FormEngineContext";
 
 export interface ComponentDefinition<ConfigType = any, PropsType = any> {
 	type: string;

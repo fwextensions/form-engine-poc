@@ -3,7 +3,7 @@ import React from "react";
 import { z } from "zod";
 import { baseLayoutComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
-import { FormEngineContext } from "../core/FormEngineContext";
+import { FormEngineContext } from "../../engine/FormEngineContext";
 
 // 1. Define Configuration Schema
 export const PageConfigSchema = baseLayoutComponentConfigSchema.extend({
