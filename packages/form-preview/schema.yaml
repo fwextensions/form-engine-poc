@@ -13,7 +13,7 @@ children:
         content: |
           <h3>Hello from Static HTML!</h3>
           <p>This content is rendered via <strong>dangerouslySetInnerHTML</strong>
-          from the YAML schema. It supports <em>basic</em> HTML tags.  booyah</p>
+          from the YAML schema. It supports <em>basic</em> HTML tags.</p>
 
       - id: firstName
         type: text

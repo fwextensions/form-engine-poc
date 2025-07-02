@@ -14,6 +14,30 @@ children:
         type: html
         content: Language selection functionality - not supported by current schema
 
+  - id: what-to-expect
+    type: page
+    title: Here's what to expect for this application.
+    children:
+      - type: html
+        content: |
+          <style>div > p { margin-bottom: 1em }</style>
+          <p>
+            First we'll ask about you and the people you plan to live with. Then, we'll ask about your income. Finally, we'll see if you qualify for any affordable housing lottery preference, and if so, ask you to upload proof of those preferences.
+          </p>
+          <p>
+            <a target="_blank" href="/document-checklist" aria-label="Opens in new window">See our checklist</a>
+            for information about required documents and claiming preferences.
+          </p>
+          <p>
+            You may also start the application now and save it and upload documents later.
+          </p>
+          <p>
+            Please be aware that each household member can only appear on one application for each listing. If your application contains household members that are on other applications for this listing, all of them will be disqualified.
+          </p>
+          <p>
+            Any fraudulent statements will cause your application to be removed from the lottery.
+          </p>
+
   - id: you-section
     type: page
     title: You

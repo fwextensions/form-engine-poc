@@ -1,4 +1,6 @@
-// import all the component modules so they'll register themselves with the registry
+// import all the component modules so they'll register themselves and be
+// available for rendering, but don't export them, as they're not intended for
+// use outside the form engine
 import "./components";
 
 export { FormEngine, type FormEngineProps } from "./components/core/FormEngine";

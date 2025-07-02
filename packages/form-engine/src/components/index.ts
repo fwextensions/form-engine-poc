@@ -5,6 +5,7 @@ export * from "./fields/Checkbox";
 export * from "./fields/RadioGroup";
 export * from "./fields/DatePicker";
 export * from "./fields/File";
+export * from "./fields/AddressValidation/AddressValidation";
 export * from "./layout/Page";
 export * from "./layout/Form";
 export * from "./layout/Html";
