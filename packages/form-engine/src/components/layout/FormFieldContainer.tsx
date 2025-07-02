@@ -3,10 +3,11 @@ import React from "react";
 import * as Form from "@radix-ui/react-form";
 
 // some gnarly Tailwind arbitrary variant selectors to add a red asterisk to
-// required fields inside FormFieldContainer
+// required fields inside FormFieldContainer, but only for the first label, so
+// that it doesn't also match labels for things like radio buttons
 const RequiredFieldStyles = `
-[&:has(input[required],select[required],textarea[required])_label]:after:content-['_*']
-[&:has(input[required],select[required],textarea[required])_label]:after:text-red-600
+[&:has(input[required],select[required],textarea[required])>*:first-child>label]:after:content-['_*']
+[&:has(input[required],select[required],textarea[required])>*:first-child>label]:after:text-red-600
 `;
 
 // Props for FormFieldContainer

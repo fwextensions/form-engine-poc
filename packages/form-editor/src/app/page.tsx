@@ -189,7 +189,11 @@ export default function FormEditorPage() {
 							language="yaml"
 							value={yamlInput}
 							onChange={(value) => setYamlInput(value || "")}
-							options={{ minimap: { enabled: false }, automaticLayout: true }}
+							options={{
+								minimap: { enabled: false },
+								scrollBeyondLastLine: false,
+								automaticLayout: true
+							}}
 						/>
 					</div>
 				</Panel>

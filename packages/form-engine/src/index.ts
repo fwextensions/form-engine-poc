@@ -1,7 +1,7 @@
-// Core components and utilities for the new component-driven architecture
-export { DynamicRenderer } from "./core/DynamicRenderer";
+// import all the component modules so they'll register themselves with the registry
+import "./components";
+
 export { FormEngine, type FormEngineProps } from "./core/FormEngine";
-export { createComponent } from "./core/componentFactory";
-export { getComponentDefinition, getAllComponentDefinitions } from "./core/componentRegistryService";
+export { createComponent, getComponentDefinition, getAllComponentDefinitions } from "./core/componentFactory";
 export type { FormConfig } from "./components/layout/Form";
 export { parseRootFormSchema } from "./services/schemaParser";

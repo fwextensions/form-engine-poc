@@ -1,4 +1,3 @@
-// packages/form-engine/src/hooks/useFormRules.ts
 import { useMemo } from "react";
 import type { FormConfig as FormSchema } from "../components/layout/Form";
 
@@ -10,7 +9,7 @@ import type { FormConfig as FormSchema } from "../components/layout/Form";
 interface FormComponentConfig {
 	id?: string;
 	rules?: {
-		when: { field: string; is: any };
+		when: { field: string; is: any }[];
 		then: ({ set: Record<string, any> } | { log: string[] })[];
 	}[];
 	children?: FormComponentConfig[];
@@ -70,11 +69,30 @@ export function useFormRules(
 			}
 
 			for (const rule of component.rules) {
+				// when a schema is being edited, it may not be fully formed.  if
+				// the rule doesn't have the properties we expect, skip it
+				if (
+					!rule ||
+					typeof rule !== "object" ||
+					!("when" in rule) ||
+					!("then" in rule)
+				) {
+					continue;
+				}
+
 				const { when, then } = rule;
-				const actualValue = formData[when.field];
+
+				// normalize `when` to always be an array for consistent processing
+				const conditions = Array.isArray(when) ? when : [when];
+				const isMet = conditions.every((condition) => {
+					const actualValue = formData[condition.field];
+
+					// Check if the condition is met
+					return actualValue === condition.is;
+				});
 
 				// Check if the condition is met
-				if (actualValue === when.is) {
+				if (isMet) {
 					// Process the 'then' actions
 					for (const action of then) {
 						if ("set" in action) {

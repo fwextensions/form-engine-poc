@@ -100,7 +100,7 @@ export const FormComponent: React.FC<FormProps> = ({
 	return (
 		<Root
 			{...rest} // Passes through other HTML attributes like id
-			className={`form-root space-y-6 ${className || ''}`}
+			className={`space-y-6 ${className || ''}`}
 			style={style}
 			onSubmit={handleSubmit}
 		>
@@ -109,7 +109,7 @@ export const FormComponent: React.FC<FormProps> = ({
 			</div>
 
 			{(!isViewMode && (showSubmit || showNext || showFinalSubmitMultiPage || showPrevious)) && (
-				<div className={`form-actions mt-6 pt-4 border-t border-gray-200 flex ${showPrevious ? 'justify-between' : 'justify-end'} items-center ${config.buttonsClassName || ''}`}>
+				<div className={`mt-6 pt-4 border-t border-gray-200 flex ${showPrevious ? 'justify-between' : 'justify-end'} items-center ${config.buttonsClassName || ''}`}>
 					{showPrevious && (
 						<button
 							type="button" // Important: not a submit type

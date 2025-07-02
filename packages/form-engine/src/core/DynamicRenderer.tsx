@@ -1,7 +1,7 @@
 // packages/form-engine/src/core/DynamicRenderer.tsx
 import React from "react";
 import { ZodError } from "zod";
-import { getComponentDefinition } from "./componentRegistryService";
+import { getComponentDefinition } from "./componentFactory";
 import { FormEngineContext } from "./FormEngineContext";
 import { evaluateCondition } from "../services/conditionLogic";
 

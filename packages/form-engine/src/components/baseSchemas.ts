@@ -47,7 +47,7 @@ const ruleActionSchema = z.union([setActionSchema, logActionSchema]);
 
 // A single rule object, containing the condition and the resulting actions.
 const ruleSchema = z.object({
-	when: ruleWhenSchema,
+	when: z.union([ruleWhenSchema, z.array(ruleWhenSchema)]),
 	then: z.array(ruleActionSchema).min(1, "A rule must have at least one action in its 'then' clause."),
 });
 
