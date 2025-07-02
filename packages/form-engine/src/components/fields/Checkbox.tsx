@@ -16,9 +16,7 @@ import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormField
 // An additional 'checkboxLabel' can be used for text right next to the checkbox itself.
 export const CheckboxConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("checkbox"),
-//	checkboxLabel: z.string().optional(), // Label specific to the checkbox input itself
 	defaultValue: z.boolean().optional(),
-	// 'validation.required' for a checkbox usually means it *must* be checked.
 });
 export type CheckboxConfig = z.infer<typeof CheckboxConfigSchema>;
 
@@ -26,7 +24,6 @@ export type CheckboxConfig = z.infer<typeof CheckboxConfigSchema>;
 export interface CheckboxProps {
 	containerProps: Omit<FormFieldContainerProps, "children" | "htmlFor">; // htmlFor is handled internally
 	checkboxRootProps: CheckboxPrimitive.CheckboxProps & { id: string; label?: string; required?: boolean };
-//	checkboxLabel?: string;
 }
 
 // 3. Create the React Component
@@ -86,9 +83,7 @@ createComponent<CheckboxConfig, CheckboxProps>({
 		return {
 			containerProps: {
 				name: id,
-//				label, // This is the main field label
 				description,
-				// No htmlFor here, FormFieldContainer will use the one from CheckboxRootProps.id if provided
 			},
 			checkboxRootProps: {
 				id,
@@ -99,7 +94,6 @@ createComponent<CheckboxConfig, CheckboxProps>({
 				disabled: context.formMode === "view",
 				required: validation?.required,
 			},
-//			checkboxLabel: label
 		};
 	},
 });
