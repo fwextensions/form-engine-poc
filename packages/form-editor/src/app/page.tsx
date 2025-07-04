@@ -1,23 +1,35 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import yaml from "js-yaml";
 import Editor from "@monaco-editor/react";
 import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
-import { FormEngine, parseRootFormSchema } from "form-engine";
+import {
+	FormEngine,
+	parseRootFormSchema,
+	type FormConfig,
+	type FormEngineHandle,
+	type FormMeta,
+} from "form-engine";
 import EditorToolbar from "@/components/EditorToolbar";
-import { getSavedForms, getFormContent, saveFormContent, deleteFormContent } from "@/lib/storage";
+import {
+	getSavedForms,
+	getFormContent,
+	saveFormContent,
+	deleteFormContent,
+} from "@/lib/storage";
 import { defaultForm, newForm } from "./default-yaml";
 
 export default function FormEditorPage() {
 	const [forms, setForms] = useState<string[]>([]);
 	const [selectedForm, setSelectedForm] = useState<string>("");
 	const [yamlInput, setYamlInput] = useState("");
-	const [formOutput, setFormOutput] = useState<React.ReactNode>(null);
+	const [formConfig, setFormConfig] = useState<FormConfig | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState(0);
-	const [totalPages, setTotalPages] = useState(1);
-	const [currentPageTitle, setCurrentPageTitle] = useState("");
+	const [formMeta, setFormMeta] = useState<FormMeta | null>(null);
+
+	const formRef = useRef<FormEngineHandle>(null);
 
 	// Load forms and select the first one on initial render
 	useEffect(() => {
@@ -47,69 +59,40 @@ export default function FormEditorPage() {
 		}
 	}, [yamlInput, selectedForm]);
 
+	// Parse YAML and update form config
 	useEffect(() => {
 		if (!yamlInput) {
-			setFormOutput(null);
+			setFormConfig(null);
 			setError("");
 
 			return;
 		}
-
-		let output = formOutput;
-		let error = "";
-		let newCurrentPage = currentPage;
-		let newTotalPages = totalPages;
-		let newCurrentPageTitle = currentPageTitle;
 
 		try {
 			const parsedYaml = yaml.load(yamlInput);
 			const { config, errors } = parseRootFormSchema(parsedYaml);
 
 			if (config) {
-				const pages = Array.isArray(config.children)
-					? config.children.filter((c: { type: string; }) => c?.type === "page")
-					: [];
-
-				newTotalPages = pages.length > 0 ? pages.length : 1;
-				setTotalPages(newTotalPages);
-
-				if (newCurrentPage >= newTotalPages) {
-					newCurrentPage = newTotalPages - 1;
-				}
-
-				if (pages.length > 0 && pages[newCurrentPage]) {
-					newCurrentPageTitle = pages[newCurrentPage].title || `Page ${newCurrentPage + 1}`;
-				} else {
-					newCurrentPageTitle = config.label || config.name || "Form";
-				}
-
-				output =
-					<FormEngine
-						schema={config}
-						formContext={{ formMode: "preview" }}
-						currentPage={newCurrentPage}
-						onPageChange={setCurrentPage}
-					/>;
+				setFormConfig(config);
+				setError(null);
 			} else if (errors) {
-				error = JSON.stringify(errors.flatten(), null, 2);
-				output = null;
+				setError(JSON.stringify(errors.flatten(), null, 2));
 			} else {
-				error = "An unknown parsing error occurred.";
-				output = null;
+				setError("An unknown parsing error occurred.");
 			}
 		} catch (e: any) {
 			// if an exception is thrown during YAML parsing, we'll show the error
 			// below, but also keep whatever formConfig we have so far, so the user
 			// doesn't completely lose the context
-			error = e.message;
+			setError(e.message);
 		}
+	}, [yamlInput]);
 
-		setFormOutput(output);
-		setError(error);
-		setCurrentPage(newCurrentPage);
-		setTotalPages(newTotalPages);
-		setCurrentPageTitle(newCurrentPageTitle);
-	}, [yamlInput, currentPage]);
+	// Reset page when selected form changes
+	useEffect(() => {
+		setCurrentPage(0);
+		setFormMeta(null);
+	}, [selectedForm]);
 
 	const handleNewForm = () => {
 		const name = prompt("Enter new form name:");
@@ -140,7 +123,7 @@ export default function FormEditorPage() {
 
 		if (
 			window.confirm(
-				`Are you sure you want to delete the form "${selectedForm}"? This cannot be undone.`
+				`Are you sure you want to delete the form "${selectedForm}"? This cannot be undone.`,
 			)
 		) {
 			deleteFormContent(selectedForm);
@@ -163,9 +146,23 @@ export default function FormEditorPage() {
 		}
 	};
 
-	const handlePrevPage = () => setCurrentPage((p) => Math.max(0, p - 1));
+	const handlePrevPage = () => formRef.current?.goToPage(currentPage - 1);
+	const handleNextPage = () => formRef.current?.goToPage(currentPage + 1);
 
-	const handleNextPage = () => setCurrentPage((p) => Math.min(totalPages - 1, p + 1));
+	const formOutput = formConfig ? (
+		<FormEngine
+			ref={formRef}
+			schema={formConfig}
+			formContext={{ formMode: "preview" }}
+			currentPage={currentPage}
+			onPageChange={setCurrentPage}
+			onMetaChange={setFormMeta}
+		/>
+	) : null;
+
+	const totalPages = formMeta?.pageCount ?? 0;
+	const pageTitle =
+		formMeta?.pageTitles[currentPage] ?? formMeta?.formTitle ?? "Form";
 
 	return (
 		<div className="flex flex-col h-screen w-screen">
@@ -177,7 +174,7 @@ export default function FormEditorPage() {
 				onDeleteForm={handleDeleteForm}
 				currentPage={currentPage}
 				totalPages={totalPages}
-				pageTitle={currentPageTitle}
+				pageTitle={pageTitle}
 				onPrevPage={handlePrevPage}
 				onNextPage={handleNextPage}
 			/>
@@ -192,7 +189,7 @@ export default function FormEditorPage() {
 							options={{
 								minimap: { enabled: false },
 								scrollBeyondLastLine: false,
-								automaticLayout: true
+								automaticLayout: true,
 							}}
 						/>
 					</div>
@@ -201,9 +198,11 @@ export default function FormEditorPage() {
 				<Panel defaultSize={50}>
 					<div className="p-6 h-full overflow-auto">
 						{error && <pre className="error-message">{error}</pre>}
-						{error && formOutput
-							? <div className="opacity-50">{formOutput}</div>
-							: formOutput}
+						{error && formOutput ? (
+							<div className="opacity-50">{formOutput}</div>
+						) : (
+							formOutput
+						)}
 					</div>
 				</Panel>
 			</PanelGroup>

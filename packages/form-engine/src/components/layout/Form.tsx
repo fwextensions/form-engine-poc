@@ -9,6 +9,7 @@ import { FormEngineContext, useFormEngine } from "../../engine/FormEngineContext
 // 1. Define Configuration Schema
 export const FormConfigSchema = baseLayoutComponentConfigSchema.extend({
 	type: z.literal("form"),
+	title: z.string().optional(),
 	display: z.enum(["multipage", "singlepage"]).optional(),
 	// submitButtonText will be used for the final submit in single-page, or last page of multi-page
 	submitButtonText: z.string().optional().default("Submit"),
