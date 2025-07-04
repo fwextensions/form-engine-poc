@@ -7,5 +7,5 @@
 			"form-engine": ["../form-engine/src"]
 		}
 	},
-	"include": ["src", "schema.yaml"]
+	"include": ["src"]
 }
