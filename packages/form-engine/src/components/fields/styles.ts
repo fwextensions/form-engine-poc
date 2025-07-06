@@ -1,21 +1,21 @@
 // Common form field styles
 export const inputStyles = `
-  w-full px-3 py-2
-  bg-white border border-gray-300 rounded-md
-  text-gray-900 placeholder-gray-400
-  focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
-  disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
-  transition-colors duration-200
+	w-full px-3 py-2
+	bg-white border border-gray-300 rounded-md
+	text-gray-900 placeholder-gray-400
+	focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500
+	disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed
+	transition-colors duration-200
 `;
 
 // Label styles
 export const labelStyles = `
-  block text-sm font-semibold text-gray-700 mb-1.5
+	block text-sm font-semibold text-gray-700 mb-1.5
 `;
 
 // Form message styles
 export const messageStyles = `
-  text-sm text-red-500 mt-1.5
+	text-sm text-red-500 mt-1.5
 `;
 
 // Common spacing and layout

@@ -4,23 +4,23 @@ import { z } from "zod";
 // Shared transform function for common field config preprocessing (e.g., label asterisk)
 export function commonFieldTransform(data: Record<string, any>)
 {
-    // It's crucial to work on a copy to avoid mutating the original object from the form config,
-    // especially if the form config is memoized or part of React state.
-    const mutableData = { ...data };
+		// It's crucial to work on a copy to avoid mutating the original object from the form config,
+		// especially if the form config is memoized or part of React state.
+		const mutableData = { ...data };
 
-    if (mutableData.label && typeof mutableData.label === "string") {
-        const trimmedLabel = mutableData.label.trim();
-        if (trimmedLabel.endsWith("*")) {
-            mutableData.label = trimmedLabel.slice(0, -1).trim();
-            // Ensure validation object exists and merge
-            mutableData.validation = {
-                ...(mutableData.validation || {}),
-                required: true,
-            };
-        }
-    }
+		if (mutableData.label && typeof mutableData.label === "string") {
+				const trimmedLabel = mutableData.label.trim();
+				if (trimmedLabel.endsWith("*")) {
+						mutableData.label = trimmedLabel.slice(0, -1).trim();
+						// Ensure validation object exists and merge
+						mutableData.validation = {
+								...(mutableData.validation || {}),
+								required: true,
+						};
+				}
+		}
 
-    return mutableData;
+		return mutableData;
 }
 
 // Defines the condition for a rule to be triggered.

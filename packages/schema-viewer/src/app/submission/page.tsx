@@ -36,8 +36,8 @@ function SubmissionDataDisplay()
 					<h2 className="text-xl font-semibold mb-3 text-gray-700">Submitted
 						Data (JSON):</h2>
 					<pre className="bg-gray-50 p-4 rounded-md overflow-x-auto text-sm border border-gray-200">
-            {JSON.stringify(formData, null, 2)}
-          </pre>
+						{JSON.stringify(formData, null, 2)}
+					</pre>
 				</div>
 			)}
 		</>
