@@ -212,6 +212,57 @@ return {
 };
 ```
 
+# Rules: whenLogic (JSONLogic)
+
+In addition to simple equality rules using `when`, you can express complex conditions with JSONLogic via `whenLogic`.
+
+- **Data available to JSONLogic**
+  - `formData`: current form values
+  - `context`: `formContext` passed into `FormEngine`
+
+Example: reveal a component only when `country === 2` (Canada):
+
+```yaml
+- id: canadaInfo
+  type: html
+  tag: div
+  className: p-2 bg-indigo-50 rounded
+  content: "This message shows only when country is Canada (via whenLogic)."
+  hidden: true
+  rules:
+    - whenLogic:
+        "==":
+          - { var: "formData.country" }
+          - 2
+      then:
+        - set:
+            hidden: false
+```
+
+Back-compat: the simpler `when` equality checks still work:
+
+```yaml
+rules:
+  - when:
+      field: newsletterSubscription
+      is: true
+    then:
+      - set:
+          hidden: false
+```
+
+You can also use per-component `condition` (JSONLogic) to control visibility directly on a component without rules side effects:
+
+```yaml
+- id: comments
+  type: textarea
+  label: Comments
+  condition:
+    "==":
+      - { var: "formData.country" }
+      - 2
+```
+
 # Notes
 
 - These recommendations align with the current design choices: hybrid navigation, imperative API, centralized preprocessing, registry-driven rendering, and the existing rules engine. The aim is to simplify authoring, improve a11y and styling flexibility, and reduce re-renders while enabling richer dynamic behavior.

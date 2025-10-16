@@ -104,6 +104,21 @@ children:
             - 2
         placeholder: Enter any comments...
         rows: 4
+
+      - id: canadaInfo
+        type: html
+        tag: div
+        className: p-2 bg-indigo-50 rounded
+        content: "This message shows only when country is Canada (via whenLogic)."
+        hidden: true
+        rules:
+          - whenLogic:
+              "==":
+                - { var: "formData.country" }
+                - 2
+            then:
+              - set:
+                  hidden: false
 `.trim();
 
 export const newForm = (name: string) => `
