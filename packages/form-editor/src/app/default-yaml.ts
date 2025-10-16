@@ -29,8 +29,9 @@ children:
 
       - id: email
         type: email
-        label: Email Address*
+        label: Email Address
         placeholder: user@example.com
+        required: true
 
   - id: pageAddressInfo
     type: page
@@ -51,14 +52,16 @@ children:
 
       - id: country
         type: select
-        label: Country*
+        label: Country
+        required: true
         options:
-          - value: "us"
+          - value: 1
             label: "United States"
-          - value: "ca"
+          - value: 2
             label: "Canada"
-          - value: "gb"
+          - value: 3
             label: "United Kingdom"
+        defaultValue: 2
 
   - id: pagePreferences
     type: page
@@ -83,16 +86,22 @@ children:
 
       - id: contactMethod
         type: radiogroup
-        label: Preferred Contact Method*
+        label: Preferred Contact Method
+        required: true
         options:
-          - value: "email"
+          - value: 10
             label: "Email"
-          - value: "phone"
+          - value: 20
             label: "Phone"
+        defaultValue: 20
 
       - id: comments
         type: textarea
         label: Comments
+        condition:
+          "==":
+            - { var: "formData.country" }
+            - 2
         placeholder: Enter any comments...
         rows: 4
 `.trim();
