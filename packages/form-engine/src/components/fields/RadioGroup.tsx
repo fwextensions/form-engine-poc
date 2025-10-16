@@ -8,6 +8,7 @@ import {
 } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
+import { serializeForUI, deserializeFromUI } from "../../utils/valueSerialization";
 
 // 1. Define Configuration Schema
 const radioOptionSchema = z.object({
@@ -76,20 +77,11 @@ createComponent<RadioGroupConfig, RadioGroupProps>({
 	component: RadioGroup,
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
-		const { id, label, description, options, defaultValue, validation, orientation } = config;
+		const { id, label, description, options, defaultValue, validation, orientation, disabled } = config;
 
-		const serialize = (v: unknown) => JSON.stringify(v);
-		const deserialize = (s: string) => {
-			try {
-				return JSON.parse(s);
-			} catch {
-				return s;
-			}
-		};
-
-		const uiOptions: UIRadioOption[] = options.map((o) => ({ label: o.label, value: serialize(o.value), disabled: o.disabled }));
+		const uiOptions: UIRadioOption[] = options.map((o) => ({ label: o.label, value: serializeForUI(o.value), disabled: o.disabled }));
 		const rawValue = context.formData[id] ?? defaultValue ?? undefined;
-		const value = rawValue !== undefined ? serialize(rawValue) : undefined;
+		const value = rawValue !== undefined ? serializeForUI(rawValue) : undefined;
 
 		return {
 			containerProps: {
@@ -100,8 +92,8 @@ createComponent<RadioGroupConfig, RadioGroupProps>({
 			radioGroupRootProps: {
 				name: id,
 				value,
-				onValueChange: (v) => context.onDataChange(id, deserialize(v)),
-				disabled: context.formMode === "view",
+				onValueChange: (v) => context.onDataChange(id, deserializeFromUI(v)),
+				disabled: context.formMode === "view" || disabled,
 				required: validation?.required,
 				orientation,
 			},

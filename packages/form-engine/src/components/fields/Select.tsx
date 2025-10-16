@@ -9,6 +9,7 @@ import {
 } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
+import { serializeForUI, deserializeFromUI } from "../../utils/valueSerialization";
 
 // 1. Define Configuration Schema
 const optionSchema = z.object({
@@ -102,18 +103,9 @@ createComponent<SelectConfig, SelectProps>({
     transformProps: (config, context) => {
         const { id, label, description, options, placeholder, defaultValue, validation, disabled } = config;
 
-        const serialize = (v: unknown) => JSON.stringify(v);
-        const deserialize = (s: string) => {
-            try {
-                return JSON.parse(s);
-            } catch {
-                return s;
-            }
-        };
-
-        const uiOptions: UISerialOption[] = options.map((o) => ({ label: o.label, value: serialize(o.value) }));
+        const uiOptions: UISerialOption[] = options.map((o) => ({ label: o.label, value: serializeForUI(o.value) }));
         const rawValue = context.formData[id] ?? defaultValue ?? undefined;
-        const value = rawValue !== undefined ? serialize(rawValue) : undefined;
+        const value = rawValue !== undefined ? serializeForUI(rawValue) : undefined;
 
         return {
             containerProps: { name: id, label, description, htmlFor: id },
@@ -121,7 +113,7 @@ createComponent<SelectConfig, SelectProps>({
                 id,
                 name: id,
                 value,
-                onValueChange: (v) => context.onDataChange(id, deserialize(v)),
+                onValueChange: (v) => context.onDataChange(id, deserializeFromUI(v)),
                 disabled: context.formMode === "view" || disabled,
                 required: validation?.required,
             },

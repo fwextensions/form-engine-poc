@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { getComponentDefinition } from "../core/componentFactory";
 import { useFormEngine } from "./FormEngineContext";
 import { evaluateCondition } from "../core/conditionLogic";
+import { deepMerge } from "../utils/deepMerge";
 
 // Default Error Component
 function DefaultErrorComponent({ error, config }: { error: Error; config: unknown }) {
@@ -46,11 +47,8 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, ErrorC
 				const componentId = (validatedConfig as any)?.id;
 				if (context?.dynamicProps?.[componentId]) {
 						const dynamicPropsForComponent = context.dynamicProps[componentId];
-						// Merge dynamic props. Dynamic props take precedence.
-						validatedConfig = {
-								...validatedConfig,
-								...dynamicPropsForComponent,
-						} as typeof validatedConfig;
+						// Deep merge so nested objects are preserved; dynamic props take precedence
+						validatedConfig = deepMerge(validatedConfig as any, dynamicPropsForComponent as any) as typeof validatedConfig;
 				}
 				// --- END: Merge dynamic props ---
 

@@ -64,7 +64,9 @@ export const baseComponentConfigSchema = z.object({
 	id: z.string().optional(), // Optional for non-interactive elements like static HTML or layout containers
 	type: z.string(), // Will be refined by specific component schemas (e.g., z.literal("text"))
 	rules: z.array(ruleSchema).optional(),
-	// Add other truly universal component properties here, e.g., conditional visibility
+	// universal component properties
+	hidden: z.boolean().optional(),
+	condition: z.any().optional(),
 });
 // Base ZodObject for all field configurations to extend.
 // This is a simple Zod object without any preprocessing directly attached to it.
@@ -76,7 +78,6 @@ export const baseFieldConfigSchema = baseComponentConfigSchema.extend({
 	description: z.string().optional(),
 	required: z.boolean().optional(), // promote required to top-level for ergonomics
 	disabled: z.boolean().optional(), // Add disabled property
-	hidden: z.boolean().optional(), // Add hidden property for conditional visibility
 	validation: z
 		.object({
 			required: z.boolean().optional(),
