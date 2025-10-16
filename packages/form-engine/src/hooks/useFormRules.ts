@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { FormConfig as FormSchema } from "../components/layout/Form";
+import { evaluateCondition } from "../core/conditionLogic";
 
 /**
  * Represents a generic component configuration within the form schema.
@@ -9,7 +10,8 @@ import type { FormConfig as FormSchema } from "../components/layout/Form";
 interface FormComponentConfig {
 	id?: string;
 	rules?: {
-		when: { field: string; is: any }[];
+		when?: { field: string; is: any } | { field: string; is: any }[];
+		whenLogic?: any;
 		then: ({ set: Record<string, any> } | { log: string[] })[];
 	}[];
 	children?: FormComponentConfig[];
@@ -57,7 +59,8 @@ function flattenComponents(components: FormComponentConfig[]): FormComponentConf
  */
 export function useFormRules(
 	schema: FormSchema,
-	formData: Record<string, any>
+	formData: Record<string, any>,
+	formContext?: Record<string, any>,
 ): DynamicPropsMap {
 	const dynamicProps = useMemo(() => {
 		const allComponents = flattenComponents(schema.children || []);
@@ -71,28 +74,27 @@ export function useFormRules(
 			for (const rule of component.rules) {
 				// when a schema is being edited, it may not be fully formed.  if
 				// the rule doesn't have the properties we expect, skip it
-				if (
-					!rule ||
-					typeof rule !== "object" ||
-					!("when" in rule) ||
-					!("then" in rule)
-				) {
+				if (!rule || typeof rule !== "object" || !("then" in rule)) {
 					continue;
 				}
 
-				const { when, then } = rule;
+				const { when, whenLogic, then } = rule as any;
 
-				// normalize `when` to always be an array for consistent processing
-				const conditions = Array.isArray(when) ? when : [when];
-				const isMet = conditions.every((condition) => {
-					// skip invalid or incomplete conditions during live editing
-					if (!condition || typeof condition !== "object" || !("field" in condition) || !("is" in condition)) {
-						return false;
-					}
-
-					const actualValue = formData[(condition as any).field];
-					return actualValue === (condition as any).is;
-				});
+				let isMet = false;
+				if (typeof whenLogic !== "undefined") {
+					// evaluate JSONLogic using formData and formContext
+					isMet = !!evaluateCondition(whenLogic, formData, formContext);
+				} else if (typeof when !== "undefined") {
+					const conditions = Array.isArray(when) ? when : [when];
+					isMet = conditions.every((condition) => {
+						// skip invalid or incomplete conditions during live editing
+						if (!condition || typeof condition !== "object" || !("field" in condition) || !("is" in condition)) {
+							return false;
+						}
+						const actualValue = formData[(condition as any).field];
+						return actualValue === (condition as any).is;
+					});
+				}
 
 				// Check if the condition is met
 				if (isMet) {
@@ -119,7 +121,7 @@ export function useFormRules(
 		}
 
 		return propsMap;
-	}, [schema, formData]);
+	}, [schema, formData, formContext]);
 
 	return dynamicProps;
 }

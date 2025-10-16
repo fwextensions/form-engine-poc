@@ -56,7 +56,7 @@ export const FormEngine = forwardRef<FormEngineHandle, FormEngineProps>(
 		const [formData, setFormData] = useState<Record<string, unknown>>(initialData);
 		const [internalCurrentPageIndex, setInternalCurrentPageIndex] = useState(0);
 
-		const dynamicProps = useFormRules(schema, formData);
+		const dynamicProps = useFormRules(schema, formData, formContext);
 
 		const pageComponents = useMemo(() => {
 			if (schema?.type === "form" && Array.isArray(schema.children)) {

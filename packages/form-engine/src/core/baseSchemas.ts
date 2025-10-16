@@ -37,7 +37,6 @@ const ruleWhenSchema = z.object({
 	field: z.string().min(1),
 	is: z.any(), // The value to check against. Can be string, number, boolean, etc.
 });
-
 // Defines the 'set' action, which updates component properties.
 // e.g., set: { required: true, label: 'A new dynamic label' }
 const setActionSchema = z.object({
@@ -47,16 +46,20 @@ const setActionSchema = z.object({
 // Defines the 'log' action for debugging purposes.
 // e.g., log: ['User is applying, reason field is now required.']
 const logActionSchema = z.object({
-	log: z.array(z.string()),
+	log: z.array(z.string()).min(1, "Log action must have at least one message"),
 });
-
 // A rule can have different types of actions.
 const ruleActionSchema = z.union([setActionSchema, logActionSchema]);
 
 // A single rule object, containing the condition and the resulting actions.
+// Back-compat: `when` supports simple equality checks. New: `whenLogic` supports JSONLogic.
 const ruleSchema = z.object({
-	when: z.union([ruleWhenSchema, z.array(ruleWhenSchema)]),
+	when: z.union([ruleWhenSchema, z.array(ruleWhenSchema)]).optional(),
+	whenLogic: z.any().optional(),
 	then: z.array(ruleActionSchema).min(1, "A rule must have at least one action in its 'then' clause."),
+}).refine((obj) => typeof obj.when !== "undefined" || typeof obj.whenLogic !== "undefined", {
+	message: "A rule must include either 'when' or 'whenLogic'",
+	path: ["when"],
 });
 
 // Base ZodObject for all UI components (layouts, static, fields)
@@ -68,6 +71,7 @@ export const baseComponentConfigSchema = z.object({
 	hidden: z.boolean().optional(),
 	condition: z.any().optional(),
 });
+
 // Base ZodObject for all field configurations to extend.
 // This is a simple Zod object without any preprocessing directly attached to it.
 // The preprocessing (like asterisk handling) is done by `commonFieldTransform`
