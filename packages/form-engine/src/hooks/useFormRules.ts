@@ -85,10 +85,13 @@ export function useFormRules(
 				// normalize `when` to always be an array for consistent processing
 				const conditions = Array.isArray(when) ? when : [when];
 				const isMet = conditions.every((condition) => {
-					const actualValue = formData[condition.field];
+					// skip invalid or incomplete conditions during live editing
+					if (!condition || typeof condition !== "object" || !("field" in condition) || !("is" in condition)) {
+						return false;
+					}
 
-					// Check if the condition is met
-					return actualValue === condition.is;
+					const actualValue = formData[(condition as any).field];
+					return actualValue === (condition as any).is;
 				});
 
 				// Check if the condition is met

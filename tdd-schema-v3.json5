@@ -1,0 +1,132 @@
+/*
+- keep the basic object shape consistent within the hierarchy, so you don't have to look for particular keys to duck-type an object.  if you can know that each schema object will always have a `type` property, always use `children` for subcomponents, etc. then you can process each object the same way as the tree is walked.  otherwise, you'd have to keep track of what kind of array is being processed, i.e., these objects are in a `steps` array, so they must be steps, vs. they're in a `fieldComponents` array, so they must be fields...
+- use consistent names for fields used the same way across components, so just `description` instead of `pageDescription`, `sectionDescription`, etc.  this makes it easier to process similar fields in the future, such as if we wanted to pull strings out of fields for translation.  that's easier to manage with a small number of common key names, instead of forgetting that something like `textareaDescription` is also occasionally used.
+- in general, try to keep it DRY with as small a set of common keys as possible.
+*/
+
+{
+  "type": "form",
+  "component": "RentalListingApplication",
+  "children": [
+    {
+      "type": "step", // maybe "page"?
+      "component": "ListingApplicationOverview",
+      "slug": "overview" // is this a prop of ListingApplicationOverview?
+    },
+    // alternatively:
+    {
+      // lowercase types could be built-in elements, while uppercase types would
+      // be React components, e.g., `<div>` vs. `<App>`
+      "type": "ListingApplicationOverview",
+      "props": {
+        "slug": "overview",
+      }
+    },
+    {
+      "type": "step",
+      "id": "you",
+      "slug": "name",
+      "title": "what's your name?",
+      "children": [
+        {
+          "type": "Name",
+          "props": {
+            "label": "your name",
+            "showMiddleName": true,
+            // not sure if these mappings should be considered props or whether a sort of
+            // data manager would pluck these out of the schema and then use them when the
+            // form is submitted to map the form data into something that Salesforce expects.
+            "fieldMappings": {
+              "firstName": "primaryApplicantFirstName",
+              "middleName": "primaryApplicantMiddleName",
+              "lastName": "primaryApplicantLastName"
+            },
+          }
+        },
+        // or maybe don't compartmentalize props, and just treat everything except "type" as
+        // props that get passed to the component?  the POC lets each component specify a
+        // transformProps() function that gives it a chance to transform the data from the
+        // schema into a props structure appropriate for the internal components.
+        {
+          "type": "Name",
+          "label": "your name",
+          "showMiddleName": true,
+          "fieldMappings": {
+            "firstName": "primaryApplicantFirstName",
+            "middleName": "primaryApplicantMiddleName",
+            "lastName": "primaryApplicantLastName"
+          },
+        },
+        {
+          "type": "DateOfBirth",
+          "props": {
+            "label": "your date of birth",
+            "fieldMappings": {
+              "dateOfBirth": "primaryApplicantDob"
+            },
+          }
+        },
+        {
+          "type": "EmailAddress",
+          "props": {
+            "label": "your email address",
+            "showDontHaveEmailAddress": true,
+            "fieldMappings": {
+              "email": "primaryApplicantEmail"
+            },
+          }
+        }
+      ]
+    },
+    {
+      "type": "step",
+      "slug": "alternate-contact-name",
+      "title": "who is your alternate contact",
+      // seems like we'll want some more generic container for the behavioral logic of any component,
+      // not just pages, so "navigation" is probably too specific.  maybe "logic", or "events"?  not
+      // entirely sure what the best approach is, but in this example, these handlers could be defined
+      // somewhere (via a file/module specified on the form object?) and then check the current form state
+      // when they're called and decide whether to skip the page or where to go when the user clicks "next".
+      "events": {
+        "onEnter": "handleAlternateContactEnter",
+        "onExit": "handleAlternateContactExit",
+      },
+      "children": [
+        {
+          "type": "Name",
+          "label": "name of alternate contact",
+          "showMiddleName": false,
+          "fieldNames": {
+            "firstName": "alternateContactFirstName",
+            "middleName": "alternateContactMiddleName",
+            "lastName": "alternateContactLastName"
+          }
+        }
+      ]
+    },
+    {
+      "type": "step",
+      "slug": "live-work-preference",
+      "title": "Based on the address you entered, your household may qualify for the following lottery preferences.",
+      "description": "just upload valid proof of where you live or work in San Francisco and get a higher ranking in the lottery.",
+      // or maybe support a JSON logic style object here to control the navigation?
+      "logic": {
+        "show": {
+          "AND": [
+              "data.tododonotsubmit_addressNeighborhoodMatch",
+              {
+                "OR": [
+                  "data.preferences.liveWorkInSf",
+                  "data.preferences.liveInSf",
+                  "data.preferences.workInSf"
+                ]
+              },
+          ]
+        }
+      },
+      "children": [
+        // ...
+      ],
+    },
+  ]
+}

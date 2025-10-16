@@ -65,17 +65,16 @@ export const FormEngine = forwardRef<FormEngineHandle, FormEngineProps>(
 			return [];
 		}, [schema]);
 
-		// Effect to call onMetaChange when schema changes
+		// Memoize meta and notify via onMetaChange when schema/pages change
+		const meta: FormMeta = useMemo(() => ({
+			formTitle: schema.title ?? "Untitled Form",
+			pageCount: pageComponents.length,
+			pageTitles: pageComponents.map((p, i) => p.title ?? `Page ${i + 1}`),
+		}), [schema, pageComponents]);
+
 		useEffect(() => {
-			if (schema) {
-				const meta: FormMeta = {
-					formTitle: schema.title ?? 'Untitled Form',
-					pageCount: pageComponents.length,
-					pageTitles: pageComponents.map((p, i) => p.title ?? `Page ${i + 1}`),
-				};
-				onMetaChange?.(meta);
-			}
-		}, [schema, pageComponents, onMetaChange]);
+			onMetaChange?.(meta);
+		}, [meta, onMetaChange]);
 
 		const totalPages = pageComponents.length;
 		const isMultiPage = (displayMode ?? schema?.display) === 'multipage' && totalPages > 1;
@@ -122,17 +121,14 @@ export const FormEngine = forwardRef<FormEngineHandle, FormEngineProps>(
 					handleNavigate(pageIndex);
 				},
 				getMeta: () => {
-					const meta = {
-						formTitle: schema.title ?? 'Untitled Form',
-						pageCount: totalPages,
-						pageTitles: pageComponents.map((p, i) => p.title ?? `Page ${i + 1}`),
+					return {
+						...meta,
 						currentPageIndex,
 						currentPageTitle: pageComponents[currentPageIndex]?.title ?? `Page ${currentPageIndex + 1}`,
 					};
-					return meta;
 				},
 			}),
-			[handleNavigate, schema, totalPages, pageComponents, currentPageIndex],
+			[handleNavigate, meta, pageComponents, currentPageIndex],
 		);
 
 		const handleNextPage = useCallback(() => {
@@ -163,11 +159,12 @@ export const FormEngine = forwardRef<FormEngineHandle, FormEngineProps>(
 			onNavigateNext: isMultiPage ? handleNextPage : undefined,
 			onNavigatePrev: isMultiPage ? handlePrevPage : undefined,
 			dynamicProps, // Pass the dynamic props through the context
+			meta,
 		};
 
 		return (
 			<FormEngineProvider value={formEngineContextValue}>
-				<DynamicRenderer config={schema} context={formEngineContextValue} />
+				<DynamicRenderer config={schema} />
 			</FormEngineProvider>
 		);
 	},

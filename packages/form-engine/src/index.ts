@@ -9,6 +9,7 @@ export type {
 	FormMeta,
 	FormEngineProps,
 } from "./engine/FormEngine";
+export { useFormMeta } from "./engine/useFormMeta";
 export type { FormConfig } from "./components/layout/Form";
 export type { PageConfig } from "./components/layout/Page";
 export { createComponent, getComponentDefinition, getAllComponentDefinitions } from "./core/componentFactory";

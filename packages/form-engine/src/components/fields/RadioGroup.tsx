@@ -12,30 +12,29 @@ import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormField
 // 1. Define Configuration Schema
 const radioOptionSchema = z.object({
 	label: z.string(),
-	value: z.string(),
+	value: z.any(), // allow non-string option values in schema
 	disabled: z.boolean().optional(),
 });
 export type RadioOption = z.infer<typeof radioOptionSchema>;
+type UIRadioOption = { label: string; value: string; disabled?: boolean };
 
 export const RadioGroupConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("radiogroup"),
 	options: z.array(radioOptionSchema),
-	defaultValue: z.string().optional(),
+	defaultValue: z.any().optional(),
 	orientation: z.enum(["horizontal", "vertical"]).optional().default("vertical"),
 });
 export type RadioGroupConfig = z.infer<typeof RadioGroupConfigSchema>;
-
 // 2. Define Props for the React Component
 export interface RadioGroupProps {
-	containerProps: Omit<FormFieldContainerProps, "children" | "htmlFor">; // RadioGroup itself doesn't need htmlFor
-	radioGroupRootProps: RadioGroupPrimitive.RadioGroupProps & { required?: boolean };
-	options: RadioOption[];
+	containerProps: Omit<FormFieldContainerProps, "children" | "htmlFor">;
+	radioGroupRootProps: RadioGroupPrimitive.RadioGroupProps & { required?: boolean; name?: string };
+	options: UIRadioOption[];
 }
 
 // 3. Create the React Component
 export const RadioGroup: React.FC<RadioGroupProps> = ({ containerProps, radioGroupRootProps, options }) => {
 	const orientationClass = radioGroupRootProps.orientation === "horizontal" ? "flex space-x-4" : "space-y-2";
-
 	return (
 		<FormFieldContainer {...containerProps}>
 			<RadioGroupPrimitive.Root
@@ -78,6 +77,20 @@ createComponent<RadioGroupConfig, RadioGroupProps>({
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, options, defaultValue, validation, orientation } = config;
+
+		const serialize = (v: unknown) => JSON.stringify(v);
+		const deserialize = (s: string) => {
+			try {
+				return JSON.parse(s);
+			} catch {
+				return s;
+			}
+		};
+
+		const uiOptions: UIRadioOption[] = options.map((o) => ({ label: o.label, value: serialize(o.value), disabled: o.disabled }));
+		const rawValue = context.formData[id] ?? defaultValue ?? undefined;
+		const value = rawValue !== undefined ? serialize(rawValue) : undefined;
+
 		return {
 			containerProps: {
 				name: id,
@@ -85,14 +98,14 @@ createComponent<RadioGroupConfig, RadioGroupProps>({
 				description,
 			},
 			radioGroupRootProps: {
-				name: id, // This name is used for the form data path and for item IDs
-				value: context.formData[id] ?? defaultValue ?? undefined,
-				onValueChange: (value) => context.onDataChange(id, value),
+				name: id,
+				value,
+				onValueChange: (v) => context.onDataChange(id, deserialize(v)),
 				disabled: context.formMode === "view",
 				required: validation?.required,
 				orientation,
 			},
-			options,
+			options: uiOptions,
 		};
 	},
 });

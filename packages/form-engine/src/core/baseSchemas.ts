@@ -20,6 +20,14 @@ export function commonFieldTransform(data: Record<string, any>)
 				}
 		}
 
+		// map top-level required into validation.required for back-compat
+		if (typeof mutableData.required === "boolean") {
+			mutableData.validation = {
+				...(mutableData.validation || {}),
+				required: mutableData.required,
+			};
+		}
+
 		return mutableData;
 }
 
@@ -58,7 +66,6 @@ export const baseComponentConfigSchema = z.object({
 	rules: z.array(ruleSchema).optional(),
 	// Add other truly universal component properties here, e.g., conditional visibility
 });
-
 // Base ZodObject for all field configurations to extend.
 // This is a simple Zod object without any preprocessing directly attached to it.
 // The preprocessing (like asterisk handling) is done by `commonFieldTransform`
@@ -67,6 +74,7 @@ export const baseFieldConfigSchema = baseComponentConfigSchema.extend({
 	id: z.string().min(1, "Field ID cannot be empty"), // id is required and non-empty for fields
 	label: z.string().optional(), // Label is optional at the schema level; transform will handle '*' if present
 	description: z.string().optional(),
+	required: z.boolean().optional(), // promote required to top-level for ergonomics
 	disabled: z.boolean().optional(), // Add disabled property
 	hidden: z.boolean().optional(), // Add hidden property for conditional visibility
 	validation: z

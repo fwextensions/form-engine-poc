@@ -1,0 +1,372 @@
+{
+  "formType": "listingApplication",
+  "subType": "defaultRental",
+  "steps": [
+    {
+      "slug": "overview",
+      "stepComponent": {
+        "componentName": "listingApplicationOverview"
+      }
+    },
+    {
+      "slug": "name",
+      "title": "what's your name?",
+      "section": "you",
+      "fieldsComponents": [
+        {
+          "componentName": "name",
+          "props": {
+            "label": "your name",
+            "fieldNames": {
+              "firstName": "primaryApplicantFirstName",
+              "middleName": "primaryApplicantMiddleName",
+              "lastName": "primaryApplicantLastName"
+            },
+            "showMiddleName": true
+          }
+        },
+        {
+          "componentName": "dateOfBirth",
+          "fieldNames": {
+            "dateOfBirth": "primaryApplicantDob"
+          },
+          "props": {
+            "label": "your date of birth"
+          }
+        },
+        {
+          "componentName": "emailAddress",
+          "fieldNames": {
+            "email": "primaryApplicantEmail"
+          },
+          "props": {
+            "label": "your email address",
+            "showDontHaveEmailAddress": true
+          }
+        }
+      ]
+    },
+    {
+      "slug": "contact",
+      "title": "Thanks {{primaryApplicantFirstName}}. Now we need to know how to contact you",
+      "fieldsComponents": [
+        {
+          "componentName": "phone",
+          "fieldNames": {
+            "phone": "primaryApplicantPhone",
+            "additionalPhone": "primaryApplicantAdditionalPhone"
+          },
+          "props": {
+            "label": "your phone number",
+            "showTypeOfNumber": true,
+            "showDontHavePhoneNumber": true,
+            "showAdditionalPhoneNumber": true,
+            "labelForAdditionalPhoneNumber": "your second phone number"
+          }
+        },
+        {
+          "componentName": "address",
+          "fieldNames": {
+            "address": "primaryApplicantAddress",
+            "mailingAddress": "primaryApplicantMailingAddress"
+          },
+          "props": {
+            "label": "address",
+            "showMailingAddress": true,
+            "validateAddressWithAPI": true
+          }
+        },
+        {
+          "componentName": "yesNoRadio",
+          "fieldNames": {
+            "question": "primaryApplicantWorkInSf"
+          },
+          "props": {
+            "label": "do you work in san francisco?",
+            "description": "this means you currently work in san francisco at least 75% of your working hours."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "verify-address",
+      "stepComponent": {
+        "componentName": "verifyAddress",
+        "props": {
+          "address": "primaryApplicantAddress"
+        }
+      }
+    },
+    {
+      "slug": "alternate-contact-type",
+      "title": "is there someone else you'd like to authorize us to contact if we can't reach you?",
+      "pageDescription": "by providing an alternate contact, your are allowing us to discuss information on your application with them.",
+      "fieldsComponents": [
+        {
+          "fieldNames": {
+            "alternateContactType": "alternateContactType"
+          },
+          "componentName": "alternateContactType"
+        }
+      ]
+    },
+    {
+      "slug": "alternate-contact-name",
+      "title": "who is your alternate contact",
+      "navigation": {
+        "showIfFormDataPresent": "alternateContactType"
+      },
+      "fieldsComponents": [
+        {
+          "componentName": "name",
+          "fieldNames": {
+            "firstName": "alternateContactFirstName",
+            "middleName": "alternateContactMiddleName",
+            "lastName": "alternateContactLastName"
+          },
+          "props": {
+            "label": "name of alternate contact",
+            "showMiddleName": false
+          }
+        }
+      ]
+    },
+    {
+      "slug": "alternate-contact-phone-address",
+      "title": "let us know how to reach your alternate contact.",
+      "pageDescription": "we'll only use this information to contact them about your application.",
+      "navigation": {
+        "showIfFormDataPresent": "alternateContactType"
+      },
+      "fieldsComponents": [
+        {
+          "componentName": "phone",
+          "fieldNames": {
+            "phone": "alternateContactPhone"
+          },
+          "props": {
+            "label": "contact phone number"
+          }
+        },
+        {
+          "componentName": "emailAddress",
+          "fieldNames": {
+            "email": "alternateContactEmail"
+          },
+          "props": {
+            "label": "contact email address"
+          }
+        },
+        {
+          "componentName": "address",
+          "fieldNames": {
+            "address": "alternateContactAddress"
+          },
+          "props": {
+            "label": "contact mailing address"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "household-intro",
+      "title": "Next, we'd like to know about the others who will live with you in the unit",
+      "fieldsComponents": [
+        {
+          "componentName": "householdIntro",
+          "fieldNames": {
+            "liveAlone": "todoNotSubmitted_liveAlone"
+          },
+          "props": {}
+        }
+      ]
+    },
+    {
+      "slug": "household-overview",
+      "navigation": {
+        "dataDependentRender": "liveAlone"
+      },
+      "stepComponent": {
+        "componentName": "listingApplicationHouseholdOverview"
+      }
+    },
+    {
+      "slug": "household-members",
+      "dataDependentRender": "liveAlone",
+      "stepComponent": {
+        "componentName": "addHouseholdMembers"
+      }
+    },
+    {
+      "slug": "household-member-form",
+      "title": "tell us about this person.",
+      "pageDescription": "you'll have the opportunity to add more household members on the next screen",
+      "navigation": {
+        "goToStep": "household-members"
+      },
+      "fieldsComponents": [
+        {
+          "componentName": "name",
+          "fieldNames": {
+            "firstName": "householdMemberFirstName",
+            "middleName": "householdMemberMiddleName",
+            "lastName": "householdMemberLastName"
+          },
+          "props": {
+            "label": "household member's name",
+            "showMiddleName": true
+          }
+        }
+      ]
+    },
+    {
+      "slug": "household-priorities",
+      "title": "do you or anyone in your household need any of the following ada accessibility features?",
+      "pageDescription": "if you are selected for a unit, the property will work to accommodate your need to the best of their ability.",
+      "fieldsComponents": [
+        {
+          "componentName": "prioritiesCheckbox",
+          "fieldNames": {
+            "members": "priorityMembers"
+          },
+          "props": {
+            "description": "please select all that apply",
+            "members": "{{formData.householdMembersArray}}"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "income-vouchers",
+      "title": "do you or anyone on this application receive any of the following?",
+      "pageDescription": {
+        "componentName": "incomeVoucherDescription"
+      },
+      "fieldsComponents": [
+        {
+          "componentName": "yesNoRadio",
+          "fieldNames": {
+            "question": "receivesIncomeVouchers"
+          },
+          "props": {
+            "note": "Please select one.",
+            "yesText": "If you have a subsidy, your income has to be two times the tenant portion of the rent."
+          }
+        }
+      ]
+    },
+    {
+      "slug": "preferences-intro",
+      "stepComponent": {
+        "componentName": "preferencesIntro"
+      }
+    },
+    {
+      "slug": "live-work-preference",
+      "title": "Based on the address you entered, your household may qualify for the following lottery preferences.",
+      "pageDescription": "just upload valid proof of where you live or work in San Francisco and get a higher ranking in the lottery.",
+      "navigation": {
+        "showIfFormDataPresent": "tododonotsubmit_addressNeighborhoodMatch",
+        "showIfListingDataPresent": [
+          "preferences.liveWorkInSf",
+          "preferences.liveInSf",
+          "preferences.workInSf"
+        ]
+      },
+      "fieldsComponents": [
+        {
+          "componentName": "liveWorkPreference",
+          "fieldNames": {
+            "liveInSfMember": "liveInSfMember",
+            "liveInSfProofType": "liveInSfProofType",
+            "liveInSfProofDoc": "liveInSfProofDoc",
+            "workInSfMember": "workInSfMember",
+            "workInSfProofType": "workInSfProofType",
+            "workInSfProofDoc": "workInSfProofDoc"
+          },
+          "props": {
+            "listingPreferences": "{{listing.preferences}}"
+            // may only show one question depending on preferences
+          }
+        }
+      ]
+    },
+    {
+      "slug": "preferences-programs",
+      "title": "There are lottery preferences for people who already have special certificates",
+      "pageDescription": "if you have not heard of these preferences, you most likely do not have one.",
+      "navigation": {
+        "showIfListingDataPresent": [
+          "preferences.certOfPreference",
+          "preferences.displaced"
+        ]
+      },
+      "fieldsComponents": [
+        {
+          "componentName": "copPreference",
+          "fieldNames": {
+            "copMember": "copMember",
+            "copNumber": "copNumber"
+          },
+          "props": {
+            "listingPreferences": "{{listing.preferences}}"
+          }
+        },
+        {
+          "componentName": "dthpPreference",
+          "fieldNames": {
+            "dthpMember": "dthpMember",
+            "dthpNumber": "dthpNumber"
+          },
+          "props": {
+            "listingPreferences": "{{listing.preferences}}"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "veterans-programs",
+      "title": "Any Veterans?",
+      "pageDescription": {
+        "componentName": "veteransDescription"
+      },
+      "navigation": {
+        "showIfListingDataPresent": [
+          "preferences.certOfPreference",
+          "preferences.displaced"
+        ]
+      },
+      "fieldsComponents": [
+        {
+          "componentName": "veteranRadio",
+          "fieldNames": {
+            "veteranMember": "veteranMember",
+            "veteranAnswer": "veteranAnswer"
+          }
+        }
+      ]
+    },
+    {
+      "slug": "review-optional",
+      "title": "Help us ensure we are meeting our goal to serve all people.",
+      "pageDescription": "These questions are optional and won't affect your eligibility for housing. Your answers will be kept private.",
+      "stepComponent": {
+        "componentName": "preferencesIntro"
+      }
+    },
+    {
+      "slug": "review-summary",
+      "title": "Take a moment to review your information before submitting your application.",
+      "stepComponent": {
+        "componentName": "reviewInformation"
+      }
+    },
+    {
+      "slug": "review-terms",
+      "title": "Terms",
+      "stepComponen": {
+        "componentName": "reviewTerms"
+      }
+    }
+  ]
+}
