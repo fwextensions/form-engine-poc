@@ -23,8 +23,9 @@ export {
 	getCatalogTypes,
 	type Catalog,
 	type CatalogEntry,
-	// Default catalog with all built-in components
-	defaultCatalog,
+	// Auto-registered catalog - built automatically when components are imported
+	getRegisteredCatalog,
+	getRegisteredCatalogEntry,
 	// JSON Schema utilities
 	catalogToJsonSchema,
 	catalogToUnifiedJsonSchema,

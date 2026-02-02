@@ -38,11 +38,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({ containerProps, inputPro
 	);
 };
 
-// 4. Register the Component
+// 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<DatePickerConfig, DatePickerProps>({
 	type: "date",
 	schema: DatePickerConfigSchema,
 	component: DatePicker,
+	description: "A date picker input field",
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, min, max } = config;

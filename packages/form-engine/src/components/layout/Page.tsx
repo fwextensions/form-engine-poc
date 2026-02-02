@@ -1,12 +1,18 @@
 // packages/form-engine/src/components/layout/Page.tsx
 import React from "react";
+import { z } from "zod";
+import { baseLayoutComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 import { FormEngineContext } from "../../engine/FormEngineContext";
-// Import the catalog entry - schema comes from here
-import { pageEntry, type PageConfig } from "../../catalog/entries/page";
 
-// Re-export the config type for external consumers
-export type { PageConfig } from "../../catalog/entries/page";
+// 1. Define Configuration Schema (colocated with component)
+export const PageConfigSchema = baseLayoutComponentConfigSchema.extend({
+	type: z.literal("page"),
+	title: z.string().optional(),
+	className: z.string().optional(),
+	style: z.record(z.string(), z.any()).optional(),
+});
+export type PageConfig = z.infer<typeof PageConfigSchema>;
 
 // 2. Define Props for the React Component
 export interface PageProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -30,11 +36,13 @@ export const PageComponent: React.FC<PageProps> = ({ title, children, className,
 	);
 };
 
-// 4. Register the Component using catalog entry
+// 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<PageConfig, PageProps>({
 	type: "page",
-	catalogEntry: pageEntry,
+	schema: PageConfigSchema,
 	component: PageComponent,
+	description: "A page container for grouping form fields, used in multi-page forms",
+	hasChildren: true,
 	transformProps: (config: PageConfig, context: FormEngineContext, renderChildren): PageProps => {
 		const { id, children, title, className, style } = config;
 
@@ -43,7 +51,7 @@ createComponent<PageConfig, PageProps>({
 			title,
 			className,
 			style,
-			children: renderChildren(children, context), // Call renderChildren and pass its result
+			children: renderChildren(children, context),
 		};
 	},
 });

@@ -70,11 +70,12 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({ containerProps, radioGro
 	);
 };
 
-// 4. Register the Component
+// 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<RadioGroupConfig, RadioGroupProps>({
 	type: "radiogroup",
 	schema: RadioGroupConfigSchema,
 	component: RadioGroup,
+	description: "A group of radio buttons for selecting one option from a list",
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, options, defaultValue, validation, orientation, disabled } = config;

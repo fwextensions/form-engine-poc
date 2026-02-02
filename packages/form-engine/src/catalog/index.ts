@@ -10,8 +10,12 @@ export {
 	type CatalogEntry,
 } from "./catalog";
 
-// Default catalog with all built-in components
-export { defaultCatalog } from "./defaultCatalog";
+// Auto-registered catalog - built automatically when components are imported
+// This is the recommended way to access the catalog
+export {
+	getRegisteredCatalog,
+	getRegisteredCatalogEntry,
+} from "../core/componentFactory";
 
 // JSON Schema utilities
 export {
@@ -21,5 +25,6 @@ export {
 	type CatalogToJsonSchemaOptions,
 } from "./toJsonSchema";
 
-// Re-export all entry schemas and types for consumers who need them
-export * from "./entries";
+// Note: The catalog is now built automatically via createComponent() calls.
+// Each component file defines its own schema and registers it.
+// Use getRegisteredCatalog() to access the complete catalog.

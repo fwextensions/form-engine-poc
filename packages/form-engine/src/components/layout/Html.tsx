@@ -1,11 +1,19 @@
 import React, { JSX } from "react";
+import { z } from "zod";
+import { baseComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
-// Import the catalog entry - schema comes from here
-import { htmlEntry, type HtmlConfig } from "../../catalog/entries/html";
 
-// Re-export the config type for external consumers
-export type { HtmlConfig } from "../../catalog/entries/html";
+// 1. Define Configuration Schema (colocated with component)
+export const HtmlConfigSchema = baseComponentConfigSchema.extend({
+	type: z.literal("html"),
+	content: z.string(),
+	tag: z.string().optional(),
+	className: z.string().optional(),
+	style: z.record(z.string(), z.any()).optional(),
+});
+export type HtmlConfig = z.infer<typeof HtmlConfigSchema>;
 
+// 2. Define Props for the React Component
 export interface HtmlProps extends Omit<HtmlConfig, 'type' | 'condition'> {
 	// id is inherited from baseComponentConfigSchema via HtmlConfig
 }
@@ -26,6 +34,7 @@ const VoidElements = [
 	"wbr"
 ];
 
+// 3. Create the React Component
 const Html: React.FC<HtmlProps> = ({
 	content,
 	tag,
@@ -52,11 +61,12 @@ const Html: React.FC<HtmlProps> = ({
 	);
 };
 
-// Register the Component using catalog entry
+// 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<HtmlConfig, HtmlProps>({
 	type: "html",
-	catalogEntry: htmlEntry,
+	schema: HtmlConfigSchema,
 	component: Html,
+	description: "Static HTML content block for rendering custom markup",
 });
 
 export default Html;

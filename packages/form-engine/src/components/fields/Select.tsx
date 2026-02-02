@@ -94,11 +94,12 @@ export const Select: React.FC<SelectProps> = ({
     );
 };
 
-// 4. Register the Component
+// 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<SelectConfig, SelectProps>({
     type: "select",
     schema: SelectConfigSchema,
     component: Select,
+    description: "A dropdown select field for choosing from predefined options",
     transformConfig: commonFieldTransform,
     transformProps: (config, context) => {
         const { id, label, description, options, placeholder, defaultValue, validation, disabled } = config;

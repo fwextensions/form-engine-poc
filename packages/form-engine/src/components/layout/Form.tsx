@@ -139,11 +139,13 @@ export const FormComponent: React.FC<FormProps> = ({
 	);
 };
 
-// 4. Register the Component
+// 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<FormConfig, FormProps>({
 	type: "form",
 	schema: FormConfigSchema,
 	component: FormComponent,
+	description: "Root form container with submit handling and multi-page navigation",
+	hasChildren: true,
 	// transformProps now primarily passes the original config and children
 	// The component itself will use context for most dynamic values and actions
 	transformProps: (config: FormConfig, context: FormEngineContext, renderChildren): FormProps => {

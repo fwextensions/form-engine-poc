@@ -101,6 +101,7 @@ createComponent<TextConfig, TextProps>({
 	type: "text",
 	schema: TextConfigSchema,
 	component: Text,
+	description: "A single-line text input field",
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
@@ -125,6 +126,7 @@ createComponent<EmailConfig, TextProps>({
 	type: "email",
 	schema: EmailConfigSchema,
 	component: Text,
+	description: "An email input field with email validation",
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
@@ -149,6 +151,7 @@ createComponent<PasswordConfig, TextProps>({
 	type: "password",
 	schema: PasswordConfigSchema,
 	component: Text,
+	description: "A password input field with masked characters",
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
@@ -173,6 +176,7 @@ createComponent<TelConfig, TextProps>({
 	type: "tel",
 	schema: TelConfigSchema,
 	component: Text,
+	description: "A telephone number input field",
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
@@ -197,6 +201,7 @@ createComponent<NumberConfig, TextProps>({
 	type: "number",
 	schema: NumberConfigSchema,
 	component: Text,
+	description: "A numeric input field with optional min/max/step constraints",
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, min, max, step, disabled } = config;

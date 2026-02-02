@@ -39,11 +39,12 @@ export const FileComponent: React.FC<FileProps> = ({ containerProps, inputProps 
 	);
 };
 
-// 4. Register the Component
+// 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<FileConfig, FileProps>({
 	type: "file",
 	schema: FileConfigSchema,
 	component: FileComponent,
+	description: "A file upload input field",
 	transformProps: (config, context) => {
 		const { id, label, description, validation, accept, multiple, disabled: configDisabled } = config;
 
