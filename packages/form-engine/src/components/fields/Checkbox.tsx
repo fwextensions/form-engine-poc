@@ -1,24 +1,15 @@
 // packages/form-engine/src/components/fields/Checkbox.tsx
 import React from "react";
-import { z } from "zod";
 import { Label, Message } from "@radix-ui/react-form";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
-import {
-	baseFieldConfigSchema,
-	commonFieldTransform,
-} from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
+// Import the catalog entry - schema and transformConfig come from here
+import { checkboxEntry, type CheckboxConfig } from "../../catalog/entries/checkbox";
 
-// 1. Define Configuration Schema
-// Note: For checkbox, the 'label' from base is often the main descriptive label.
-// An additional 'checkboxLabel' can be used for text right next to the checkbox itself.
-export const CheckboxConfigSchema = baseFieldConfigSchema.extend({
-	type: z.literal("checkbox"),
-	defaultValue: z.boolean().optional(),
-});
-export type CheckboxConfig = z.infer<typeof CheckboxConfigSchema>;
+// Re-export the config type for external consumers
+export type { CheckboxConfig } from "../../catalog/entries/checkbox";
 
 // 2. Define Props for the React Component
 export interface CheckboxProps {
@@ -70,12 +61,12 @@ export const Checkbox: React.FC<CheckboxProps> = ({ containerProps, checkboxRoot
 	);
 };
 
-// 4. Register the Component
+// 4. Register the Component using catalog entry
+// The schema and transformConfig come from the catalog entry
 createComponent<CheckboxConfig, CheckboxProps>({
 	type: "checkbox",
-	schema: CheckboxConfigSchema,
+	catalogEntry: checkboxEntry,
 	component: Checkbox,
-	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, defaultValue, validation } = config;
 		const checked = context.formData[id] ?? defaultValue ?? false;

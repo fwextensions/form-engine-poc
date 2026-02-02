@@ -1,16 +1,10 @@
 import React, { JSX } from "react";
-import { z } from "zod";
-import { baseComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
+// Import the catalog entry - schema comes from here
+import { htmlEntry, type HtmlConfig } from "../../catalog/entries/html";
 
-export const HtmlConfigSchema = baseComponentConfigSchema.extend({
-	type: z.literal("html"),
-	content: z.string(),
-	tag: z.string().optional(),
-	className: z.string().optional(),
-	style: z.record(z.string(), z.any()).optional(),
-});
-export type HtmlConfig = z.infer<typeof HtmlConfigSchema>;
+// Re-export the config type for external consumers
+export type { HtmlConfig } from "../../catalog/entries/html";
 
 export interface HtmlProps extends Omit<HtmlConfig, 'type' | 'condition'> {
 	// id is inherited from baseComponentConfigSchema via HtmlConfig
@@ -58,9 +52,10 @@ const Html: React.FC<HtmlProps> = ({
 	);
 };
 
+// Register the Component using catalog entry
 createComponent<HtmlConfig, HtmlProps>({
 	type: "html",
-	schema: HtmlConfigSchema,
+	catalogEntry: htmlEntry,
 	component: Html,
 });
 
