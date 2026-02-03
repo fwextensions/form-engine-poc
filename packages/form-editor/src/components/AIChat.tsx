@@ -13,7 +13,7 @@ import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import { hasApiKey, getSettings } from "@/lib/settings";
 import { SchemaGenerator } from "@/lib/schema-generator";
 import { createAnthropicClient } from "@/lib/llm-client";
-import { extractYamlFromResponse } from "@/lib/yaml-extractor";
+import { extractYamlFromResponse, extractTextAfterYaml } from "@/lib/yaml-extractor";
 import { validateSchema } from "@/lib/schema-validator";
 
 interface AIChatProps {
@@ -49,20 +49,31 @@ export default function AIChat({
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [inputValue, setInputValue] = useState("");
 	const generatorRef = useRef<SchemaGenerator | null>(null);
+	const lastApiKeyRef = useRef<string | undefined>(undefined);
 
-	// Initialize schema generator when API key is available
-	useEffect(() => {
+	// Initialize/reinitialize schema generator when API key changes
+	// This ensures the generator is recreated when settings are updated
+	const initializeGenerator = () => {
 		if (hasApiKey()) {
 			const settings = getSettings();
-			if (settings.apiKey) {
+			// Recreate generator if API key has changed
+			if (settings.apiKey && settings.apiKey !== lastApiKeyRef.current) {
 				const client = createAnthropicClient({
 					apiKey: settings.apiKey,
 					model: settings.model,
 				});
 				generatorRef.current = new SchemaGenerator(client);
+				lastApiKeyRef.current = settings.apiKey;
 			}
+		} else {
+			// Clear generator if no API key
+			generatorRef.current = null;
+			lastApiKeyRef.current = undefined;
 		}
-	}, []);
+	};
+
+	// Check and initialize on every render (lightweight check)
+	initializeGenerator();
 
 	// Example prompts for empty state
 	const examplePrompts = [
@@ -140,12 +151,18 @@ export default function AIChat({
 				// Validate the extracted schema
 				const validationResult = validateSchema(extractedYaml);
 
-				// Update message with validation results
+				// Extract any text after the YAML block (LLM's summary/explanation)
+				const textAfterYaml = extractTextAfterYaml(assistantContent);
+				const displayMessage = textAfterYaml || "Form updated";
+
+				// Update message with validation results and simplified content
 				setMessages((prev) =>
 					prev.map((msg) =>
 						msg.id === assistantMessageId
 							? {
 									...msg,
+									// Show LLM's summary or default message instead of full YAML
+									content: displayMessage,
 									extractedSchema: extractedYaml,
 									validationErrors: validationResult.errors,
 									validationWarnings: validationResult.warnings,

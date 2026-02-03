@@ -42,6 +42,35 @@ export function extractYamlFromResponse(response: string): string | null {
 }
 
 /**
+ * Extracts any text that appears after the YAML block in an LLM response.
+ * This is typically a summary or explanation from the LLM.
+ * 
+ * @param response - The LLM response text
+ * @returns The text after the YAML block, or null if none found
+ */
+export function extractTextAfterYaml(response: string): string | null {
+  if (!response || response.trim().length === 0) {
+    return null;
+  }
+
+  // Look for ```yaml or ```yml code blocks and get text after
+  const yamlBlockMatch = response.match(/```ya?ml\s*[\s\S]*?```\s*([\s\S]*)/);
+  if (yamlBlockMatch && yamlBlockMatch[1]) {
+    const afterText = yamlBlockMatch[1].trim();
+    return afterText.length > 0 ? afterText : null;
+  }
+
+  // Look for generic ``` code blocks and get text after
+  const genericBlockMatch = response.match(/```\s*[\s\S]*?```\s*([\s\S]*)/);
+  if (genericBlockMatch && genericBlockMatch[1]) {
+    const afterText = genericBlockMatch[1].trim();
+    return afterText.length > 0 ? afterText : null;
+  }
+
+  return null;
+}
+
+/**
  * Checks if content looks like YAML by checking if it starts with
  * common form schema properties (id: or type:)
  */
