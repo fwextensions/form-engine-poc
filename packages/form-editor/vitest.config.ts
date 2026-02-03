@@ -9,9 +9,10 @@ export default defineConfig({
 	},
 	test: {
 		globals: true,
-		environment: "node",
+		environment: "jsdom",
 		include: ["src/**/*.{test,spec}.{js,ts,jsx,tsx}"],
 		css: false,
+		setupFiles: ["./vitest.setup.ts"],
 	},
 	// Override postcss to prevent it from loading
 	css: false,

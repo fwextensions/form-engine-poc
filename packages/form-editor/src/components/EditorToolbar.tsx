@@ -11,6 +11,7 @@ interface EditorToolbarProps {
 	pageTitle: string;
 	onPrevPage: () => void;
 	onNextPage: () => void;
+	onOpenSettings: () => void;
 }
 
 const EditorToolbar = ({
@@ -24,6 +25,7 @@ const EditorToolbar = ({
 	pageTitle,
 	onPrevPage,
 	onNextPage,
+	onOpenSettings,
 }: EditorToolbarProps) => {
 	return (
 		<div className="bg-slate-100 border-b border-slate-300 p-2 flex items-center justify-between w-full">
@@ -50,6 +52,13 @@ const EditorToolbar = ({
 					className="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm"
 				>
 					Delete
+				</button>
+				<button
+					onClick={onOpenSettings}
+					className="bg-slate-500 hover:bg-slate-700 text-white font-bold py-1 px-3 rounded text-sm"
+					title="Settings"
+				>
+					⚙️
 				</button>
 			</div>
 

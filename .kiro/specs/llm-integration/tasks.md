@@ -95,18 +95,18 @@ This plan implements LLM-assisted form schema generation in phases: catalog prom
     - **Validates: Requirements 3.1, 3.3, 3.4**
 
 - [ ] 5. Implement UI Components
-  - [~] 5.1 Install chat UI library dependency
+  - [x] 5.1 Install chat UI library dependency
     - Add `@chatscope/chat-ui-kit-react` and `@chatscope/chat-ui-kit-styles` to form-editor
     - _Requirements: 5.1_
 
-  - [~] 5.2 Create SettingsDialog component in `form-editor/src/components/SettingsDialog.tsx`
+  - [x] 5.2 Create SettingsDialog component in `form-editor/src/components/SettingsDialog.tsx`
     - Use Radix UI Dialog for modal
     - Add provider dropdown (Anthropic/OpenAI)
     - Add API key password input
     - Save/cancel buttons
     - _Requirements: 6.1, 6.2, 6.3_
 
-  - [~] 5.3 Create AIChat component in `form-editor/src/components/AIChat.tsx`
+  - [x] 5.3 Create AIChat component in `form-editor/src/components/AIChat.tsx`
     - Use chatscope components (MainContainer, ChatContainer, MessageList, Message, MessageInput)
     - Display empty state with example prompts when no messages
     - Show streaming responses in real-time
@@ -117,30 +117,30 @@ This plan implements LLM-assisted form schema generation in phases: catalog prom
     - Show API key prompt when not configured
     - _Requirements: 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 7.8, 8.1, 8.2, 8.3, 8.4, 8.5_
 
-  - [~] 5.4 Create EditorPane component in `form-editor/src/components/EditorPane.tsx`
+  - [x] 5.4 Create EditorPane component in `form-editor/src/components/EditorPane.tsx`
     - Use Radix UI Tabs for YAML/AI tab interface
     - Render Monaco editor in YAML tab
     - Render AIChat in AI tab
     - Pass schema state between tabs
     - _Requirements: 4.1, 4.2, 4.3, 4.5_
 
-  - [~] 5.5 Write property test for tab state preservation
+  - [x] 5.5 Write property test for tab state preservation
     - **Property 13: Tab Switch State Preservation**
     - **Validates: Requirements 4.4**
 
 - [ ] 6. Integrate into Form Editor Page
-  - [~] 6.1 Update `form-editor/src/app/page.tsx` to use EditorPane
+  - [x] 6.1 Update `form-editor/src/app/page.tsx` to use EditorPane
     - Replace Monaco editor with EditorPane component
     - Add activeTab state management
     - Add settings button to toolbar
     - _Requirements: 4.1_
 
-  - [~] 6.2 Update new form behavior
+  - [x] 6.2 Update new form behavior
     - Modify handleNewForm to set empty schema instead of default YAML
     - Switch to AI tab when creating new form
     - _Requirements: 4.6, 4.7_
 
-  - [~] 6.3 Add settings button to EditorToolbar
+  - [x] 6.3 Add settings button to EditorToolbar
     - Add gear icon button that opens SettingsDialog
     - _Requirements: 6.1_
 

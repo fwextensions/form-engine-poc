@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import yaml from "js-yaml";
-import Editor from "@monaco-editor/react";
 import { PanelGroup, Panel, PanelResizeHandle } from "react-resizable-panels";
 import {
 	FormEngine,
@@ -12,6 +11,8 @@ import {
 	type FormMeta,
 } from "form-engine";
 import EditorToolbar from "@/components/EditorToolbar";
+import EditorPane from "@/components/EditorPane";
+import SettingsDialog from "@/components/SettingsDialog";
 import {
 	getSavedForms,
 	getFormContent,
@@ -28,6 +29,8 @@ export default function FormEditorPage() {
 	const [error, setError] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState(0);
 	const [formMeta, setFormMeta] = useState<FormMeta | null>(null);
+	const [activeTab, setActiveTab] = useState<"yaml" | "ai">("yaml");
+	const [settingsOpen, setSettingsOpen] = useState(false);
 
 	const formRef = useRef<FormEngineHandle>(null);
 
@@ -98,12 +101,13 @@ export default function FormEditorPage() {
 		const name = prompt("Enter new form name:");
 
 		if (name && !forms.includes(name)) {
-			const newYaml = newForm(name);
+			const emptySchema = "";
 
-			saveFormContent(name, newYaml);
+			saveFormContent(name, emptySchema);
 			setForms([...forms, name]);
 			setSelectedForm(name);
-			setYamlInput(newYaml);
+			setYamlInput(emptySchema);
+			setActiveTab("ai");
 		} else if (name) {
 			alert("A form with this name already exists.");
 		}
@@ -177,23 +181,17 @@ export default function FormEditorPage() {
 				pageTitle={pageTitle}
 				onPrevPage={handlePrevPage}
 				onNextPage={handleNextPage}
+				onOpenSettings={() => setSettingsOpen(true)}
 			/>
 			<PanelGroup direction="horizontal" className="flex-grow">
 				<Panel defaultSize={50}>
-					<div className="h-full">
-						<Editor
-							height="100%"
-							language="yaml"
-							value={yamlInput}
-							onChange={(value) => setYamlInput(value || "")}
-							options={{
-								minimap: { enabled: false },
-								scrollBeyondLastLine: false,
-								automaticLayout: true,
-								wordWrap: "on",
-							}}
-						/>
-					</div>
+					<EditorPane
+						schema={yamlInput}
+						onSchemaChange={setYamlInput}
+						activeTab={activeTab}
+						onTabChange={setActiveTab}
+						onOpenSettings={() => setSettingsOpen(true)}
+					/>
 				</Panel>
 				<PanelResizeHandle className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
 				<Panel defaultSize={50}>
@@ -207,6 +205,7 @@ export default function FormEditorPage() {
 					</div>
 				</Panel>
 			</PanelGroup>
+			<SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 		</div>
 	);
 }
