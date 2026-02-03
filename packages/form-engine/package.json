@@ -10,7 +10,9 @@
   "scripts": {
     "build": "npm run generate-schema && tsc",
     "lint": "echo 'Lint script for form-engine package not yet implemented'",
-    "generate-schema": "tsx ./scripts/generate-form-schema.ts"
+    "generate-schema": "tsx ./scripts/generate-form-schema.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "peerDependencies": {
     "react": "^19.0.0",
@@ -29,8 +31,11 @@
     "@types/json-logic-js": "^2.0.8",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/ui": "^2.1.8",
+    "fast-check": "^3.23.0",
     "tsx": "^4.19.4",
     "typescript": "^5",
+    "vitest": "^2.1.8",
     "zod-to-json-schema": "^3.24.5"
   }
 }

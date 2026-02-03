@@ -31,4 +31,8 @@ export {
 	catalogToUnifiedJsonSchema,
 	entryToJsonSchema,
 	type CatalogToJsonSchemaOptions,
+	// LLM Prompt Generation utilities
+	generateCatalogPrompt,
+	formatPropsFromZodSchema,
+	type CatalogPromptOptions,
 } from "./catalog";

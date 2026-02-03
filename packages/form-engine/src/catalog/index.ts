@@ -25,6 +25,13 @@ export {
 	type CatalogToJsonSchemaOptions,
 } from "./toJsonSchema";
 
+// LLM Prompt Generation utilities
+export {
+	generateCatalogPrompt,
+	formatPropsFromZodSchema,
+	type CatalogPromptOptions,
+} from "./prompt";
+
 // Note: The catalog is now built automatically via createComponent() calls.
 // Each component file defines its own schema and registers it.
 // Use getRegisteredCatalog() to access the complete catalog.
