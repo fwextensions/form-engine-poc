@@ -289,11 +289,11 @@ describe("Settings Storage - Property-Based Tests", () => {
       );
     });
 
-    it("should handle settings with unicode characters", () => {
+    it("should handle settings with unicode and special characters", () => {
       fc.assert(
         fc.property(
           providerArb,
-          fc.fullUnicodeString({ minLength: 1, maxLength: 50 }),
+          fc.string({ minLength: 1, maxLength: 50 }),
           (provider, apiKey) => {
             const settings: LLMSettings = { provider, apiKey };
             

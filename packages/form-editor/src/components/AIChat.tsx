@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
 	MainContainer,
 	ChatContainer,
@@ -10,9 +10,10 @@ import {
 	TypingIndicator,
 } from "@chatscope/chat-ui-kit-react";
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
+import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
 import { hasApiKey, getSettings } from "@/lib/settings";
 import { SchemaGenerator } from "@/lib/schema-generator";
-import { createAnthropicClient } from "@/lib/llm-client";
 import { extractYamlFromResponse, extractTextAfterYaml } from "@/lib/yaml-extractor";
 import { validateSchema } from "@/lib/schema-validator";
 
@@ -22,58 +23,87 @@ interface AIChatProps {
 	onOpenSettings: () => void;
 }
 
-interface ChatMessage {
-	id: string;
-	role: "user" | "assistant";
-	content: string;
-	timestamp: Date;
-	extractedSchema?: string;
-	validationErrors?: string[];
-	validationWarnings?: string[];
-}
-
 /**
  * AI Chat interface component for schema generation.
  * 
  * Uses chatscope components for the chat UI and integrates with
- * SchemaGenerator for LLM interactions.
+ * the Vercel AI SDK's useChat hook for LLM interactions.
  * 
- * Requirements: 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 7.8, 8.1, 8.2, 8.3, 8.4, 8.5
+ * Requirements: 2.1, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 7.8, 8.1, 8.2, 8.3, 8.4, 8.5
  */
 export default function AIChat({
 	currentSchema,
 	onSchemaGenerated,
 	onOpenSettings,
 }: AIChatProps) {
-	const [messages, setMessages] = useState<ChatMessage[]>([]);
-	const [isGenerating, setIsGenerating] = useState(false);
 	const [inputValue, setInputValue] = useState("");
 	const generatorRef = useRef<SchemaGenerator | null>(null);
-	const lastApiKeyRef = useRef<string | undefined>(undefined);
+	const [validationResults, setValidationResults] = useState<Map<string, {
+		extractedSchema?: string;
+		validationErrors?: string[];
+		validationWarnings?: string[];
+	}>>(new Map());
 
-	// Initialize/reinitialize schema generator when API key changes
-	// This ensures the generator is recreated when settings are updated
-	const initializeGenerator = () => {
-		if (hasApiKey()) {
-			const settings = getSettings();
-			// Recreate generator if API key has changed
-			if (settings.apiKey && settings.apiKey !== lastApiKeyRef.current) {
-				const client = createAnthropicClient({
+	// Initialize schema generator
+	if (!generatorRef.current) {
+		generatorRef.current = new SchemaGenerator();
+	}
+
+	// Configure useChat hook with API endpoint and credentials
+	// Use a function for body to ensure settings are always fresh
+	const { messages, sendMessage, status, error } = useChat({
+		transport: new DefaultChatTransport({
+			api: '/api/llm',
+			body: () => {
+				const settings = getSettings();
+				return {
+					provider: settings.provider,
 					apiKey: settings.apiKey,
-					model: settings.model,
-				});
-				generatorRef.current = new SchemaGenerator(client);
-				lastApiKeyRef.current = settings.apiKey;
-			}
-		} else {
-			// Clear generator if no API key
-			generatorRef.current = null;
-			lastApiKeyRef.current = undefined;
-		}
-	};
+					model: settings.model || undefined,
+					awsAccessKeyId: settings.awsAccessKeyId,
+					awsSecretAccessKey: settings.awsSecretAccessKey,
+					awsRegion: settings.awsRegion,
+					system: generatorRef.current!.getSystemPrompt(),
+				};
+			},
+		}),
+		onFinish: (options) => {
+			// Extract and validate YAML when streaming completes
+			const message = options.message;
+			const messageContent = message.parts.map(part => {
+				if (part.type === 'text') {
+					return part.text;
+				}
+				return '';
+			}).join('');
 
-	// Check and initialize on every render (lightweight check)
-	initializeGenerator();
+			const extractedYaml = extractYamlFromResponse(messageContent);
+
+			if (extractedYaml) {
+				// Validate the extracted schema
+				const validationResult = validateSchema(extractedYaml);
+
+				// Store validation results for this message
+				setValidationResults(prev => {
+					const newMap = new Map(prev);
+					newMap.set(message.id, {
+						extractedSchema: extractedYaml,
+						validationErrors: validationResult.errors,
+						validationWarnings: validationResult.warnings,
+					});
+					return newMap;
+				});
+
+				// If valid, update the schema
+				if (validationResult.valid) {
+					onSchemaGenerated(extractedYaml);
+				}
+			}
+		},
+	});
+
+	// Check if currently loading
+	const isLoading = status === 'submitted' || status === 'streaming';
 
 	// Example prompts for empty state
 	const examplePrompts = [
@@ -83,7 +113,7 @@ export default function AIChat({
 	];
 
 	const handleSendMessage = async (message: string) => {
-		if (!message.trim() || isGenerating) {
+		if (!message.trim() || isLoading) {
 			return;
 		}
 
@@ -92,107 +122,26 @@ export default function AIChat({
 			return;
 		}
 
-		const userMessage: ChatMessage = {
-			id: `user-${Date.now()}`,
-			role: "user",
-			content: message,
-			timestamp: new Date(),
-		};
+		// Determine if this is a new schema or an edit
+		const isEdit = currentSchema.trim().length > 0;
+		const userMessage = isEdit
+			? generatorRef.current!.buildEditPrompt(currentSchema, message)
+			: message;
 
-		setMessages((prev) => [...prev, userMessage]);
+		// Clear input and send message via useChat
 		setInputValue("");
-		setIsGenerating(true);
-
-		try {
-			// Create assistant message that will be updated with streaming content
-			const assistantMessageId = `assistant-${Date.now()}`;
-			let assistantContent = "";
-
-			setMessages((prev) => [
-				...prev,
-				{
-					id: assistantMessageId,
-					role: "assistant",
-					content: "",
-					timestamp: new Date(),
-				},
-			]);
-
-			// Stream response from LLM
-			const generator = generatorRef.current;
-			if (!generator) {
-				throw new Error("Schema generator not initialized");
-			}
-
-			// Determine if this is a new schema or an edit
-			const isEdit = currentSchema.trim().length > 0;
-			const stream = isEdit
-				? generator.edit(currentSchema, message)
-				: generator.generate(message);
-
-			// Process streaming chunks
-			for await (const chunk of stream) {
-				assistantContent += chunk;
-
-				// Update the assistant message with accumulated content
-				setMessages((prev) =>
-					prev.map((msg) =>
-						msg.id === assistantMessageId
-							? { ...msg, content: assistantContent }
-							: msg
-					)
-				);
-			}
-
-			// After streaming completes, extract and validate YAML
-			const extractedYaml = extractYamlFromResponse(assistantContent);
-
-			if (extractedYaml) {
-				// Validate the extracted schema
-				const validationResult = validateSchema(extractedYaml);
-
-				// Extract any text after the YAML block (LLM's summary/explanation)
-				const textAfterYaml = extractTextAfterYaml(assistantContent);
-				const displayMessage = textAfterYaml || "Form updated";
-
-				// Update message with validation results and simplified content
-				setMessages((prev) =>
-					prev.map((msg) =>
-						msg.id === assistantMessageId
-							? {
-									...msg,
-									// Show LLM's summary or default message instead of full YAML
-									content: displayMessage,
-									extractedSchema: extractedYaml,
-									validationErrors: validationResult.errors,
-									validationWarnings: validationResult.warnings,
-							  }
-							: msg
-					)
-				);
-
-				// If valid, update the schema
-				if (validationResult.valid) {
-					onSchemaGenerated(extractedYaml);
-				}
-			}
-		} catch (error) {
-			// Handle errors by adding an error message
-			const errorMessage: ChatMessage = {
-				id: `error-${Date.now()}`,
-				role: "assistant",
-				content: `Error: ${error instanceof Error ? error.message : "An unexpected error occurred"}`,
-				timestamp: new Date(),
-			};
-
-			setMessages((prev) => [...prev, errorMessage]);
-		} finally {
-			setIsGenerating(false);
-		}
+		await sendMessage({
+			text: userMessage,
+		});
 	};
 
 	const handleExampleClick = (prompt: string) => {
 		setInputValue(prompt);
+	};
+
+	// Helper to get validation results for a message
+	const getValidationForMessage = (messageId: string) => {
+		return validationResults.get(messageId);
 	};
 
 	// Render empty state when no messages
@@ -307,7 +256,7 @@ export default function AIChat({
 							value={inputValue}
 							onChange={(val) => setInputValue(val)}
 							onSend={handleSendMessage}
-							disabled={isGenerating}
+							disabled={isLoading}
 							attachButton={false}
 							sendButton={true}
 						/>
@@ -338,67 +287,95 @@ export default function AIChat({
 					<ChatContainer>
 						<MessageList
 							typingIndicator={
-								isGenerating ? (
+								isLoading ? (
 									<TypingIndicator content="AI is generating..." />
 								) : null
 							}
 						>
-							{messages.map((msg) => (
-								<React.Fragment key={msg.id}>
-									<Message
-										model={{
-											message: msg.content,
-											sentTime: msg.timestamp.toISOString(),
-											sender: msg.role === "user" ? "You" : "AI Assistant",
-											direction:
-												msg.role === "user" ? "outgoing" : "incoming",
-											position: "single",
-										}}
-									/>
+							{messages.map((msg) => {
+								const validation = getValidationForMessage(msg.id);
+								
+								// Extract text content from message parts
+								const messageContent = msg.parts.map(part => {
+									if (part.type === 'text') {
+										return part.text;
+									}
+									return '';
+								}).join('');
 
-									{/* Validation errors */}
-									{msg.validationErrors &&
-										msg.validationErrors.length > 0 && (
-											<div className="mx-4 my-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-												<p className="text-sm font-medium text-red-800 mb-2">
-													Validation Errors:
-												</p>
-												<ul className="text-sm text-red-700 space-y-1">
-													{msg.validationErrors.map((error, idx) => (
-														<li key={idx}>• {error}</li>
-													))}
-												</ul>
-											</div>
-										)}
+								const displayContent = validation?.extractedSchema
+									? extractTextAfterYaml(messageContent) || "Form updated"
+									: messageContent;
 
-									{/* Validation warnings */}
-									{msg.validationWarnings &&
-										msg.validationWarnings.length > 0 && (
-											<div className="mx-4 my-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-												<p className="text-sm font-medium text-yellow-800 mb-2">
-													Warnings:
-												</p>
-												<ul className="text-sm text-yellow-700 space-y-1">
-													{msg.validationWarnings.map((warning, idx) => (
-														<li key={idx}>• {warning}</li>
-													))}
-												</ul>
-											</div>
-										)}
+								return (
+									<React.Fragment key={msg.id}>
+										<Message
+											model={{
+												message: displayContent,
+												sentTime: new Date().toISOString(),
+												sender: msg.role === "user" ? "You" : "AI Assistant",
+												direction:
+													msg.role === "user" ? "outgoing" : "incoming",
+												position: "single",
+											}}
+										/>
 
-									{/* Success indicator */}
-									{msg.extractedSchema &&
-										(!msg.validationErrors ||
-											msg.validationErrors.length === 0) && (
-											<div className="mx-4 my-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-												<p className="text-sm text-green-800">
-													✓ Schema generated successfully and applied to
-													the editor
-												</p>
-											</div>
-										)}
-								</React.Fragment>
-							))}
+										{/* Validation errors */}
+										{validation?.validationErrors &&
+											validation.validationErrors.length > 0 && (
+												<div className="mx-4 my-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+													<p className="text-sm font-medium text-red-800 mb-2">
+														Validation Errors:
+													</p>
+													<ul className="text-sm text-red-700 space-y-1">
+														{validation.validationErrors.map((error, idx) => (
+															<li key={idx}>• {error}</li>
+														))}
+													</ul>
+												</div>
+											)}
+
+										{/* Validation warnings */}
+										{validation?.validationWarnings &&
+											validation.validationWarnings.length > 0 && (
+												<div className="mx-4 my-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+													<p className="text-sm font-medium text-yellow-800 mb-2">
+														Warnings:
+													</p>
+													<ul className="text-sm text-yellow-700 space-y-1">
+														{validation.validationWarnings.map((warning, idx) => (
+															<li key={idx}>• {warning}</li>
+														))}
+													</ul>
+												</div>
+											)}
+
+										{/* Success indicator */}
+										{validation?.extractedSchema &&
+											(!validation.validationErrors ||
+												validation.validationErrors.length === 0) && (
+												<div className="mx-4 my-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+													<p className="text-sm text-green-800">
+														✓ Schema generated successfully and applied to
+														the editor
+													</p>
+												</div>
+											)}
+									</React.Fragment>
+								);
+							})}
+
+							{/* Error display */}
+							{error && (
+								<div className="mx-4 my-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+									<p className="text-sm font-medium text-red-800 mb-1">
+										Error
+									</p>
+									<p className="text-sm text-red-700">
+										{error.message || "An unexpected error occurred"}
+									</p>
+								</div>
+							)}
 						</MessageList>
 					</ChatContainer>
 				</MainContainer>
@@ -411,7 +388,7 @@ export default function AIChat({
 					value={inputValue}
 					onChange={(val) => setInputValue(val)}
 					onSend={handleSendMessage}
-					disabled={isGenerating}
+					disabled={isLoading}
 					attachButton={false}
 					sendButton={true}
 				/>

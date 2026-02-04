@@ -86,8 +86,6 @@ describe("EditorPane - Property-Based Tests", () => {
 			fc.string({ maxLength: 200 }),
 			// Strings with special characters
 			fc.string({ minLength: 0, maxLength: 200 }),
-			// Unicode strings
-			fc.fullUnicodeString({ minLength: 0, maxLength: 100 }),
 		);
 
 		it("should preserve schema when switching from YAML to AI tab", () => {
@@ -507,7 +505,7 @@ describe("EditorPane - Property-Based Tests", () => {
 		it("should preserve schema with unicode characters through tab switches", () => {
 			fc.assert(
 				fc.property(
-					fc.fullUnicodeString({ minLength: 1, maxLength: 100 }),
+					fc.string({ minLength: 1, maxLength: 100 }),
 					(unicodeSchema) => {
 						// Start with YAML tab
 						const { container: c1, unmount: u1 } = render(

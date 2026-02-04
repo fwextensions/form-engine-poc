@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { getSettings, saveSettings, hasApiKey, type LLMSettings } from "../settings";
+import { getSettings, saveSettings, hasApiKey, DEFAULT_MODELS, type LLMSettings } from "../settings";
 
 describe("settings", () => {
 	// Mock localStorage
@@ -33,6 +33,33 @@ describe("settings", () => {
 		vi.unstubAllGlobals();
 	});
 
+	describe("DEFAULT_MODELS", () => {
+		it("should have default model for anthropic", () => {
+			expect(DEFAULT_MODELS.anthropic).toBe("claude-sonnet-4-20250514");
+		});
+
+		it("should have default model for openai", () => {
+			expect(DEFAULT_MODELS.openai).toBe("gpt-4o");
+		});
+
+		it("should have default model for google", () => {
+			expect(DEFAULT_MODELS.google).toBe("gemini-2.0-flash");
+		});
+
+		it("should have default model for bedrock", () => {
+			expect(DEFAULT_MODELS.bedrock).toBe("anthropic.claude-3-sonnet-20240229-v1:0");
+		});
+
+		it("should have all four providers defined", () => {
+			const providers = Object.keys(DEFAULT_MODELS);
+			expect(providers).toHaveLength(4);
+			expect(providers).toContain("anthropic");
+			expect(providers).toContain("openai");
+			expect(providers).toContain("google");
+			expect(providers).toContain("bedrock");
+		});
+	});
+
 	describe("getSettings", () => {
 		it("should return default settings when localStorage is empty", () => {
 			const settings = getSettings();
@@ -52,6 +79,86 @@ describe("settings", () => {
 
 			const settings = getSettings();
 			expect(settings).toEqual(savedSettings);
+		});
+
+		it("should return saved settings for google provider", () => {
+			const savedSettings: LLMSettings = {
+				provider: "google",
+				apiKey: "test-google-key",
+				model: "gemini-pro",
+			};
+
+			store["form-editor-llm-settings"] = JSON.stringify(savedSettings);
+
+			const settings = getSettings();
+			expect(settings).toEqual(savedSettings);
+		});
+
+		it("should return saved settings for bedrock provider", () => {
+			const savedSettings: LLMSettings = {
+				provider: "bedrock",
+				apiKey: "test-bedrock-key",
+				model: "anthropic.claude-v2",
+			};
+
+			store["form-editor-llm-settings"] = JSON.stringify(savedSettings);
+
+			const settings = getSettings();
+			expect(settings).toEqual(savedSettings);
+		});
+
+		it("should return saved settings with AWS credentials for bedrock", () => {
+			const savedSettings: LLMSettings = {
+				provider: "bedrock",
+				awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
+				awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+				awsRegion: "us-east-1",
+				model: "anthropic.claude-v2",
+			};
+
+			store["form-editor-llm-settings"] = JSON.stringify(savedSettings);
+
+			const settings = getSettings();
+			expect(settings).toEqual(savedSettings);
+		});
+
+		it("should filter out invalid awsAccessKeyId types", () => {
+			store["form-editor-llm-settings"] = JSON.stringify({ 
+				provider: "bedrock", 
+				awsAccessKeyId: 123 
+			});
+
+			const settings = getSettings();
+			expect(settings).toEqual({
+				provider: "bedrock",
+				awsAccessKeyId: undefined,
+			});
+		});
+
+		it("should filter out invalid awsSecretAccessKey types", () => {
+			store["form-editor-llm-settings"] = JSON.stringify({ 
+				provider: "bedrock", 
+				awsSecretAccessKey: true 
+			});
+
+			const settings = getSettings();
+			expect(settings).toEqual({
+				provider: "bedrock",
+				awsSecretAccessKey: undefined,
+			});
+		});
+
+		it("should filter out invalid awsRegion types", () => {
+			store["form-editor-llm-settings"] = JSON.stringify({ 
+				provider: "bedrock", 
+				awsRegion: 456 
+			});
+
+			const settings = getSettings();
+			expect(settings).toEqual({
+				provider: "bedrock",
+				awsRegion: undefined,
+			});
 		});
 
 		it("should return default settings when localStorage contains invalid JSON", () => {
@@ -144,6 +251,27 @@ describe("settings", () => {
 			expect(store["form-editor-llm-settings"]).toBe(JSON.stringify(settings));
 		});
 
+		it("should save settings with AWS credentials for bedrock", () => {
+			const settings: LLMSettings = {
+				provider: "bedrock",
+				awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
+				awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+				awsRegion: "us-west-2",
+				model: "anthropic.claude-v2",
+			};
+
+			saveSettings(settings);
+
+			expect(localStorageMock.setItem).toHaveBeenCalledWith(
+				"form-editor-llm-settings",
+				expect.any(String)
+			);
+			
+			// Verify the stored value can be parsed back correctly
+			const stored = JSON.parse(store["form-editor-llm-settings"]);
+			expect(stored).toEqual(settings);
+		});
+
 		it("should overwrite existing settings", () => {
 			const oldSettings: LLMSettings = {
 				provider: "anthropic",
@@ -230,6 +358,21 @@ describe("settings", () => {
 			expect(loaded.provider).toBe(original.provider);
 			expect(loaded.apiKey).toBeUndefined();
 			expect(loaded.model).toBeUndefined();
+		});
+
+		it("should preserve AWS credentials through save and load", () => {
+			const original: LLMSettings = {
+				provider: "bedrock",
+				awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
+				awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+				awsRegion: "eu-west-1",
+				model: "anthropic.claude-3-sonnet-20240229-v1:0",
+			};
+
+			saveSettings(original);
+			const loaded = getSettings();
+
+			expect(loaded).toEqual(original);
 		});
 	});
 });

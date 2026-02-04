@@ -5,13 +5,28 @@
 
 const SETTINGS_KEY = "form-editor-llm-settings";
 
-export type LLMProvider = "anthropic" | "openai";
+export type LLMProvider = "anthropic" | "openai" | "google" | "bedrock";
 
 export interface LLMSettings {
 	provider: LLMProvider;
 	apiKey?: string;
 	model?: string;
+	// AWS Bedrock specific credentials
+	awsAccessKeyId?: string;
+	awsSecretAccessKey?: string;
+	awsRegion?: string;
 }
+
+/**
+ * Default models for each provider.
+ * Used when no model is explicitly specified in settings.
+ */
+export const DEFAULT_MODELS: Record<LLMProvider, string> = {
+	anthropic: "claude-sonnet-4-20250514",
+	openai: "gpt-4o",
+	google: "gemini-2.0-flash",
+	bedrock: "anthropic.claude-3-sonnet-20240229-v1:0",
+};
 
 /**
  * Default settings when none are saved or storage is corrupted.
@@ -43,7 +58,12 @@ export function getSettings(): LLMSettings {
 		}
 
 		// Validate provider is valid
-		if (parsed.provider !== "anthropic" && parsed.provider !== "openai") {
+		if (
+			parsed.provider !== "anthropic" &&
+			parsed.provider !== "openai" &&
+			parsed.provider !== "google" &&
+			parsed.provider !== "bedrock"
+		) {
 			return DEFAULT_SETTINGS;
 		}
 
@@ -51,6 +71,9 @@ export function getSettings(): LLMSettings {
 			provider: parsed.provider,
 			apiKey: typeof parsed.apiKey === "string" ? parsed.apiKey : undefined,
 			model: typeof parsed.model === "string" ? parsed.model : undefined,
+			awsAccessKeyId: typeof parsed.awsAccessKeyId === "string" ? parsed.awsAccessKeyId : undefined,
+			awsSecretAccessKey: typeof parsed.awsSecretAccessKey === "string" ? parsed.awsSecretAccessKey : undefined,
+			awsRegion: typeof parsed.awsRegion === "string" ? parsed.awsRegion : undefined,
 		};
 	} catch (error) {
 		// Handle JSON parse errors or other exceptions
@@ -73,6 +96,9 @@ export function saveSettings(settings: LLMSettings): void {
 			provider: settings.provider,
 			apiKey: settings.apiKey,
 			model: settings.model,
+			awsAccessKeyId: settings.awsAccessKeyId,
+			awsSecretAccessKey: settings.awsSecretAccessKey,
+			awsRegion: settings.awsRegion,
 		};
 
 		window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(toStore));
