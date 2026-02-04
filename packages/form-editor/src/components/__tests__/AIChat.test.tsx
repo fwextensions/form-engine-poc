@@ -12,9 +12,10 @@ vi.mock("@/lib/settings", () => ({
 	getModelForProvider: vi.fn(() => "claude-3-5-sonnet-20241022"),
 }));
 
-// Mock the DefaultChatTransport
-vi.mock("ai", () => ({
-	DefaultChatTransport: vi.fn().mockImplementation(function(this: any) {
+// Mock AssistantChatTransport
+vi.mock("@assistant-ui/react-ai-sdk", () => ({
+	useChatRuntime: vi.fn(() => mockRuntime),
+	AssistantChatTransport: vi.fn().mockImplementation(function(this: any) {
 		return this;
 	}),
 }));
@@ -60,10 +61,6 @@ vi.mock("@assistant-ui/react", () => ({
 	useThread: vi.fn(() => mockThread),
 }));
 
-// Mock assistant-ui AI SDK integration
-vi.mock("@assistant-ui/react-ai-sdk", () => ({
-	useChatRuntime: vi.fn(() => mockRuntime),
-}));
 
 describe("AIChat", () => {
 	const mockOnSchemaGenerated = vi.fn();
@@ -191,9 +188,6 @@ describe("AIChat", () => {
 			expect(mockRuntime.thread.append).toHaveBeenCalledWith({
 				role: "user",
 				content: [{ type: "text", text: "Create a contact form with name, email, and message fields" }],
-				metadata: {
-					fullPrompt: "Create a contact form with name, email, and message fields",
-				},
 			});
 		});
 	});

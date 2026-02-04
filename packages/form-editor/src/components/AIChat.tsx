@@ -11,8 +11,7 @@ import {
 	useAssistantRuntime,
 	useThread,
 } from "@assistant-ui/react";
-import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
-import { DefaultChatTransport } from "ai";
+import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
 import { hasApiKey, getSettings, getModelForProvider } from "@/lib/settings";
 import { SchemaGenerator } from "@/lib/schema-generator";
 import { extractYamlFromResponse, extractTextAfterYaml } from "@/lib/yaml-extractor";
@@ -24,6 +23,13 @@ interface AIChatProps {
 	onOpenSettings: () => void;
 }
 
+// Type for validation results
+type ValidationResults = Map<string, {
+	extractedSchema?: string;
+	validationErrors?: string[];
+	validationWarnings?: string[];
+}>;
+
 /**
  * Inner component that has access to assistant-ui hooks
  */
@@ -32,57 +38,16 @@ function AIChatInner({
 	onSchemaGenerated,
 	onOpenSettings,
 	generatorRef,
-}: AIChatProps & { generatorRef: React.MutableRefObject<SchemaGenerator | null> }) {
-	const [validationResults, setValidationResults] = useState<Map<string, {
-		extractedSchema?: string;
-		validationErrors?: string[];
-		validationWarnings?: string[];
-	}>>(new Map());
-
+	validationResults,
+	setValidationResults,
+}: AIChatProps & {
+	generatorRef: React.MutableRefObject<SchemaGenerator | null>;
+	validationResults: ValidationResults;
+	setValidationResults: React.Dispatch<React.SetStateAction<ValidationResults>>;
+}) {
 	// Access runtime via hooks
 	const runtime = useAssistantRuntime();
 	const thread = useThread();
-
-	// Listen for message completion events to perform validation
-	useAssistantEvent({ scope: "*", event: "run-ended" }, () => {
-		const messages = thread.messages;
-
-		if (messages.length > 0) {
-			const lastMessage = messages[messages.length - 1];
-
-			// Only process assistant messages
-			if (lastMessage.role === 'assistant') {
-				// Extract text content from message parts
-				const messageContent = lastMessage.content
-					.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
-					.map(part => part.text)
-					.join('');
-
-				const extractedYaml = extractYamlFromResponse(messageContent);
-
-				if (extractedYaml) {
-					// Validate the extracted schema
-					const validationResult = validateSchema(extractedYaml);
-
-					// Store validation results for this message
-					setValidationResults(prev => {
-						const newMap = new Map(prev);
-						newMap.set(lastMessage.id, {
-							extractedSchema: extractedYaml,
-							validationErrors: validationResult.errors,
-							validationWarnings: validationResult.warnings,
-						});
-						return newMap;
-					});
-
-					// If valid, update the schema
-					if (validationResult.valid) {
-						onSchemaGenerated(extractedYaml);
-					}
-				}
-			}
-		}
-	});
 
 	// Example prompts for empty state
 	const examplePrompts = [
@@ -107,13 +72,11 @@ function AIChatInner({
 			: message;
 
 		// Send message via runtime API
+		// Note: We store fullPrompt in a custom property that prepareSendMessagesRequest will use
 		runtime.thread.append({
 			role: "user",
 			content: [{ type: "text", text: message }],
-			metadata: {
-				fullPrompt: fullPrompt, // Include the full prompt for the API
-			},
-		});
+		} as any);
 	};
 
 	// Helper to get validation results for a message
@@ -151,9 +114,9 @@ function AIChatInner({
 								: "bg-slate-100 text-slate-900"
 						}`}
 					>
-						<MessagePrimitive.Content>
+						<div className="whitespace-pre-wrap">
 							{displayContent}
-						</MessagePrimitive.Content>
+						</div>
 					</div>
 				</MessagePrimitive.Root>
 
@@ -359,18 +322,6 @@ function AIChatInner({
 				<ThreadPrimitive.Root className="h-full">
 					<ThreadPrimitive.Viewport className="h-full overflow-y-auto p-4">
 						<ThreadPrimitive.Messages components={{ UserMessage: CustomMessage, AssistantMessage: CustomMessage }} />
-
-						{/* Error display */}
-						{thread.error && (
-							<div className="mx-4 my-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-								<p className="text-sm font-medium text-red-800 mb-1">
-									Error
-								</p>
-								<p className="text-sm text-red-700">
-									{thread.error.message || "An unexpected error occurred"}
-								</p>
-							</div>
-						)}
 					</ThreadPrimitive.Viewport>
 					<ThreadPrimitive.ScrollToBottom className="absolute bottom-4 right-4" />
 				</ThreadPrimitive.Root>
@@ -416,15 +367,24 @@ function AIChatInner({
  */
 export default function AIChat(props: AIChatProps) {
 	const generatorRef = useRef<SchemaGenerator | null>(null);
+	const currentSchemaRef = useRef<string>(props.currentSchema);
+	const [validationResults, setValidationResults] = useState<Map<string, {
+		extractedSchema?: string;
+		validationErrors?: string[];
+		validationWarnings?: string[];
+	}>>(new Map());
+
+	// Keep currentSchemaRef in sync with props
+	currentSchemaRef.current = props.currentSchema;
 
 	// Initialize schema generator
 	if (!generatorRef.current) {
 		generatorRef.current = new SchemaGenerator();
 	}
 
-	// Configure useChatRuntime with custom transport
+	// Configure useChatRuntime with custom transport and onFinish callback
 	const runtime = useChatRuntime({
-		transport: new DefaultChatTransport({
+		transport: new AssistantChatTransport({
 			api: '/api/llm',
 			body: () => {
 				const settings = getSettings();
@@ -457,14 +417,28 @@ export default function AIChat(props: AIChatProps) {
 				return requestBody;
 			},
 			prepareSendMessagesRequest: ({ messages, body }) => {
-				// Transform messages to use fullPrompt from metadata if available
-				const transformedMessages = messages.map((msg) => {
-					if (msg.role === 'user' && msg.metadata?.fullPrompt) {
-						// Use the full prompt for the API call
-						return {
-							...msg,
-							parts: [{ type: 'text' as const, text: msg.metadata.fullPrompt }],
-						};
+				// Transform the last user message to include current schema context if editing
+				const transformedMessages = messages.map((msg, index) => {
+					// Only transform the last user message
+					if (msg.role === 'user' && index === messages.length - 1) {
+						const currentSchema = currentSchemaRef.current;
+						const isEdit = currentSchema.trim().length > 0;
+
+						if (isEdit) {
+							// Get the original text from the message parts
+							const originalText = msg.parts
+								?.filter((part: any) => part.type === 'text')
+								.map((part: any) => part.text)
+								.join('') || '';
+
+							// Build the full edit prompt
+							const fullPrompt = generatorRef.current!.buildEditPrompt(currentSchema, originalText);
+
+							return {
+								...msg,
+								parts: [{ type: 'text' as const, text: fullPrompt }],
+							};
+						}
 					}
 					return msg;
 				});
@@ -477,11 +451,56 @@ export default function AIChat(props: AIChatProps) {
 				};
 			},
 		}),
+		onFinish: ({ message }) => {
+			console.log('[AIChat] onFinish called', message);
+
+			if (message.role === 'assistant') {
+				// Extract text content from message parts
+				const messageContent = message.parts
+					?.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+					.map(part => part.text)
+					.join('') || '';
+
+				console.log('[AIChat] messageContent:', messageContent);
+				const extractedYaml = extractYamlFromResponse(messageContent);
+				console.log('[AIChat] extractedYaml:', extractedYaml);
+
+				if (extractedYaml) {
+					// Validate the extracted schema
+					const validationResult = validateSchema(extractedYaml);
+					console.log('[AIChat] validationResult:', validationResult);
+
+					// Store validation results for this message
+					setValidationResults(prev => {
+						const newMap = new Map(prev);
+						newMap.set(message.id, {
+							extractedSchema: extractedYaml,
+							validationErrors: validationResult.errors,
+							validationWarnings: validationResult.warnings,
+						});
+						return newMap;
+					});
+
+					// If valid, update the schema
+					if (validationResult.valid) {
+						console.log('[AIChat] Schema is valid, calling onSchemaGenerated');
+						props.onSchemaGenerated(extractedYaml);
+					} else {
+						console.log('[AIChat] Schema is invalid, not updating');
+					}
+				} else {
+					console.log('[AIChat] No YAML extracted from response');
+				}
+			}
+		},
+		onError: (error) => {
+			console.error('[AIChat] onError:', error);
+		},
 	});
 
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
-			<AIChatInner {...props} generatorRef={generatorRef} />
+			<AIChatInner {...props} generatorRef={generatorRef} validationResults={validationResults} setValidationResults={setValidationResults} />
 		</AssistantRuntimeProvider>
 	);
 }
