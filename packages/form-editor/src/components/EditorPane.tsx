@@ -15,11 +15,11 @@ interface EditorPaneProps {
 
 /**
  * EditorPane component with tabbed interface for YAML editing and AI assistance.
- * 
+ *
  * Uses Radix UI Tabs to switch between:
  * - YAML Editor: Monaco editor for manual schema editing
  * - AI Assistant: Chat interface for LLM-assisted schema generation
- * 
+ *
  * Requirements: 4.1, 4.2, 4.3, 4.5
  */
 export default function EditorPane({
@@ -67,8 +67,12 @@ export default function EditorPane({
 				/>
 			</Tabs.Content>
 
-			{/* AI Assistant Tab Content */}
-			<Tabs.Content value="ai" className="flex-1 overflow-hidden">
+			{/* AI Assistant Tab Content - keep mounted to preserve conversation state */}
+			<Tabs.Content
+				value="ai"
+				className="flex-1 overflow-hidden data-[state=inactive]:hidden"
+				forceMount
+			>
 				<AIChat
 					currentSchema={schema}
 					onSchemaGenerated={onSchemaChange}
