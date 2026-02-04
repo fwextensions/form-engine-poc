@@ -26,6 +26,7 @@ export interface LLMClient {
 
 /**
  * Creates an Anthropic Claude client with SSE streaming.
+ * Uses the Next.js API proxy to avoid CORS issues.
  * 
  * @param config - Configuration including API key, model, and max tokens
  * @returns LLMClient instance that streams responses via SSE
@@ -33,7 +34,7 @@ export interface LLMClient {
 export function createAnthropicClient(config: LLMClientConfig): LLMClient {
 	const {
 		apiKey,
-		model = "claude-3-5-sonnet-20241022",
+		model = "claude-haiku-4-5-20251001",
 		maxTokens = 4096,
 	} = config;
 
@@ -46,26 +47,35 @@ export function createAnthropicClient(config: LLMClientConfig): LLMClient {
 			// Anthropic API expects a single system parameter
 			const systemPrompt = systemMessages.map(m => m.content).join("\n\n");
 
-			// Build request body according to Anthropic Messages API
+			// Build messages array for the API
+			const apiMessages = conversationMessages.map(m => ({
+				role: m.role,
+				content: m.content,
+			}));
+
+			// Add system message if present
+			if (systemPrompt) {
+				apiMessages.unshift({
+					role: "system" as const,
+					content: systemPrompt,
+				});
+			}
+
+			// Build request body for the proxy endpoint
 			const requestBody = {
+				provider: "anthropic",
+				apiKey,
 				model,
-				max_tokens: maxTokens,
-				messages: conversationMessages.map(m => ({
-					role: m.role,
-					content: m.content,
-				})),
+				messages: apiMessages,
 				stream: true,
-				...(systemPrompt && { system: systemPrompt }),
 			};
 
 			let response: Response;
 			try {
-				response = await fetch("https://api.anthropic.com/v1/messages", {
+				response = await fetch("/api/llm", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
-						"x-api-key": apiKey,
-						"anthropic-version": "2023-06-01",
 					},
 					body: JSON.stringify(requestBody),
 				});
