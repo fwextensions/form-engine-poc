@@ -21,7 +21,10 @@ export default function SettingsDialog({
 }: SettingsDialogProps) {
 	const [provider, setProvider] = useState<LLMProvider>("anthropic");
 	const [apiKey, setApiKey] = useState("");
-	const [model, setModel] = useState("");
+	const [anthropicModel, setAnthropicModel] = useState("");
+	const [openaiModel, setOpenaiModel] = useState("");
+	const [googleModel, setGoogleModel] = useState("");
+	const [bedrockModel, setBedrockModel] = useState("");
 	const [awsAccessKeyId, setAwsAccessKeyId] = useState("");
 	const [awsSecretAccessKey, setAwsSecretAccessKey] = useState("");
 	const [awsRegion, setAwsRegion] = useState("");
@@ -32,7 +35,10 @@ export default function SettingsDialog({
 			const settings = getSettings();
 			setProvider(settings.provider);
 			setApiKey(settings.apiKey || "");
-			setModel(settings.model || "");
+			setAnthropicModel(settings.anthropicModel || "");
+			setOpenaiModel(settings.openaiModel || "");
+			setGoogleModel(settings.googleModel || "");
+			setBedrockModel(settings.bedrockModel || "");
 			setAwsAccessKeyId(settings.awsAccessKeyId || "");
 			setAwsSecretAccessKey(settings.awsSecretAccessKey || "");
 			setAwsRegion(settings.awsRegion || "");
@@ -44,7 +50,10 @@ export default function SettingsDialog({
 			saveSettings({
 				provider,
 				apiKey: apiKey.trim() || undefined,
-				model: model.trim() || undefined,
+				anthropicModel: anthropicModel.trim() || undefined,
+				openaiModel: openaiModel.trim() || undefined,
+				googleModel: googleModel.trim() || undefined,
+				bedrockModel: bedrockModel.trim() || undefined,
 				awsAccessKeyId: awsAccessKeyId.trim() || undefined,
 				awsSecretAccessKey: awsSecretAccessKey.trim() || undefined,
 				awsRegion: awsRegion.trim() || undefined,
@@ -191,11 +200,25 @@ export default function SettingsDialog({
 							<input
 								id="model"
 								type="text"
-								value={model}
-								onChange={(e) => setModel(e.target.value)}
+								value={
+									provider === "anthropic"
+										? anthropicModel
+										: provider === "openai"
+										? openaiModel
+										: provider === "google"
+										? googleModel
+										: bedrockModel
+								}
+								onChange={(e) => {
+									const value = e.target.value;
+									if (provider === "anthropic") setAnthropicModel(value);
+									else if (provider === "openai") setOpenaiModel(value);
+									else if (provider === "google") setGoogleModel(value);
+									else setBedrockModel(value);
+								}}
 								placeholder={
 									provider === "anthropic"
-										? "e.g., claude-haiku-4-5-20251001"
+										? "e.g., claude-sonnet-4-20250514"
 										: provider === "openai"
 										? "e.g., gpt-4o"
 										: provider === "google"
@@ -205,7 +228,7 @@ export default function SettingsDialog({
 								className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
 							/>
 							<p className="text-xs text-slate-500 mt-1">
-								Leave empty to use the default model.
+								Leave empty to use the default model for this provider.
 							</p>
 						</div>
 					</div>

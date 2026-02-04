@@ -16,7 +16,7 @@ interface LLMRequest {
 	messages: Array<{ role: string; content: string }>;
 	system?: string;
 	maxTokens?: number;
-	// AWS Bedrock specific
+	// AWS Bedrock specific (IAM authentication)
 	awsAccessKeyId?: string;
 	awsSecretAccessKey?: string;
 	awsRegion?: string;
@@ -64,14 +64,15 @@ export function createProvider(
 				apiKey: credentials.apiKey,
 			});
 
-		case "bedrock":
+		case "bedrock": {
+			// IAM authentication using access keys
 			if (
 				!credentials.awsAccessKeyId ||
 				!credentials.awsSecretAccessKey ||
 				!credentials.awsRegion
 			) {
 				throw new Error(
-					"AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock provider"
+					"AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock"
 				);
 			}
 			return createAmazonBedrock({
@@ -79,6 +80,7 @@ export function createProvider(
 				accessKeyId: credentials.awsAccessKeyId,
 				secretAccessKey: credentials.awsSecretAccessKey,
 			});
+		}
 
 		default:
 			throw new Error(`Unsupported provider: ${provider}`);
@@ -92,6 +94,10 @@ export function createProvider(
 export async function POST(request: NextRequest) {
 	try {
 		const body: LLMRequest = await request.json();
+		
+		// Debug: Log the received body to understand the structure
+		console.log("Received request body:", JSON.stringify(body, null, 2));
+		
 		const {
 			provider,
 			apiKey,
@@ -128,12 +134,29 @@ export async function POST(request: NextRequest) {
 		});
 
 		// Call streamText with the provider's model and messages
+		// Transform UIMessage format to simple {role, content} format
+		const transformedMessages = messages.map((msg) => {
+			// Handle UIMessage format with parts array
+			if ('parts' in msg && Array.isArray(msg.parts)) {
+				const textContent = msg.parts
+					.filter((part: any) => part.type === 'text')
+					.map((part: any) => part.text)
+					.join('');
+				return {
+					role: msg.role as "user" | "assistant" | "system",
+					content: textContent,
+				};
+			}
+			// Handle simple {role, content} format
+			return {
+				role: msg.role as "user" | "assistant" | "system",
+				content: msg.content || '',
+			};
+		});
+
 		const result = streamText({
 			model: providerInstance(model),
-			messages: messages.map((msg) => ({
-				role: msg.role as "user" | "assistant" | "system",
-				content: msg.content,
-			})),
+			messages: transformedMessages,
 			...(system && { system }),
 			...(maxTokens && { maxTokens }),
 		});

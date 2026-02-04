@@ -12,7 +12,7 @@ import {
 import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { hasApiKey, getSettings } from "@/lib/settings";
+import { hasApiKey, getSettings, getModelForProvider } from "@/lib/settings";
 import { SchemaGenerator } from "@/lib/schema-generator";
 import { extractYamlFromResponse, extractTextAfterYaml } from "@/lib/yaml-extractor";
 import { validateSchema } from "@/lib/schema-validator";
@@ -56,14 +56,45 @@ export default function AIChat({
 			api: '/api/llm',
 			body: () => {
 				const settings = getSettings();
-				return {
+				
+				// Build request body with only relevant credentials for the provider
+				const requestBody: Record<string, any> = {
 					provider: settings.provider,
-					apiKey: settings.apiKey,
-					model: settings.model || undefined,
-					awsAccessKeyId: settings.awsAccessKeyId,
-					awsSecretAccessKey: settings.awsSecretAccessKey,
-					awsRegion: settings.awsRegion,
+					model: getModelForProvider(settings),
 					system: generatorRef.current!.getSystemPrompt(),
+				};
+
+				// Add provider-specific credentials
+				if (settings.provider === 'bedrock') {
+					// Bedrock uses AWS credentials
+					requestBody.awsAccessKeyId = settings.awsAccessKeyId;
+					requestBody.awsSecretAccessKey = settings.awsSecretAccessKey;
+					requestBody.awsRegion = settings.awsRegion;
+				} else {
+					// Other providers use API key
+					requestBody.apiKey = settings.apiKey;
+				}
+
+				return requestBody;
+			},
+			prepareSendMessagesRequest: ({ messages, body }) => {
+				// Transform messages to use fullPrompt from metadata if available
+				const transformedMessages = messages.map((msg) => {
+					if (msg.role === 'user' && msg.metadata?.fullPrompt) {
+						// Use the full prompt for the API call
+						return {
+							...msg,
+							parts: [{ type: 'text' as const, text: msg.metadata.fullPrompt }],
+						};
+					}
+					return msg;
+				});
+
+				return {
+					body: {
+						...body,
+						messages: transformedMessages,
+					},
 				};
 			},
 		}),
@@ -124,14 +155,18 @@ export default function AIChat({
 
 		// Determine if this is a new schema or an edit
 		const isEdit = currentSchema.trim().length > 0;
-		const userMessage = isEdit
+		const fullPrompt = isEdit
 			? generatorRef.current!.buildEditPrompt(currentSchema, message)
 			: message;
 
 		// Clear input and send message via useChat
+		// Send the user's original message for display, but include the full prompt as metadata
 		setInputValue("");
 		await sendMessage({
-			text: userMessage,
+			text: message, // Display the user's actual message
+			metadata: {
+				fullPrompt: fullPrompt, // Include the full prompt for the API
+			},
 		});
 	};
 

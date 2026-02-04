@@ -367,9 +367,11 @@ describe("SettingsDialog", () => {
 				provider: "bedrock",
 				apiKey: undefined,
 				model: "anthropic.claude-3-sonnet-20240229-v1:0",
+				bedrockAuthMethod: "iam",
 				awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
 				awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 				awsRegion: "us-west-2",
+				bedrockApiKey: undefined,
 			});
 		});
 
@@ -398,9 +400,11 @@ describe("SettingsDialog", () => {
 				provider: "bedrock",
 				apiKey: undefined,
 				model: undefined,
+				bedrockAuthMethod: "iam",
 				awsAccessKeyId: "AKIATEST",
 				awsSecretAccessKey: "secretkey",
 				awsRegion: "us-east-1",
+				bedrockApiKey: undefined,
 			});
 		});
 	});

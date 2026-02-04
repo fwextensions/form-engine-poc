@@ -65,7 +65,7 @@ describe("Provider Factory", () => {
 		it("should throw error when AWS credentials are missing", () => {
 			expect(() => {
 				createProvider("bedrock", {});
-			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock provider");
+			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for IAM authentication");
 		});
 
 		it("should throw error when only accessKeyId is provided", () => {
@@ -73,7 +73,7 @@ describe("Provider Factory", () => {
 				createProvider("bedrock", {
 					awsAccessKeyId: "test-key-id",
 				});
-			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock provider");
+			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for IAM authentication");
 		});
 
 		it("should throw error when only secretAccessKey is provided", () => {
@@ -81,7 +81,7 @@ describe("Provider Factory", () => {
 				createProvider("bedrock", {
 					awsSecretAccessKey: "test-secret",
 				});
-			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock provider");
+			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for IAM authentication");
 		});
 
 		it("should throw error when only region is provided", () => {
@@ -89,7 +89,7 @@ describe("Provider Factory", () => {
 				createProvider("bedrock", {
 					awsRegion: "us-east-1",
 				});
-			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock provider");
+			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for IAM authentication");
 		});
 
 		it("should throw error when accessKeyId is missing", () => {
@@ -98,7 +98,7 @@ describe("Provider Factory", () => {
 					awsSecretAccessKey: "test-secret",
 					awsRegion: "us-east-1",
 				});
-			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock provider");
+			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for IAM authentication");
 		});
 
 		it("should throw error when secretAccessKey is missing", () => {
@@ -107,7 +107,7 @@ describe("Provider Factory", () => {
 					awsAccessKeyId: "test-key-id",
 					awsRegion: "us-east-1",
 				});
-			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock provider");
+			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for IAM authentication");
 		});
 
 		it("should throw error when region is missing", () => {
@@ -116,7 +116,7 @@ describe("Provider Factory", () => {
 					awsAccessKeyId: "test-key-id",
 					awsSecretAccessKey: "test-secret",
 				});
-			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock provider");
+			}).toThrow("AWS credentials (accessKeyId, secretAccessKey, region) are required for IAM authentication");
 		});
 
 		it("should create Bedrock provider with valid AWS credentials", () => {
