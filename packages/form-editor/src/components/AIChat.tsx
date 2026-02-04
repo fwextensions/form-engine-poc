@@ -66,10 +66,17 @@ export default function AIChat({
 
 				// Add provider-specific credentials
 				if (settings.provider === 'bedrock') {
-					// Bedrock uses AWS credentials
-					requestBody.awsAccessKeyId = settings.awsAccessKeyId;
-					requestBody.awsSecretAccessKey = settings.awsSecretAccessKey;
+					// Bedrock uses either AWS credentials or API key
+					const authMethod = settings.bedrockAuthMethod || 'iam';
+					requestBody.bedrockAuthMethod = authMethod;
 					requestBody.awsRegion = settings.awsRegion;
+					
+					if (authMethod === 'apiKey') {
+						requestBody.bedrockApiKey = settings.bedrockApiKey;
+					} else {
+						requestBody.awsAccessKeyId = settings.awsAccessKeyId;
+						requestBody.awsSecretAccessKey = settings.awsSecretAccessKey;
+					}
 				} else {
 					// Other providers use API key
 					requestBody.apiKey = settings.apiKey;

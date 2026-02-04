@@ -16,10 +16,12 @@ interface LLMRequest {
 	messages: Array<{ role: string; content: string }>;
 	system?: string;
 	maxTokens?: number;
-	// AWS Bedrock specific (IAM authentication)
+	// AWS Bedrock specific
+	bedrockAuthMethod?: "iam" | "apiKey";
 	awsAccessKeyId?: string;
 	awsSecretAccessKey?: string;
 	awsRegion?: string;
+	bedrockApiKey?: string;
 }
 
 /**
@@ -34,9 +36,11 @@ export function createProvider(
 	provider: LLMProvider,
 	credentials: {
 		apiKey?: string;
+		bedrockAuthMethod?: "iam" | "apiKey";
 		awsAccessKeyId?: string;
 		awsSecretAccessKey?: string;
 		awsRegion?: string;
+		bedrockApiKey?: string;
 	}
 ) {
 	switch (provider) {
@@ -65,21 +69,37 @@ export function createProvider(
 			});
 
 		case "bedrock": {
-			// IAM authentication using access keys
-			if (
-				!credentials.awsAccessKeyId ||
-				!credentials.awsSecretAccessKey ||
-				!credentials.awsRegion
-			) {
-				throw new Error(
-					"AWS credentials (accessKeyId, secretAccessKey, region) are required for Bedrock"
-				);
+			const authMethod = credentials.bedrockAuthMethod || "iam";
+			
+			if (authMethod === "apiKey") {
+				// API Key authentication using bearer token
+				if (!credentials.bedrockApiKey || !credentials.awsRegion) {
+					throw new Error(
+						"Bedrock API key and region are required for API key authentication"
+					);
+				}
+				
+				return createAmazonBedrock({
+					region: credentials.awsRegion,
+					apiKey: credentials.bedrockApiKey,
+				});
+			} else {
+				// IAM authentication using access keys
+				if (
+					!credentials.awsAccessKeyId ||
+					!credentials.awsSecretAccessKey ||
+					!credentials.awsRegion
+				) {
+					throw new Error(
+						"AWS credentials (accessKeyId, secretAccessKey, region) are required for IAM authentication"
+					);
+				}
+				return createAmazonBedrock({
+					region: credentials.awsRegion,
+					accessKeyId: credentials.awsAccessKeyId,
+					secretAccessKey: credentials.awsSecretAccessKey,
+				});
 			}
-			return createAmazonBedrock({
-				region: credentials.awsRegion,
-				accessKeyId: credentials.awsAccessKeyId,
-				secretAccessKey: credentials.awsSecretAccessKey,
-			});
 		}
 
 		default:
@@ -105,9 +125,11 @@ export async function POST(request: NextRequest) {
 			messages,
 			system,
 			maxTokens,
+			bedrockAuthMethod,
 			awsAccessKeyId,
 			awsSecretAccessKey,
 			awsRegion,
+			bedrockApiKey,
 		} = body;
 
 		// Validate required fields
@@ -128,9 +150,11 @@ export async function POST(request: NextRequest) {
 		// Create provider instance using factory function
 		const providerInstance = createProvider(provider, {
 			apiKey,
+			bedrockAuthMethod,
 			awsAccessKeyId,
 			awsSecretAccessKey,
 			awsRegion,
+			bedrockApiKey,
 		});
 
 		// Call streamText with the provider's model and messages

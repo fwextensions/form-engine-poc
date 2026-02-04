@@ -25,9 +25,11 @@ export default function SettingsDialog({
 	const [openaiModel, setOpenaiModel] = useState("");
 	const [googleModel, setGoogleModel] = useState("");
 	const [bedrockModel, setBedrockModel] = useState("");
+	const [bedrockAuthMethod, setBedrockAuthMethod] = useState<"iam" | "apiKey">("iam");
 	const [awsAccessKeyId, setAwsAccessKeyId] = useState("");
 	const [awsSecretAccessKey, setAwsSecretAccessKey] = useState("");
 	const [awsRegion, setAwsRegion] = useState("");
+	const [bedrockApiKey, setBedrockApiKey] = useState("");
 
 	// Load settings when dialog opens
 	useEffect(() => {
@@ -39,9 +41,11 @@ export default function SettingsDialog({
 			setOpenaiModel(settings.openaiModel || "");
 			setGoogleModel(settings.googleModel || "");
 			setBedrockModel(settings.bedrockModel || "");
+			setBedrockAuthMethod(settings.bedrockAuthMethod || "iam");
 			setAwsAccessKeyId(settings.awsAccessKeyId || "");
 			setAwsSecretAccessKey(settings.awsSecretAccessKey || "");
 			setAwsRegion(settings.awsRegion || "");
+			setBedrockApiKey(settings.bedrockApiKey || "");
 		}
 	}, [open]);
 
@@ -54,9 +58,11 @@ export default function SettingsDialog({
 				openaiModel: openaiModel.trim() || undefined,
 				googleModel: googleModel.trim() || undefined,
 				bedrockModel: bedrockModel.trim() || undefined,
+				bedrockAuthMethod: provider === "bedrock" ? bedrockAuthMethod : undefined,
 				awsAccessKeyId: awsAccessKeyId.trim() || undefined,
 				awsSecretAccessKey: awsSecretAccessKey.trim() || undefined,
 				awsRegion: awsRegion.trim() || undefined,
+				bedrockApiKey: bedrockApiKey.trim() || undefined,
 			});
 			onOpenChange(false);
 		} catch (error) {
@@ -137,55 +143,120 @@ export default function SettingsDialog({
 							<>
 								<div>
 									<label
-										htmlFor="awsAccessKeyId"
+										htmlFor="bedrockAuthMethod"
 										className="block text-sm font-medium text-slate-700 mb-1"
 									>
-										AWS Access Key ID
+										Authentication Method
 									</label>
-									<input
-										id="awsAccessKeyId"
-										type="password"
-										value={awsAccessKeyId}
-										onChange={(e) => setAwsAccessKeyId(e.target.value)}
-										placeholder="Enter your AWS Access Key ID"
+									<select
+										id="bedrockAuthMethod"
+										value={bedrockAuthMethod}
+										onChange={(e) =>
+											setBedrockAuthMethod(e.target.value as "iam" | "apiKey")
+										}
 										className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									/>
-								</div>
-								<div>
-									<label
-										htmlFor="awsSecretAccessKey"
-										className="block text-sm font-medium text-slate-700 mb-1"
 									>
-										AWS Secret Access Key
-									</label>
-									<input
-										id="awsSecretAccessKey"
-										type="password"
-										value={awsSecretAccessKey}
-										onChange={(e) => setAwsSecretAccessKey(e.target.value)}
-										placeholder="Enter your AWS Secret Access Key"
-										className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									/>
-								</div>
-								<div>
-									<label
-										htmlFor="awsRegion"
-										className="block text-sm font-medium text-slate-700 mb-1"
-									>
-										AWS Region
-									</label>
-									<input
-										id="awsRegion"
-										type="text"
-										value={awsRegion}
-										onChange={(e) => setAwsRegion(e.target.value)}
-										placeholder="e.g., us-east-1"
-										className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									/>
+										<option value="iam">IAM Credentials</option>
+										<option value="apiKey">API Key</option>
+									</select>
 									<p className="text-xs text-slate-500 mt-1">
-										AWS credentials are stored locally in your browser.
+										Choose how to authenticate with Amazon Bedrock.
 									</p>
 								</div>
+
+								{bedrockAuthMethod === "apiKey" ? (
+									<>
+										<div>
+											<label
+												htmlFor="bedrockApiKey"
+												className="block text-sm font-medium text-slate-700 mb-1"
+											>
+												Bedrock API Key
+											</label>
+											<input
+												id="bedrockApiKey"
+												type="password"
+												value={bedrockApiKey}
+												onChange={(e) => setBedrockApiKey(e.target.value)}
+												placeholder="Enter your Bedrock API key"
+												className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											/>
+										</div>
+										<div>
+											<label
+												htmlFor="awsRegion"
+												className="block text-sm font-medium text-slate-700 mb-1"
+											>
+												AWS Region
+											</label>
+											<input
+												id="awsRegion"
+												type="text"
+												value={awsRegion}
+												onChange={(e) => setAwsRegion(e.target.value)}
+												placeholder="e.g., us-east-1"
+												className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											/>
+											<p className="text-xs text-slate-500 mt-1">
+												API key and region are stored locally in your browser.
+											</p>
+										</div>
+									</>
+								) : (
+									<>
+										<div>
+											<label
+												htmlFor="awsAccessKeyId"
+												className="block text-sm font-medium text-slate-700 mb-1"
+											>
+												AWS Access Key ID
+											</label>
+											<input
+												id="awsAccessKeyId"
+												type="password"
+												value={awsAccessKeyId}
+												onChange={(e) => setAwsAccessKeyId(e.target.value)}
+												placeholder="Enter your AWS Access Key ID"
+												className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											/>
+										</div>
+										<div>
+											<label
+												htmlFor="awsSecretAccessKey"
+												className="block text-sm font-medium text-slate-700 mb-1"
+											>
+												AWS Secret Access Key
+											</label>
+											<input
+												id="awsSecretAccessKey"
+												type="password"
+												value={awsSecretAccessKey}
+												onChange={(e) => setAwsSecretAccessKey(e.target.value)}
+												placeholder="Enter your AWS Secret Access Key"
+												className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											/>
+										</div>
+										<div>
+											<label
+												htmlFor="awsRegion"
+												className="block text-sm font-medium text-slate-700 mb-1"
+											>
+												AWS Region
+											</label>
+											<input
+												id="awsRegion"
+												type="text"
+												value={awsRegion}
+												onChange={(e) => setAwsRegion(e.target.value)}
+												placeholder="e.g., us-east-1"
+												className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+											/>
+											<p className="text-xs text-slate-500 mt-1">
+												AWS credentials are stored locally in your browser.
+											</p>
+										</div>
+									</>
+								)}
 							</>
 						)}
 

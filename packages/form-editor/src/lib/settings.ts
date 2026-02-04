@@ -18,9 +18,11 @@ export interface LLMSettings {
 	googleModel?: string;
 	bedrockModel?: string;
 	// AWS Bedrock specific credentials
+	bedrockAuthMethod?: BedrockAuthMethod;
 	awsAccessKeyId?: string;
 	awsSecretAccessKey?: string;
 	awsRegion?: string;
+	bedrockApiKey?: string;
 }
 
 /**
@@ -99,9 +101,13 @@ export function getSettings(): LLMSettings {
 			openaiModel: typeof parsed.openaiModel === "string" ? parsed.openaiModel : undefined,
 			googleModel: typeof parsed.googleModel === "string" ? parsed.googleModel : undefined,
 			bedrockModel: typeof parsed.bedrockModel === "string" ? parsed.bedrockModel : undefined,
+			bedrockAuthMethod: parsed.bedrockAuthMethod === "iam" || parsed.bedrockAuthMethod === "apiKey"
+				? parsed.bedrockAuthMethod
+				: undefined,
 			awsAccessKeyId: typeof parsed.awsAccessKeyId === "string" ? parsed.awsAccessKeyId : undefined,
 			awsSecretAccessKey: typeof parsed.awsSecretAccessKey === "string" ? parsed.awsSecretAccessKey : undefined,
 			awsRegion: typeof parsed.awsRegion === "string" ? parsed.awsRegion : undefined,
+			bedrockApiKey: typeof parsed.bedrockApiKey === "string" ? parsed.bedrockApiKey : undefined,
 		};
 	} catch (error) {
 		// Handle JSON parse errors or other exceptions
@@ -127,9 +133,11 @@ export function saveSettings(settings: LLMSettings): void {
 			openaiModel: settings.openaiModel,
 			googleModel: settings.googleModel,
 			bedrockModel: settings.bedrockModel,
+			bedrockAuthMethod: settings.bedrockAuthMethod,
 			awsAccessKeyId: settings.awsAccessKeyId,
 			awsSecretAccessKey: settings.awsSecretAccessKey,
 			awsRegion: settings.awsRegion,
+			bedrockApiKey: settings.bedrockApiKey,
 		};
 
 		window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(toStore));
@@ -150,15 +158,25 @@ export function hasApiKey(): boolean {
 	// Check provider-specific credentials
 	switch (settings.provider) {
 		case "bedrock":
-			// Bedrock requires AWS credentials
-			return !!(
-				settings.awsAccessKeyId &&
-				settings.awsAccessKeyId.length > 0 &&
-				settings.awsSecretAccessKey &&
-				settings.awsSecretAccessKey.length > 0 &&
-				settings.awsRegion &&
-				settings.awsRegion.length > 0
-			);
+			// Bedrock requires either AWS credentials or API key
+			const authMethod = settings.bedrockAuthMethod || "iam";
+			if (authMethod === "apiKey") {
+				return !!(
+					settings.bedrockApiKey &&
+					settings.bedrockApiKey.length > 0 &&
+					settings.awsRegion &&
+					settings.awsRegion.length > 0
+				);
+			} else {
+				return !!(
+					settings.awsAccessKeyId &&
+					settings.awsAccessKeyId.length > 0 &&
+					settings.awsSecretAccessKey &&
+					settings.awsSecretAccessKey.length > 0 &&
+					settings.awsRegion &&
+					settings.awsRegion.length > 0
+				);
+			}
 		case "anthropic":
 		case "openai":
 		case "google":
