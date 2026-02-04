@@ -10,23 +10,23 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "form-engine": "1.0.2",
+    "form-engine": "*",
     "js-yaml": "^4.1.1",
     "next": "16.1.6",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "^3",
-    "@tailwindcss/postcss": "^4",
+    "@eslint/eslintrc": "^3.2.0",
+    "@tailwindcss/postcss": "^4.1.18",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
+    "@types/node": "^25.1.0",
+    "@types/react": "^19.2.4",
+    "@types/react-dom": "^19.2.4",
+    "eslint": "^9.20.0",
     "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
-    "typescript": "^5",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.8.3",
     "yaml-loader": "^0.9.0"
   }
 }
