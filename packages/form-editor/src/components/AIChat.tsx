@@ -2,15 +2,17 @@
 
 import React, { useState, useRef } from "react";
 import {
-	MainContainer,
-	ChatContainer,
-	MessageList,
-	Message,
-	MessageInput,
-	TypingIndicator,
-} from "@chatscope/chat-ui-kit-react";
-import "@chatscope/chat-ui-kit-styles/dist/default/styles.min.css";
-import { useChat } from "@ai-sdk/react";
+	AssistantRuntimeProvider,
+	Thread,
+	ThreadPrimitive,
+	ComposerPrimitive,
+	MessagePrimitive,
+	useMessage,
+	useAssistantEvent,
+	useAssistantRuntime,
+	useThread,
+} from "@assistant-ui/react";
+import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import { DefaultChatTransport } from "ai";
 import { hasApiKey, getSettings, getModelForProvider } from "@/lib/settings";
 import { SchemaGenerator } from "@/lib/schema-generator";
@@ -24,124 +26,64 @@ interface AIChatProps {
 }
 
 /**
- * AI Chat interface component for schema generation.
- * 
- * Uses chatscope components for the chat UI and integrates with
- * the Vercel AI SDK's useChat hook for LLM interactions.
- * 
- * Requirements: 2.1, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 7.8, 8.1, 8.2, 8.3, 8.4, 8.5
+ * Inner component that has access to assistant-ui hooks
  */
-export default function AIChat({
+function AIChatInner({
 	currentSchema,
 	onSchemaGenerated,
 	onOpenSettings,
-}: AIChatProps) {
-	const [inputValue, setInputValue] = useState("");
-	const generatorRef = useRef<SchemaGenerator | null>(null);
+	generatorRef,
+}: AIChatProps & { generatorRef: React.MutableRefObject<SchemaGenerator | null> }) {
 	const [validationResults, setValidationResults] = useState<Map<string, {
 		extractedSchema?: string;
 		validationErrors?: string[];
 		validationWarnings?: string[];
 	}>>(new Map());
 
-	// Initialize schema generator
-	if (!generatorRef.current) {
-		generatorRef.current = new SchemaGenerator();
-	}
+	// Access runtime via hooks
+	const runtime = useAssistantRuntime();
+	const thread = useThread();
 
-	// Configure useChat hook with API endpoint and credentials
-	// Use a function for body to ensure settings are always fresh
-	const { messages, sendMessage, status, error } = useChat({
-		transport: new DefaultChatTransport({
-			api: '/api/llm',
-			body: () => {
-				const settings = getSettings();
-				
-				// Build request body with only relevant credentials for the provider
-				const requestBody: Record<string, any> = {
-					provider: settings.provider,
-					model: getModelForProvider(settings),
-					system: generatorRef.current!.getSystemPrompt(),
-				};
+	// Listen for message completion events to perform validation
+	useAssistantEvent("run-ended", () => {
+		const messages = thread.messages;
 
-				// Add provider-specific credentials
-				if (settings.provider === 'bedrock') {
-					// Bedrock uses either AWS credentials or API key
-					const authMethod = settings.bedrockAuthMethod || 'iam';
-					requestBody.bedrockAuthMethod = authMethod;
-					requestBody.awsRegion = settings.awsRegion;
-					
-					if (authMethod === 'apiKey') {
-						requestBody.bedrockApiKey = settings.bedrockApiKey;
-					} else {
-						requestBody.awsAccessKeyId = settings.awsAccessKeyId;
-						requestBody.awsSecretAccessKey = settings.awsSecretAccessKey;
-					}
-				} else {
-					// Other providers use API key
-					requestBody.apiKey = settings.apiKey;
-				}
+		if (messages.length > 0) {
+			const lastMessage = messages[messages.length - 1];
 
-				return requestBody;
-			},
-			prepareSendMessagesRequest: ({ messages, body }) => {
-				// Transform messages to use fullPrompt from metadata if available
-				const transformedMessages = messages.map((msg) => {
-					if (msg.role === 'user' && msg.metadata?.fullPrompt) {
-						// Use the full prompt for the API call
-						return {
-							...msg,
-							parts: [{ type: 'text' as const, text: msg.metadata.fullPrompt }],
-						};
-					}
-					return msg;
-				});
+			// Only process assistant messages
+			if (lastMessage.role === 'assistant') {
+				// Extract text content from message parts
+				const messageContent = lastMessage.content
+					.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+					.map(part => part.text)
+					.join('');
 
-				return {
-					body: {
-						...body,
-						messages: transformedMessages,
-					},
-				};
-			},
-		}),
-		onFinish: (options) => {
-			// Extract and validate YAML when streaming completes
-			const message = options.message;
-			const messageContent = message.parts.map(part => {
-				if (part.type === 'text') {
-					return part.text;
-				}
-				return '';
-			}).join('');
+				const extractedYaml = extractYamlFromResponse(messageContent);
 
-			const extractedYaml = extractYamlFromResponse(messageContent);
+				if (extractedYaml) {
+					// Validate the extracted schema
+					const validationResult = validateSchema(extractedYaml);
 
-			if (extractedYaml) {
-				// Validate the extracted schema
-				const validationResult = validateSchema(extractedYaml);
-
-				// Store validation results for this message
-				setValidationResults(prev => {
-					const newMap = new Map(prev);
-					newMap.set(message.id, {
-						extractedSchema: extractedYaml,
-						validationErrors: validationResult.errors,
-						validationWarnings: validationResult.warnings,
+					// Store validation results for this message
+					setValidationResults(prev => {
+						const newMap = new Map(prev);
+						newMap.set(lastMessage.id, {
+							extractedSchema: extractedYaml,
+							validationErrors: validationResult.errors,
+							validationWarnings: validationResult.warnings,
+						});
+						return newMap;
 					});
-					return newMap;
-				});
 
-				// If valid, update the schema
-				if (validationResult.valid) {
-					onSchemaGenerated(extractedYaml);
+					// If valid, update the schema
+					if (validationResult.valid) {
+						onSchemaGenerated(extractedYaml);
+					}
 				}
 			}
-		},
+		}
 	});
-
-	// Check if currently loading
-	const isLoading = status === 'submitted' || status === 'streaming';
 
 	// Example prompts for empty state
 	const examplePrompts = [
@@ -150,15 +92,14 @@ export default function AIChat({
 		"Design a survey form with rating scales and text feedback",
 	];
 
-	const handleSendMessage = async (message: string) => {
-		if (!message.trim() || isLoading) {
-			return;
-		}
+	const handleExampleClick = (prompt: string) => {
+		if (!hasApiKey()) return;
+		handleSendMessage(prompt);
+	};
 
-		// Check if API key is configured
-		if (!hasApiKey()) {
-			return;
-		}
+	const handleSendMessage = async (message: string) => {
+		if (!message.trim()) return;
+		if (!hasApiKey()) return;
 
 		// Determine if this is a new schema or an edit
 		const isEdit = currentSchema.trim().length > 0;
@@ -166,19 +107,14 @@ export default function AIChat({
 			? generatorRef.current!.buildEditPrompt(currentSchema, message)
 			: message;
 
-		// Clear input and send message via useChat
-		// Send the user's original message for display, but include the full prompt as metadata
-		setInputValue("");
-		await sendMessage({
-			text: message, // Display the user's actual message
+		// Send message via runtime API
+		runtime.thread.append({
+			role: "user",
+			content: [{ type: "text", text: message }],
 			metadata: {
 				fullPrompt: fullPrompt, // Include the full prompt for the API
 			},
 		});
-	};
-
-	const handleExampleClick = (prompt: string) => {
-		setInputValue(prompt);
 	};
 
 	// Helper to get validation results for a message
@@ -186,7 +122,89 @@ export default function AIChat({
 		return validationResults.get(messageId);
 	};
 
+	// Check if currently loading
+	const isRunning = thread.isRunning;
+
+	// Custom message component that displays validation results
+	const CustomMessage = () => {
+		const message = useMessage();
+		const validation = getValidationForMessage(message.id);
+
+		// Extract text content from message parts
+		const messageContent = message.content
+			.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+			.map(part => part.text)
+			.join('');
+
+		const displayContent = validation?.extractedSchema
+			? extractTextAfterYaml(messageContent) || "Form updated"
+			: messageContent;
+
+		return (
+			<>
+				<MessagePrimitive.Root
+					className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} mb-4`}
+				>
+					<div
+						className={`max-w-[80%] rounded-lg px-4 py-2 ${
+							message.role === "user"
+								? "bg-blue-500 text-white"
+								: "bg-slate-100 text-slate-900"
+						}`}
+					>
+						<MessagePrimitive.Content>
+							{displayContent}
+						</MessagePrimitive.Content>
+					</div>
+				</MessagePrimitive.Root>
+
+				{/* Validation errors */}
+				{validation?.validationErrors &&
+					validation.validationErrors.length > 0 && (
+						<div className="mx-4 my-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+							<p className="text-sm font-medium text-red-800 mb-2">
+								Validation Errors:
+							</p>
+							<ul className="text-sm text-red-700 space-y-1">
+								{validation.validationErrors.map((error, idx) => (
+									<li key={idx}>• {error}</li>
+								))}
+							</ul>
+						</div>
+					)}
+
+				{/* Validation warnings */}
+				{validation?.validationWarnings &&
+					validation.validationWarnings.length > 0 && (
+						<div className="mx-4 my-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+							<p className="text-sm font-medium text-yellow-800 mb-2">
+								Warnings:
+							</p>
+							<ul className="text-sm text-yellow-700 space-y-1">
+								{validation.validationWarnings.map((warning, idx) => (
+									<li key={idx}>• {warning}</li>
+								))}
+							</ul>
+						</div>
+					)}
+
+				{/* Success indicator */}
+				{validation?.extractedSchema &&
+					(!validation.validationErrors ||
+						validation.validationErrors.length === 0) && (
+						<div className="mx-4 my-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+							<p className="text-sm text-green-800">
+								✓ Schema generated successfully and applied to
+								the editor
+							</p>
+						</div>
+					)}
+			</>
+		);
+	};
+
 	// Render empty state when no messages
+	const messages = thread.messages;
 	if (messages.length === 0) {
 		return (
 			<div className="flex flex-col h-full bg-white">
@@ -293,15 +311,29 @@ export default function AIChat({
 				{/* Message input */}
 				{hasApiKey() && (
 					<div className="border-t border-slate-200 p-4">
-						<MessageInput
-							placeholder="Describe your form..."
-							value={inputValue}
-							onChange={(val) => setInputValue(val)}
-							onSend={handleSendMessage}
-							disabled={isLoading}
-							attachButton={false}
-							sendButton={true}
-						/>
+						<ComposerPrimitive.Root
+							onSubmit={(e) => {
+								e.preventDefault();
+								const input = e.currentTarget.querySelector('input');
+								if (input && input.value.trim()) {
+									handleSendMessage(input.value);
+									input.value = '';
+								}
+							}}
+							className="flex gap-2"
+						>
+							<ComposerPrimitive.Input
+								placeholder="Describe your form..."
+								disabled={isRunning}
+								className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+							/>
+							<ComposerPrimitive.Send
+								disabled={isRunning}
+								className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+							>
+								Send
+							</ComposerPrimitive.Send>
+						</ComposerPrimitive.Root>
 					</div>
 				)}
 			</div>
@@ -325,116 +357,132 @@ export default function AIChat({
 
 			{/* Chat messages */}
 			<div className="flex-1 overflow-hidden">
-				<MainContainer>
-					<ChatContainer>
-						<MessageList
-							typingIndicator={
-								isLoading ? (
-									<TypingIndicator content="AI is generating..." />
-								) : null
-							}
-						>
-							{messages.map((msg) => {
-								const validation = getValidationForMessage(msg.id);
-								
-								// Extract text content from message parts
-								const messageContent = msg.parts.map(part => {
-									if (part.type === 'text') {
-										return part.text;
-									}
-									return '';
-								}).join('');
+				<Thread.Root className="h-full">
+					<Thread.Viewport className="h-full overflow-y-auto p-4">
+						<ThreadPrimitive.Messages components={{ UserMessage: CustomMessage, AssistantMessage: CustomMessage }} />
 
-								const displayContent = validation?.extractedSchema
-									? extractTextAfterYaml(messageContent) || "Form updated"
-									: messageContent;
-
-								return (
-									<React.Fragment key={msg.id}>
-										<Message
-											model={{
-												message: displayContent,
-												sentTime: new Date().toISOString(),
-												sender: msg.role === "user" ? "You" : "AI Assistant",
-												direction:
-													msg.role === "user" ? "outgoing" : "incoming",
-												position: "single",
-											}}
-										/>
-
-										{/* Validation errors */}
-										{validation?.validationErrors &&
-											validation.validationErrors.length > 0 && (
-												<div className="mx-4 my-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-													<p className="text-sm font-medium text-red-800 mb-2">
-														Validation Errors:
-													</p>
-													<ul className="text-sm text-red-700 space-y-1">
-														{validation.validationErrors.map((error, idx) => (
-															<li key={idx}>• {error}</li>
-														))}
-													</ul>
-												</div>
-											)}
-
-										{/* Validation warnings */}
-										{validation?.validationWarnings &&
-											validation.validationWarnings.length > 0 && (
-												<div className="mx-4 my-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-													<p className="text-sm font-medium text-yellow-800 mb-2">
-														Warnings:
-													</p>
-													<ul className="text-sm text-yellow-700 space-y-1">
-														{validation.validationWarnings.map((warning, idx) => (
-															<li key={idx}>• {warning}</li>
-														))}
-													</ul>
-												</div>
-											)}
-
-										{/* Success indicator */}
-										{validation?.extractedSchema &&
-											(!validation.validationErrors ||
-												validation.validationErrors.length === 0) && (
-												<div className="mx-4 my-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-													<p className="text-sm text-green-800">
-														✓ Schema generated successfully and applied to
-														the editor
-													</p>
-												</div>
-											)}
-									</React.Fragment>
-								);
-							})}
-
-							{/* Error display */}
-							{error && (
-								<div className="mx-4 my-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-									<p className="text-sm font-medium text-red-800 mb-1">
-										Error
-									</p>
-									<p className="text-sm text-red-700">
-										{error.message || "An unexpected error occurred"}
-									</p>
-								</div>
-							)}
-						</MessageList>
-					</ChatContainer>
-				</MainContainer>
+						{/* Error display */}
+						{thread.error && (
+							<div className="mx-4 my-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+								<p className="text-sm font-medium text-red-800 mb-1">
+									Error
+								</p>
+								<p className="text-sm text-red-700">
+									{thread.error.message || "An unexpected error occurred"}
+								</p>
+							</div>
+						)}
+					</Thread.Viewport>
+					<Thread.ScrollToBottom className="absolute bottom-4 right-4" />
+				</Thread.Root>
 			</div>
 
 			{/* Message input */}
 			<div className="border-t border-slate-200 p-4">
-				<MessageInput
-					placeholder="Ask me to modify the form..."
-					value={inputValue}
-					onChange={(val) => setInputValue(val)}
-					onSend={handleSendMessage}
-					disabled={isLoading}
-					attachButton={false}
-					sendButton={true}
-				/>
+				<ComposerPrimitive.Root
+					onSubmit={(e) => {
+						e.preventDefault();
+						const input = e.currentTarget.querySelector('input');
+						if (input && input.value.trim()) {
+							handleSendMessage(input.value);
+							input.value = '';
+						}
+					}}
+					className="flex gap-2"
+				>
+					<ComposerPrimitive.Input
+						placeholder="Ask me to modify the form..."
+						disabled={isRunning}
+						className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+					/>
+					<ComposerPrimitive.Send
+						disabled={isRunning}
+						className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+					>
+						{isRunning ? "Generating..." : "Send"}
+					</ComposerPrimitive.Send>
+				</ComposerPrimitive.Root>
 			</div>
 		</div>
+	);
+}
+
+/**
+ * AI Chat interface component for schema generation.
+ *
+ * Uses assistant-ui components for the chat UI and integrates with
+ * the Vercel AI SDK's useChatRuntime hook for LLM interactions.
+ *
+ * Requirements: 2.1, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 7.8, 8.1, 8.2, 8.3, 8.4, 8.5
+ */
+export default function AIChat(props: AIChatProps) {
+	const generatorRef = useRef<SchemaGenerator | null>(null);
+
+	// Initialize schema generator
+	if (!generatorRef.current) {
+		generatorRef.current = new SchemaGenerator();
+	}
+
+	// Configure useChatRuntime with custom transport
+	const runtime = useChatRuntime({
+		transport: new DefaultChatTransport({
+			api: '/api/llm',
+			body: () => {
+				const settings = getSettings();
+
+				// Build request body with only relevant credentials for the provider
+				const requestBody: Record<string, any> = {
+					provider: settings.provider,
+					model: getModelForProvider(settings),
+					system: generatorRef.current!.getSystemPrompt(),
+				};
+
+				// Add provider-specific credentials
+				if (settings.provider === 'bedrock') {
+					// Bedrock uses either AWS credentials or API key
+					const authMethod = settings.bedrockAuthMethod || 'iam';
+					requestBody.bedrockAuthMethod = authMethod;
+					requestBody.awsRegion = settings.awsRegion;
+
+					if (authMethod === 'apiKey') {
+						requestBody.bedrockApiKey = settings.bedrockApiKey;
+					} else {
+						requestBody.awsAccessKeyId = settings.awsAccessKeyId;
+						requestBody.awsSecretAccessKey = settings.awsSecretAccessKey;
+					}
+				} else {
+					// Other providers use API key
+					requestBody.apiKey = settings.apiKey;
+				}
+
+				return requestBody;
+			},
+			prepareSendMessagesRequest: ({ messages, body }) => {
+				// Transform messages to use fullPrompt from metadata if available
+				const transformedMessages = messages.map((msg) => {
+					if (msg.role === 'user' && msg.metadata?.fullPrompt) {
+						// Use the full prompt for the API call
+						return {
+							...msg,
+							parts: [{ type: 'text' as const, text: msg.metadata.fullPrompt }],
+						};
+					}
+					return msg;
+				});
+
+				return {
+					body: {
+						...body,
+						messages: transformedMessages,
+					},
+				};
+			},
+		}),
+	});
+
+	return (
+		<AssistantRuntimeProvider runtime={runtime}>
+			<AIChatInner {...props} generatorRef={generatorRef} />
+		</AssistantRuntimeProvider>
 	);
 }

@@ -29,8 +29,8 @@
   },
   "devDependencies": {
     "@types/json-logic-js": "^2.0.8",
-    "@types/react": "^19.2.4",
-    "@types/react-dom": "^19.2.4",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "@vitest/ui": "^4.0.18",
     "fast-check": "^4.5.3",
     "tsx": "^4.21.0",

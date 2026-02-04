@@ -4,41 +4,79 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AIChat from "../AIChat";
 import * as settings from "@/lib/settings";
-import { useChat } from "@ai-sdk/react";
 
 // Mock the settings module
 vi.mock("@/lib/settings", () => ({
 	hasApiKey: vi.fn(),
 	getSettings: vi.fn(),
-}));
-
-// Mock the Vercel AI SDK
-vi.mock("@ai-sdk/react", () => ({
-	useChat: vi.fn(),
+	getModelForProvider: vi.fn(() => "claude-3-5-sonnet-20241022"),
 }));
 
 // Mock the DefaultChatTransport
 vi.mock("ai", () => ({
-	DefaultChatTransport: vi.fn(),
+	DefaultChatTransport: vi.fn().mockImplementation(function(this: any) {
+		return this;
+	}),
 }));
 
-// Mock chatscope styles to avoid CSS import issues in tests
-vi.mock("@chatscope/chat-ui-kit-styles/dist/default/styles.min.css", () => ({}));
+// Mock assistant-ui
+const mockThread = {
+	messages: [],
+	isRunning: false,
+	error: null,
+};
+
+const mockRuntime = {
+	thread: {
+		append: vi.fn(),
+	},
+};
+
+vi.mock("@assistant-ui/react", () => ({
+	AssistantRuntimeProvider: ({ children }: any) => children,
+	Thread: {
+		Root: ({ children }: any) => <div>{children}</div>,
+		Viewport: ({ children }: any) => <div>{children}</div>,
+		ScrollToBottom: () => null,
+	},
+	ThreadPrimitive: {
+		Empty: ({ children }: any) => <div>{children}</div>,
+		Messages: () => null,
+	},
+	ComposerPrimitive: {
+		Root: ({ children, onSubmit }: any) => <form onSubmit={onSubmit}>{children}</form>,
+		Input: (props: any) => <input {...props} />,
+		Send: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+	},
+	MessagePrimitive: {
+		Root: ({ children }: any) => <div>{children}</div>,
+		Content: ({ children }: any) => <div>{children}</div>,
+	},
+	useMessage: vi.fn(() => ({
+		id: "test-message-id",
+		role: "assistant",
+		content: [{ type: "text", text: "Test message" }],
+	})),
+	useAssistantEvent: vi.fn(),
+	useAssistantRuntime: vi.fn(() => mockRuntime),
+	useThread: vi.fn(() => mockThread),
+}));
+
+// Mock assistant-ui AI SDK integration
+vi.mock("@assistant-ui/react-ai-sdk", () => ({
+	useChatRuntime: vi.fn(() => mockRuntime),
+}));
 
 describe("AIChat", () => {
 	const mockOnSchemaGenerated = vi.fn();
 	const mockOnOpenSettings = vi.fn();
-	const mockSendMessage = vi.fn();
 
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Reset useChat mock to default state
-		vi.mocked(useChat).mockReturnValue({
-			messages: [],
-			sendMessage: mockSendMessage,
-			status: "idle",
-			error: null,
-		} as any);
+		// Reset thread mock to default state
+		mockThread.messages = [];
+		mockThread.isRunning = false;
+		mockThread.error = null;
 	});
 
 	afterEach(() => {
@@ -87,7 +125,7 @@ describe("AIChat", () => {
 			vi.mocked(settings.getSettings).mockReturnValue({
 				provider: "anthropic",
 				apiKey: "test-key",
-			});
+			} as any);
 
 			render(
 				<AIChat
@@ -114,7 +152,7 @@ describe("AIChat", () => {
 			vi.mocked(settings.getSettings).mockReturnValue({
 				provider: "anthropic",
 				apiKey: "test-key",
-			});
+			} as any);
 
 			render(
 				<AIChat
@@ -129,12 +167,12 @@ describe("AIChat", () => {
 			).toBeInTheDocument();
 		});
 
-		it("should populate input when example prompt is clicked", async () => {
+		it("should send message when example prompt is clicked", async () => {
 			vi.mocked(settings.hasApiKey).mockReturnValue(true);
 			vi.mocked(settings.getSettings).mockReturnValue({
 				provider: "anthropic",
 				apiKey: "test-key",
-			});
+			} as any);
 			const user = userEvent.setup();
 
 			render(
@@ -150,12 +188,15 @@ describe("AIChat", () => {
 			);
 			await user.click(exampleButton);
 
-			// The input is a contenteditable div with data-placeholder attribute
-			const input = document.querySelector('[contenteditable="true"]');
-			expect(input).toBeTruthy();
-			expect(input?.textContent?.trim()).toBe(
-				"Create a contact form with name, email, and message fields"
-			);
+			// Should call runtime.thread.append with the message
+			expect(mockRuntime.thread.append).toHaveBeenCalledTimes(1);
+			expect(mockRuntime.thread.append).toHaveBeenCalledWith({
+				role: "user",
+				content: [{ type: "text", text: "Create a contact form with name, email, and message fields" }],
+				metadata: {
+					fullPrompt: "Create a contact form with name, email, and message fields",
+				},
+			});
 		});
 	});
 });
