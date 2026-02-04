@@ -42,12 +42,10 @@ const mockRuntime = {
 
 vi.mock("@assistant-ui/react", () => ({
 	AssistantRuntimeProvider: ({ children }: any) => children,
-	Thread: {
+	ThreadPrimitive: {
 		Root: ({ children }: any) => <div>{children}</div>,
 		Viewport: ({ children }: any) => <div>{children}</div>,
 		ScrollToBottom: () => null,
-	},
-	ThreadPrimitive: {
 		Empty: ({ children }: any) => <div>{children}</div>,
 		Messages: ({ components }: any) => null,
 	},

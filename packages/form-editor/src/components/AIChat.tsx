@@ -3,7 +3,6 @@
 import React, { useState, useRef } from "react";
 import {
 	AssistantRuntimeProvider,
-	Thread,
 	ThreadPrimitive,
 	ComposerPrimitive,
 	MessagePrimitive,
@@ -45,7 +44,7 @@ function AIChatInner({
 	const thread = useThread();
 
 	// Listen for message completion events to perform validation
-	useAssistantEvent("run-ended", () => {
+	useAssistantEvent({ scope: "*", event: "run-ended" }, () => {
 		const messages = thread.messages;
 
 		if (messages.length > 0) {
@@ -357,8 +356,8 @@ function AIChatInner({
 
 			{/* Chat messages */}
 			<div className="flex-1 overflow-hidden">
-				<Thread.Root className="h-full">
-					<Thread.Viewport className="h-full overflow-y-auto p-4">
+				<ThreadPrimitive.Root className="h-full">
+					<ThreadPrimitive.Viewport className="h-full overflow-y-auto p-4">
 						<ThreadPrimitive.Messages components={{ UserMessage: CustomMessage, AssistantMessage: CustomMessage }} />
 
 						{/* Error display */}
@@ -372,9 +371,9 @@ function AIChatInner({
 								</p>
 							</div>
 						)}
-					</Thread.Viewport>
-					<Thread.ScrollToBottom className="absolute bottom-4 right-4" />
-				</Thread.Root>
+					</ThreadPrimitive.Viewport>
+					<ThreadPrimitive.ScrollToBottom className="absolute bottom-4 right-4" />
+				</ThreadPrimitive.Root>
 			</div>
 
 			{/* Message input */}
