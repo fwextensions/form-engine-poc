@@ -93,9 +93,38 @@ function AIChatInner({
 			.map(part => part.text)
 			.join('');
 
-		const displayContent = validation?.extractedSchema
-			? extractTextAfterYaml(messageContent) || "Form updated"
-			: messageContent;
+		const isAssistant = message.role === 'assistant';
+		const isStreaming = isAssistant &&
+			'status' in message &&
+			typeof message.status === 'object' &&
+			message.status !== null &&
+			'type' in message.status &&
+			message.status.type === 'running';
+
+		// Detect code blocks in assistant messages
+		const codeBlockStartIndex = messageContent.indexOf('```');
+		const hasCodeBlock = isAssistant && codeBlockStartIndex !== -1;
+
+		let displayContent: string;
+		let showStreamingIndicator = false;
+
+		if (hasCodeBlock) {
+			const textBefore = messageContent.substring(0, codeBlockStartIndex).trim();
+			const textAfter = extractTextAfterYaml(messageContent);
+
+			if (isStreaming) {
+				// While streaming: hide the code block, show indicator
+				const parts = [textBefore, textAfter].filter(Boolean);
+				displayContent = parts.join('\n\n');
+				showStreamingIndicator = true;
+			} else {
+				// Complete: hide the code block, show text around it
+				const parts = [textBefore, textAfter].filter(Boolean);
+				displayContent = parts.join('\n\n') || 'Form updated';
+			}
+		} else {
+			displayContent = messageContent;
+		}
 
 		return (
 			<>
@@ -109,9 +138,28 @@ function AIChatInner({
 								: "bg-slate-100 text-slate-900"
 						}`}
 					>
-						<div className="whitespace-pre-wrap">
-							{displayContent}
-						</div>
+						{displayContent && (
+							<div className="whitespace-pre-wrap">
+								{displayContent}
+							</div>
+						)}
+						{showStreamingIndicator && (
+							<div className={`flex items-center gap-2 text-slate-500 ${displayContent ? 'pt-2' : ''}`}>
+								<span
+									className="inline-block w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+									style={{ animationDelay: '0ms' }}
+								/>
+								<span
+									className="inline-block w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+									style={{ animationDelay: '150ms' }}
+								/>
+								<span
+									className="inline-block w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
+									style={{ animationDelay: '300ms' }}
+								/>
+								<span className="text-sm ml-1">Generating schema…</span>
+							</div>
+						)}
 					</div>
 				</MessagePrimitive.Root>
 
