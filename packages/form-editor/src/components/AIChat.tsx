@@ -10,12 +10,15 @@ import {
 	useAssistantEvent,
 	useAssistantRuntime,
 	useThread,
+	makeAssistantToolUI,
 } from "@assistant-ui/react";
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
+import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
 import { hasApiKey, getSettings, getModelForProvider } from "@/lib/settings";
 import { SchemaGenerator } from "@/lib/schema-generator";
 import { extractYamlFromResponse, extractTextAfterYaml } from "@/lib/yaml-extractor";
 import { validateSchema } from "@/lib/schema-validator";
+import { ThinkingIndicator } from "./ThinkingIndicator";
 
 interface AIChatProps {
 	currentSchema: string;
@@ -29,6 +32,43 @@ type ValidationResults = Map<string, {
 	validationErrors?: string[];
 	validationWarnings?: string[];
 }>;
+
+/**
+ * Custom tool UI component for the generate_schema tool.
+ * This component renders the explanation text and loading state,
+ * but hides the YAML content to avoid visual noise during streaming.
+ * 
+ * Requirements: 3.2, 1.1, 1.3
+ */
+const SchemaGeneratorToolUI = makeAssistantToolUI({
+	toolName: 'generate_schema',
+	render: function SchemaGeneratorToolUI({ args, status }) {
+		const isRunning = status?.type === 'running';
+		
+		return (
+			<div className="my-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+				{/* Show explanation text if available */}
+				{args.explanation && (
+					<p className="text-sm text-slate-700 mb-2">{args.explanation}</p>
+				)}
+				
+				{/* Show loading state during streaming */}
+				{isRunning && (
+					<div className="flex items-center gap-2 text-sm text-slate-500">
+						<div className="flex gap-1">
+							<div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+							<div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+							<div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+						</div>
+						<span>Generating schema...</span>
+					</div>
+				)}
+				
+				{/* YAML content is intentionally hidden - it's not rendered here */}
+			</div>
+		);
+	},
+});
 
 /**
  * Inner component that has access to assistant-ui hooks
@@ -101,7 +141,19 @@ function AIChatInner({
 						}`}
 					>
 						<div className="whitespace-pre-wrap">
-							{displayContent}
+							{/* Render message parts with tool UI support and markdown rendering */}
+							<MessagePrimitive.Parts
+								components={{
+									Text: MarkdownTextPrimitive,
+									tools: {
+										by_name: {
+											generate_schema: SchemaGeneratorToolUI,
+										},
+									},
+								}}
+							/>
+							{/* Only show text content if there's no tool call */}
+							{!message.content.some(part => part.type === 'tool-call') && displayContent}
 						</div>
 					</div>
 				</MessagePrimitive.Root>
@@ -300,6 +352,8 @@ function AIChatInner({
 				<ThreadPrimitive.Root className="h-full">
 					<ThreadPrimitive.Viewport className="h-full overflow-y-auto p-4">
 						<ThreadPrimitive.Messages components={{ UserMessage: CustomMessage, AssistantMessage: CustomMessage }} />
+						{/* Show thinking indicator when running and no messages are streaming */}
+						{isRunning && <ThinkingIndicator />}
 					</ThreadPrimitive.Viewport>
 					<ThreadPrimitive.ScrollToBottom className="absolute bottom-4 right-4" />
 				</ThreadPrimitive.Root>
@@ -425,18 +479,35 @@ export default function AIChat(props: AIChatProps) {
 			console.log('[AIChat] onFinish called', message);
 
 			if (message.role === 'assistant') {
-				// Extract text content from message parts
-				const messageContent = message.parts
-					?.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
-					.map(part => part.text)
-					.join('') || '';
+				let extractedYaml: string | null = null;
 
-				console.log('[AIChat] messageContent:', messageContent);
-				const extractedYaml = extractYamlFromResponse(messageContent);
-				console.log('[AIChat] extractedYaml:', extractedYaml);
+				// First, check for tool-call message parts (Requirements 5.1, 3.4)
+				const toolCallParts = message.parts?.filter(
+					(part): part is { type: 'tool-call'; toolName: string; args: any } => 
+						part.type === 'tool-call' && part.toolName === 'generate_schema'
+				) || [];
+
+				if (toolCallParts.length > 0) {
+					// Extract YAML from tool call args
+					const toolCall = toolCallParts[0];
+					if (toolCall.args && typeof toolCall.args.yaml === 'string') {
+						extractedYaml = toolCall.args.yaml;
+						console.log('[AIChat] Extracted YAML from tool call args');
+					}
+				} else {
+					// Fallback: Extract text content from message parts for backward compatibility
+					const messageContent = message.parts
+						?.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
+						.map(part => part.text)
+						.join('') || '';
+
+					console.log('[AIChat] messageContent:', messageContent);
+					extractedYaml = extractYamlFromResponse(messageContent);
+					console.log('[AIChat] extractedYaml from markdown:', extractedYaml);
+				}
 
 				if (extractedYaml) {
-					// Validate the extracted schema
+					// Validate the extracted schema (existing validation logic)
 					const validationResult = validateSchema(extractedYaml);
 					console.log('[AIChat] validationResult:', validationResult);
 

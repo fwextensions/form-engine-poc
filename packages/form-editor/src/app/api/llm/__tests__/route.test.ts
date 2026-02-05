@@ -6,6 +6,7 @@ import { streamText, APICallError } from "ai";
 // Mock the Vercel AI SDK
 vi.mock("ai", () => ({
 	streamText: vi.fn(),
+	tool: vi.fn(),
 	APICallError: {
 		isInstance: vi.fn(),
 	},

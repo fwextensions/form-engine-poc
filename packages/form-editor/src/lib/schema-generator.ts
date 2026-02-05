@@ -35,7 +35,27 @@ export class SchemaGenerator {
 	 * @returns Complete system prompt for the LLM
 	 */
 	getSystemPrompt(): string {
-		return this.catalogPrompt;
+		const toolInstructions = `You are a form schema generator assistant. When generating or modifying form schemas, you MUST use the generate_schema tool to return the YAML.
+
+IMPORTANT TOOL USAGE:
+- ALWAYS use the generate_schema tool when creating or modifying schemas
+- Put the complete YAML schema in the 'yaml' parameter
+- Put a brief explanation of what was generated or changed in the 'explanation' parameter
+- You can include additional conversational text in your response alongside the tool call
+
+WHEN TO USE THE TOOL:
+- Use the tool when the user asks to create a new form schema
+- Use the tool when the user asks to modify an existing schema
+- Use the tool when the user provides specific requirements for a form
+
+WHEN TO RESPOND CONVERSATIONALLY (without the tool):
+- When the user asks questions about form capabilities or syntax
+- When the user asks for clarification or examples
+- When the user asks about what types of forms can be created
+- When there's an error or you need more information from the user
+
+`;
+		return toolInstructions + this.catalogPrompt;
 	}
 
 	/**

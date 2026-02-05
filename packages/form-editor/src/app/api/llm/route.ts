@@ -4,6 +4,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
+import { z } from "zod";
 import type { LLMProvider } from "@/lib/settings";
 
 /**
@@ -23,6 +24,18 @@ interface LLMRequest {
 	awsRegion?: string;
 	bedrockApiKey?: string;
 }
+
+/**
+ * Tool definition for generating form schemas.
+ * This tool allows the LLM to return YAML schemas separately from conversational text.
+ */
+const generateSchemaTool = {
+	description: 'Generate or modify a form schema in YAML format. Use this tool whenever you need to create or update a form schema. Always use this tool when the user asks for schema generation or modification.',
+	inputSchema: z.object({
+		yaml: z.string().describe('The complete YAML schema for the form'),
+		explanation: z.string().describe('A brief explanation of what was generated or changed'),
+	}),
+};
 
 /**
  * Creates a provider instance based on the provider type and credentials.
@@ -183,6 +196,9 @@ export async function POST(request: NextRequest) {
 			messages: transformedMessages,
 			...(system && { system }),
 			...(maxTokens && { maxTokens }),
+			tools: {
+				generate_schema: generateSchemaTool,
+			},
 		});
 
 		// Return streaming response compatible with useChat

@@ -20,6 +20,11 @@ vi.mock("@assistant-ui/react-ai-sdk", () => ({
 	}),
 }));
 
+// Mock markdown component
+vi.mock("@assistant-ui/react-markdown", () => ({
+	MarkdownTextPrimitive: ({ children }: any) => <div>{children}</div>,
+}));
+
 // Mock assistant-ui
 const mockThread = {
 	messages: [],
@@ -28,6 +33,7 @@ const mockThread = {
 };
 
 const mockRuntime = {
+	append: vi.fn(),
 	thread: {
 		append: vi.fn(),
 	},
@@ -50,7 +56,12 @@ vi.mock("@assistant-ui/react", () => ({
 	MessagePrimitive: {
 		Root: ({ children }: any) => <div>{children}</div>,
 		Content: ({ children }: any) => <div>{children}</div>,
+		Parts: ({ children }: any) => <div>{children}</div>,
 	},
+	makeAssistantToolUI: vi.fn((config: any) => {
+		// Return a mock component
+		return () => <div data-testid="tool-ui">{config.toolName}</div>;
+	}),
 	useMessage: vi.fn(() => ({
 		id: "test-message-id",
 		role: "assistant",
@@ -183,9 +194,9 @@ describe("AIChat", () => {
 			);
 			await user.click(exampleButton);
 
-			// Should call runtime.thread.append with the message
-			expect(mockRuntime.thread.append).toHaveBeenCalledTimes(1);
-			expect(mockRuntime.thread.append).toHaveBeenCalledWith({
+			// Should call runtime.append with the message
+			expect(mockRuntime.append).toHaveBeenCalledTimes(1);
+			expect(mockRuntime.append).toHaveBeenCalledWith({
 				role: "user",
 				content: [{ type: "text", text: "Create a contact form with name, email, and message fields" }],
 			});
