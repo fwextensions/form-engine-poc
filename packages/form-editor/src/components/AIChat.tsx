@@ -58,25 +58,11 @@ function AIChatInner({
 
 	const handleExampleClick = (prompt: string) => {
 		if (!hasApiKey()) return;
-		handleSendMessage(prompt);
-	};
-
-	const handleSendMessage = async (message: string) => {
-		if (!message.trim()) return;
-		if (!hasApiKey()) return;
-
-		// Determine if this is a new schema or an edit
-		const isEdit = currentSchema.trim().length > 0;
-		const fullPrompt = isEdit
-			? generatorRef.current!.buildEditPrompt(currentSchema, message)
-			: message;
-
 		// Send message via runtime API
-		// Note: We store fullPrompt in a custom property that prepareSendMessagesRequest will use
-		runtime.thread.append({
+		runtime.append({
 			role: "user",
-			content: [{ type: "text", text: message }],
-		} as any);
+			content: [{ type: "text", text: prompt }],
+		});
 	};
 
 	// Helper to get validation results for a message
@@ -273,21 +259,13 @@ function AIChatInner({
 				{/* Message input */}
 				{hasApiKey() && (
 					<div className="border-t border-slate-200 p-4">
-						<ComposerPrimitive.Root
-							onSubmit={(e) => {
-								e.preventDefault();
-								const input = e.currentTarget.querySelector('input');
-								if (input && input.value.trim()) {
-									handleSendMessage(input.value);
-									input.value = '';
-								}
-							}}
-							className="flex gap-2"
-						>
+						<ComposerPrimitive.Root className="flex gap-2">
 							<ComposerPrimitive.Input
 								placeholder="Describe your form..."
 								disabled={isRunning}
-								className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+								autoFocus
+								className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+								rows={1}
 							/>
 							<ComposerPrimitive.Send
 								disabled={isRunning}
@@ -329,21 +307,13 @@ function AIChatInner({
 
 			{/* Message input */}
 			<div className="border-t border-slate-200 p-4">
-				<ComposerPrimitive.Root
-					onSubmit={(e) => {
-						e.preventDefault();
-						const input = e.currentTarget.querySelector('input');
-						if (input && input.value.trim()) {
-							handleSendMessage(input.value);
-							input.value = '';
-						}
-					}}
-					className="flex gap-2"
-				>
+				<ComposerPrimitive.Root className="flex gap-2">
 					<ComposerPrimitive.Input
 						placeholder="Ask me to modify the form..."
 						disabled={isRunning}
-						className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+						autoFocus
+						className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+						rows={1}
 					/>
 					<ComposerPrimitive.Send
 						disabled={isRunning}
