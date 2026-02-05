@@ -1,4 +1,5 @@
 const FORM_STORAGE_PREFIX = "form-editor-";
+const SETTINGS_KEY = "form-editor-llm-settings";
 
 const getFormKey = (name: string): string => `${FORM_STORAGE_PREFIX}${name}`;
 
@@ -13,7 +14,8 @@ export function getSavedForms(): string[]
 	for (let i = 0; i < localStorage.length; i++) {
 		const key = localStorage.key(i);
 
-		if (key?.startsWith(FORM_STORAGE_PREFIX)) {
+		// Skip settings key - only include actual form schemas
+		if (key?.startsWith(FORM_STORAGE_PREFIX) && key !== SETTINGS_KEY) {
 			savedForms.push(key.replace(FORM_STORAGE_PREFIX, ""));
 		}
 	}

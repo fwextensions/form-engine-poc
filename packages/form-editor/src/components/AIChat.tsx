@@ -49,6 +49,15 @@ function AIChatInner({
 	const runtime = useAssistantRuntime();
 	const thread = useThread();
 
+	// Defer API key check until after hydration to avoid SSR mismatch
+	const [isClient, setIsClient] = useState(false);
+	const [hasKey, setHasKey] = useState(false);
+
+	React.useEffect(() => {
+		setIsClient(true);
+		setHasKey(hasApiKey());
+	}, []);
+
 	// Example prompts for empty state
 	const examplePrompts = [
 		"Create a contact form with name, email, and message fields",
@@ -57,7 +66,7 @@ function AIChatInner({
 	];
 
 	const handleExampleClick = (prompt: string) => {
-		if (!hasApiKey()) return;
+		if (!hasKey) return;
 		// Send message via runtime API
 		runtime.append({
 			role: "user",
@@ -154,22 +163,32 @@ function AIChatInner({
 	// Render empty state when no messages
 	const messages = thread.messages;
 	if (messages.length === 0) {
+		// Show loading state during SSR/hydration
+		if (!isClient) {
+			return (
+				<div className="flex flex-col h-full bg-white">
+					<div className="flex-1 flex items-center justify-center">
+						<div className="text-slate-400">Loading...</div>
+					</div>
+				</div>
+			);
+		}
+
 		return (
 			<div className="flex flex-col h-full bg-white">
 				{/* Header */}
+{/*
 				<div className="border-b border-slate-200 p-4">
-					<h2 className="text-lg font-semibold text-slate-800">
-						AI Assistant
-					</h2>
 					<p className="text-sm text-slate-600 mt-1">
 						Describe your form in natural language and I'll generate the
 						schema for you.
 					</p>
 				</div>
+*/}
 
 				{/* Empty state content */}
 				<div className="flex-1 flex flex-col items-center justify-center p-8">
-					{!hasApiKey() ? (
+					{!hasKey ? (
 						// API key not configured
 						<div className="text-center max-w-md">
 							<div className="mb-4">
@@ -228,6 +247,7 @@ function AIChatInner({
 							</p>
 
 							{/* Schema context indicator */}
+{/*
 							{currentSchema.trim().length > 0 && (
 								<div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
 									<p className="text-sm text-blue-800">
@@ -236,6 +256,7 @@ function AIChatInner({
 									</p>
 								</div>
 							)}
+*/}
 
 							{/* Example prompts */}
 							<div className="space-y-3">
@@ -257,7 +278,7 @@ function AIChatInner({
 				</div>
 
 				{/* Message input */}
-				{hasApiKey() && (
+				{hasKey && (
 					<div className="border-t border-slate-200 p-4">
 						<ComposerPrimitive.Root className="flex gap-2">
 							<ComposerPrimitive.Input
@@ -284,16 +305,15 @@ function AIChatInner({
 	return (
 		<div className="flex flex-col h-full bg-white">
 			{/* Header */}
+{/*
 			<div className="border-b border-slate-200 p-4">
-				<h2 className="text-lg font-semibold text-slate-800">
-					AI Assistant
-				</h2>
 				{currentSchema.trim().length > 0 && (
 					<p className="text-xs text-blue-600 mt-1">
 						✓ I can see and modify your current schema
 					</p>
 				)}
 			</div>
+*/}
 
 			{/* Chat messages */}
 			<div className="flex-1 overflow-hidden">
