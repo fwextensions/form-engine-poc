@@ -132,6 +132,10 @@ function AIChatInner({
 			displayContent = messageContent;
 		}
 
+		// Check if schema was successfully applied (for showing checkmark)
+		const schemaApplied = validation?.extractedSchema &&
+			(!validation.validationErrors || validation.validationErrors.length === 0);
+
 		return (
 			<>
 				<MessagePrimitive.Root
@@ -144,11 +148,16 @@ function AIChatInner({
 								: "bg-slate-100 text-slate-900"
 						}`}
 					>
-						{displayContent && (
-							<div className="whitespace-pre-wrap">
-								{displayContent}
-							</div>
-						)}
+						<div className="flex items-start gap-2">
+							{displayContent && (
+								<div className="whitespace-pre-wrap flex-1">
+									{displayContent}
+								</div>
+							)}
+							{schemaApplied && (
+								<span className="text-green-600 flex-shrink-0" title="Schema applied">✓</span>
+							)}
+						</div>
 						{showStreamingIndicator && (
 							<div className={`flex items-center gap-2 text-slate-500 ${displayContent ? 'pt-2' : ''}`}>
 								<span
@@ -201,17 +210,6 @@ function AIChatInner({
 						</div>
 					)}
 
-				{/* Success indicator */}
-				{validation?.extractedSchema &&
-					(!validation.validationErrors ||
-						validation.validationErrors.length === 0) && (
-						<div className="mx-4 my-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-							<p className="text-sm text-green-800">
-								✓ Schema generated successfully and applied to
-								the editor
-							</p>
-						</div>
-					)}
 			</>
 		);
 	};
