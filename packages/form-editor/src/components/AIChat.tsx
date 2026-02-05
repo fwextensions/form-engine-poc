@@ -107,8 +107,13 @@ function AIChatInner({
 
 		let displayContent: string;
 		let showStreamingIndicator = false;
+		let streamingLabel = '';
 
-		if (hasCodeBlock) {
+		if (isAssistant && isStreaming && !messageContent.trim()) {
+			// Streaming just started, no content yet — show immediate indicator
+			displayContent = '';
+			showStreamingIndicator = true;
+		} else if (hasCodeBlock) {
 			const textBefore = messageContent.substring(0, codeBlockStartIndex).trim();
 			const textAfter = extractTextAfterYaml(messageContent);
 
@@ -117,6 +122,7 @@ function AIChatInner({
 				const parts = [textBefore, textAfter].filter(Boolean);
 				displayContent = parts.join('\n\n');
 				showStreamingIndicator = true;
+				streamingLabel = 'Generating schema…';
 			} else {
 				// Complete: hide the code block, show text around it
 				const parts = [textBefore, textAfter].filter(Boolean);
@@ -157,7 +163,9 @@ function AIChatInner({
 									className="inline-block w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
 									style={{ animationDelay: '300ms' }}
 								/>
-								<span className="text-sm ml-1">Generating schema…</span>
+								{streamingLabel && (
+									<span className="text-sm ml-1">{streamingLabel}</span>
+								)}
 							</div>
 						)}
 					</div>
