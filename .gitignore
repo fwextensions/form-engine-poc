@@ -25,6 +25,8 @@ dist
 .vscode
 
 .claude/skills
+.kiro/skills
+.agents
 
 # debug
 npm-debug.log*

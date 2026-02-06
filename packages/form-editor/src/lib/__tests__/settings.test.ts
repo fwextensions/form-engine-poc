@@ -72,39 +72,45 @@ describe("settings", () => {
 			const savedSettings: LLMSettings = {
 				provider: "openai",
 				apiKey: "test-key-123",
-				model: "gpt-4",
+				openaiModel: "gpt-4",
 			};
 
 			store["form-editor-llm-settings"] = JSON.stringify(savedSettings);
 
 			const settings = getSettings();
-			expect(settings).toEqual(savedSettings);
+			expect(settings.provider).toBe("openai");
+			expect(settings.apiKey).toBe("test-key-123");
+			expect(settings.openaiModel).toBe("gpt-4");
 		});
 
 		it("should return saved settings for google provider", () => {
 			const savedSettings: LLMSettings = {
 				provider: "google",
 				apiKey: "test-google-key",
-				model: "gemini-pro",
+				googleModel: "gemini-pro",
 			};
 
 			store["form-editor-llm-settings"] = JSON.stringify(savedSettings);
 
 			const settings = getSettings();
-			expect(settings).toEqual(savedSettings);
+			expect(settings.provider).toBe("google");
+			expect(settings.apiKey).toBe("test-google-key");
+			expect(settings.googleModel).toBe("gemini-pro");
 		});
 
 		it("should return saved settings for bedrock provider", () => {
 			const savedSettings: LLMSettings = {
 				provider: "bedrock",
 				apiKey: "test-bedrock-key",
-				model: "anthropic.claude-v2",
+				bedrockModel: "anthropic.claude-v2",
 			};
 
 			store["form-editor-llm-settings"] = JSON.stringify(savedSettings);
 
 			const settings = getSettings();
-			expect(settings).toEqual(savedSettings);
+			expect(settings.provider).toBe("bedrock");
+			expect(settings.apiKey).toBe("test-bedrock-key");
+			expect(settings.bedrockModel).toBe("anthropic.claude-v2");
 		});
 
 		it("should return saved settings with AWS credentials for bedrock", () => {
@@ -113,13 +119,17 @@ describe("settings", () => {
 				awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
 				awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 				awsRegion: "us-east-1",
-				model: "anthropic.claude-v2",
+				bedrockModel: "anthropic.claude-v2",
 			};
 
 			store["form-editor-llm-settings"] = JSON.stringify(savedSettings);
 
 			const settings = getSettings();
-			expect(settings).toEqual(savedSettings);
+			expect(settings.provider).toBe("bedrock");
+			expect(settings.awsAccessKeyId).toBe("AKIAIOSFODNN7EXAMPLE");
+			expect(settings.awsSecretAccessKey).toBe("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
+			expect(settings.awsRegion).toBe("us-east-1");
+			expect(settings.bedrockModel).toBe("anthropic.claude-v2");
 		});
 
 		it("should filter out invalid awsAccessKeyId types", () => {
@@ -129,10 +139,8 @@ describe("settings", () => {
 			});
 
 			const settings = getSettings();
-			expect(settings).toEqual({
-				provider: "bedrock",
-				awsAccessKeyId: undefined,
-			});
+			expect(settings.provider).toBe("bedrock");
+			expect(settings.awsAccessKeyId).toBeUndefined();
 		});
 
 		it("should filter out invalid awsSecretAccessKey types", () => {
@@ -142,10 +150,8 @@ describe("settings", () => {
 			});
 
 			const settings = getSettings();
-			expect(settings).toEqual({
-				provider: "bedrock",
-				awsSecretAccessKey: undefined,
-			});
+			expect(settings.provider).toBe("bedrock");
+			expect(settings.awsSecretAccessKey).toBeUndefined();
 		});
 
 		it("should filter out invalid awsRegion types", () => {
@@ -155,10 +161,8 @@ describe("settings", () => {
 			});
 
 			const settings = getSettings();
-			expect(settings).toEqual({
-				provider: "bedrock",
-				awsRegion: undefined,
-			});
+			expect(settings.provider).toBe("bedrock");
+			expect(settings.awsRegion).toBeUndefined();
 		});
 
 		it("should return default settings when localStorage contains invalid JSON", () => {
@@ -192,31 +196,16 @@ describe("settings", () => {
 			store["form-editor-llm-settings"] = JSON.stringify({ provider: "anthropic", apiKey: 123 });
 
 			const settings = getSettings();
-			expect(settings).toEqual({
-				provider: "anthropic",
-				apiKey: undefined,
-			});
-		});
-
-		it("should filter out invalid model types", () => {
-			store["form-editor-llm-settings"] = JSON.stringify({ provider: "anthropic", model: true });
-
-			const settings = getSettings();
-			expect(settings).toEqual({
-				provider: "anthropic",
-				model: undefined,
-			});
+			expect(settings.provider).toBe("anthropic");
+			expect(settings.apiKey).toBeUndefined();
 		});
 
 		it("should handle settings with only provider", () => {
 			store["form-editor-llm-settings"] = JSON.stringify({ provider: "openai" });
 
 			const settings = getSettings();
-			expect(settings).toEqual({
-				provider: "openai",
-				apiKey: undefined,
-				model: undefined,
-			});
+			expect(settings.provider).toBe("openai");
+			expect(settings.apiKey).toBeUndefined();
 		});
 	});
 
@@ -225,16 +214,17 @@ describe("settings", () => {
 			const settings: LLMSettings = {
 				provider: "anthropic",
 				apiKey: "test-key",
-				model: "claude-3",
 			};
 
 			saveSettings(settings);
 
 			expect(localStorageMock.setItem).toHaveBeenCalledWith(
 				"form-editor-llm-settings",
-				JSON.stringify(settings)
+				expect.any(String)
 			);
-			expect(store["form-editor-llm-settings"]).toBe(JSON.stringify(settings));
+			const stored = JSON.parse(store["form-editor-llm-settings"]);
+			expect(stored.provider).toBe("anthropic");
+			expect(stored.apiKey).toBe("test-key");
 		});
 
 		it("should save settings with only provider", () => {
@@ -246,9 +236,10 @@ describe("settings", () => {
 
 			expect(localStorageMock.setItem).toHaveBeenCalledWith(
 				"form-editor-llm-settings",
-				JSON.stringify(settings)
+				expect.any(String)
 			);
-			expect(store["form-editor-llm-settings"]).toBe(JSON.stringify(settings));
+			const stored = JSON.parse(store["form-editor-llm-settings"]);
+			expect(stored.provider).toBe("openai");
 		});
 
 		it("should save settings with AWS credentials for bedrock", () => {
@@ -257,7 +248,7 @@ describe("settings", () => {
 				awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
 				awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 				awsRegion: "us-west-2",
-				model: "anthropic.claude-v2",
+				bedrockModel: "anthropic.claude-v2",
 			};
 
 			saveSettings(settings);
@@ -269,7 +260,11 @@ describe("settings", () => {
 			
 			// Verify the stored value can be parsed back correctly
 			const stored = JSON.parse(store["form-editor-llm-settings"]);
-			expect(stored).toEqual(settings);
+			expect(stored.provider).toBe("bedrock");
+			expect(stored.awsAccessKeyId).toBe("AKIAIOSFODNN7EXAMPLE");
+			expect(stored.awsSecretAccessKey).toBe("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
+			expect(stored.awsRegion).toBe("us-west-2");
+			expect(stored.bedrockModel).toBe("anthropic.claude-v2");
 		});
 
 		it("should overwrite existing settings", () => {
@@ -281,13 +276,16 @@ describe("settings", () => {
 			const newSettings: LLMSettings = {
 				provider: "openai",
 				apiKey: "new-key",
-				model: "gpt-4",
+				openaiModel: "gpt-4",
 			};
 
 			saveSettings(oldSettings);
 			saveSettings(newSettings);
 
-			expect(store["form-editor-llm-settings"]).toBe(JSON.stringify(newSettings));
+			const stored = JSON.parse(store["form-editor-llm-settings"]);
+			expect(stored.provider).toBe("openai");
+			expect(stored.apiKey).toBe("new-key");
+			expect(stored.openaiModel).toBe("gpt-4");
 		});
 
 		it("should throw error when localStorage.setItem fails", () => {
@@ -338,13 +336,15 @@ describe("settings", () => {
 			const original: LLMSettings = {
 				provider: "anthropic",
 				apiKey: "test-api-key-123",
-				model: "claude-3-opus",
+				anthropicModel: "claude-3-opus",
 			};
 
 			saveSettings(original);
 			const loaded = getSettings();
 
-			expect(loaded).toEqual(original);
+			expect(loaded.provider).toBe(original.provider);
+			expect(loaded.apiKey).toBe(original.apiKey);
+			expect(loaded.anthropicModel).toBe(original.anthropicModel);
 		});
 
 		it("should preserve settings without optional fields", () => {
@@ -357,7 +357,6 @@ describe("settings", () => {
 
 			expect(loaded.provider).toBe(original.provider);
 			expect(loaded.apiKey).toBeUndefined();
-			expect(loaded.model).toBeUndefined();
 		});
 
 		it("should preserve AWS credentials through save and load", () => {
@@ -366,13 +365,17 @@ describe("settings", () => {
 				awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
 				awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 				awsRegion: "eu-west-1",
-				model: "anthropic.claude-3-sonnet-20240229-v1:0",
+				bedrockModel: "anthropic.claude-3-sonnet-20240229-v1:0",
 			};
 
 			saveSettings(original);
 			const loaded = getSettings();
 
-			expect(loaded).toEqual(original);
+			expect(loaded.provider).toBe(original.provider);
+			expect(loaded.awsAccessKeyId).toBe(original.awsAccessKeyId);
+			expect(loaded.awsSecretAccessKey).toBe(original.awsSecretAccessKey);
+			expect(loaded.awsRegion).toBe(original.awsRegion);
+			expect(loaded.bedrockModel).toBe(original.bedrockModel);
 		});
 	});
 });

@@ -148,16 +148,60 @@ export function saveSettings(settings: LLMSettings): void {
 	}
 }
 
+// Cache the server credential status
+let serverCredentialStatus: { bedrockConfigured: boolean } | null = null;
+
+/**
+ * Fetches the server credential status from the GET /api/llm/credentials endpoint.
+ * Caches the result so subsequent calls return the cached value without a network request.
+ */
+export async function fetchServerCredentialStatus(): Promise<{ bedrockConfigured: boolean }> {
+	if (serverCredentialStatus !== null) {
+		return serverCredentialStatus;
+	}
+	try {
+		const response = await fetch("/api/llm/credentials");
+		const data = await response.json();
+		serverCredentialStatus = data;
+		return data;
+	} catch {
+		return { bedrockConfigured: false };
+	}
+}
+
+/**
+ * Sets the cached server credential status.
+ * Useful for updating the cache after receiving status from the server.
+ */
+export function setServerCredentialStatus(status: { bedrockConfigured: boolean }): void {
+	serverCredentialStatus = status;
+}
+
+/**
+ * Gets the cached server credential status.
+ * Returns null if the status has not been fetched yet.
+ */
+export function getServerCredentialStatus(): { bedrockConfigured: boolean } | null {
+	return serverCredentialStatus;
+}
+
 /**
  * Checks if credentials are configured for the current provider.
  * Returns true if the necessary credentials exist in settings.
+ * For the bedrock provider, also returns true when server-side credentials are available.
  */
 export function hasApiKey(): boolean {
 	const settings = getSettings();
 	
 	// Check provider-specific credentials
 	switch (settings.provider) {
-		case "bedrock":
+		case "bedrock": {
+			// If server-side Bedrock credentials are available, no client credentials needed
+			const serverStatus = getServerCredentialStatus();
+			if (serverStatus?.bedrockConfigured) {
+				return true;
+			}
+
 			// Bedrock requires either AWS credentials or API key
 			const authMethod = settings.bedrockAuthMethod || "iam";
 			if (authMethod === "apiKey") {
@@ -177,6 +221,7 @@ export function hasApiKey(): boolean {
 					settings.awsRegion.length > 0
 				);
 			}
+		}
 		case "anthropic":
 		case "openai":
 		case "google":

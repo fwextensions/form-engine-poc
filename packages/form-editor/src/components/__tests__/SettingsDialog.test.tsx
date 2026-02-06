@@ -14,19 +14,21 @@ import * as settings from "@/lib/settings";
 vi.mock("@/lib/settings", () => ({
 	getSettings: vi.fn(),
 	saveSettings: vi.fn(),
+	getServerCredentialStatus: vi.fn(),
 }));
 
 describe("SettingsDialog", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		// Default mock implementation
+		// Default mock implementation - use new per-provider model fields
 		vi.mocked(settings.getSettings).mockReturnValue({
 			provider: "anthropic",
 			apiKey: "",
-			model: "",
 		});
 		// Ensure saveSettings doesn't throw
 		vi.mocked(settings.saveSettings).mockImplementation(() => {});
+		// Default: no server credentials
+		vi.mocked(settings.getServerCredentialStatus).mockReturnValue(null);
 	});
 
 	it("should render the dialog when open is true", () => {
@@ -91,7 +93,7 @@ describe("SettingsDialog", () => {
 		vi.mocked(settings.getSettings).mockReturnValue({
 			provider: "openai",
 			apiKey: "test-key-123",
-			model: "gpt-4",
+			openaiModel: "gpt-4",
 		});
 
 		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
@@ -150,11 +152,13 @@ describe("SettingsDialog", () => {
 		fireEvent.click(saveButton);
 
 		await waitFor(() => {
-			expect(settings.saveSettings).toHaveBeenCalledWith({
-				provider: "openai",
-				apiKey: "test-key",
-				model: "gpt-4",
-			});
+			expect(settings.saveSettings).toHaveBeenCalledWith(
+				expect.objectContaining({
+					provider: "openai",
+					apiKey: "test-key",
+					openaiModel: "gpt-4",
+				})
+			);
 			expect(onOpenChange).toHaveBeenCalledWith(false);
 		});
 	});
@@ -168,15 +172,17 @@ describe("SettingsDialog", () => {
 		const saveButton = screen.getByRole("button", { name: "Save" });
 
 		fireEvent.change(apiKeyInput, { target: { value: "  test-key  " } });
-		fireEvent.change(modelInput, { target: { value: "  gpt-4  " } });
+		fireEvent.change(modelInput, { target: { value: "  claude-3-opus  " } });
 		fireEvent.click(saveButton);
 
 		await waitFor(() => {
-			expect(settings.saveSettings).toHaveBeenCalledWith({
-				provider: "anthropic",
-				apiKey: "test-key",
-				model: "gpt-4",
-			});
+			expect(settings.saveSettings).toHaveBeenCalledWith(
+				expect.objectContaining({
+					provider: "anthropic",
+					apiKey: "test-key",
+					anthropicModel: "claude-3-opus",
+				})
+			);
 		});
 	});
 
@@ -188,11 +194,13 @@ describe("SettingsDialog", () => {
 		fireEvent.click(saveButton);
 
 		await waitFor(() => {
-			expect(settings.saveSettings).toHaveBeenCalledWith({
-				provider: "anthropic",
-				apiKey: undefined,
-				model: undefined,
-			});
+			expect(settings.saveSettings).toHaveBeenCalledWith(
+				expect.objectContaining({
+					provider: "anthropic",
+					apiKey: undefined,
+					anthropicModel: undefined,
+				})
+			);
 		});
 	});
 
@@ -234,7 +242,7 @@ describe("SettingsDialog", () => {
 		// Default is Anthropic
 		expect(modelInput).toHaveAttribute(
 			"placeholder",
-			"e.g., claude-haiku-4-5-20251001",
+			"e.g., claude-sonnet-4-20250514",
 		);
 
 		// Change to OpenAI
@@ -253,7 +261,7 @@ describe("SettingsDialog", () => {
 		fireEvent.change(providerSelect, { target: { value: "anthropic" } });
 		expect(modelInput).toHaveAttribute(
 			"placeholder",
-			"e.g., claude-haiku-4-5-20251001",
+			"e.g., claude-sonnet-4-20250514",
 		);
 	});
 
@@ -318,7 +326,7 @@ describe("SettingsDialog", () => {
 			awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
 			awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
 			awsRegion: "us-east-1",
-			model: "anthropic.claude-3-sonnet-20240229-v1:0",
+			bedrockModel: "anthropic.claude-3-sonnet-20240229-v1:0",
 		});
 
 		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
@@ -363,16 +371,18 @@ describe("SettingsDialog", () => {
 		await user.click(saveButton);
 
 		await waitFor(() => {
-			expect(settings.saveSettings).toHaveBeenCalledWith({
-				provider: "bedrock",
-				apiKey: undefined,
-				model: "anthropic.claude-3-sonnet-20240229-v1:0",
-				bedrockAuthMethod: "iam",
-				awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
-				awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
-				awsRegion: "us-west-2",
-				bedrockApiKey: undefined,
-			});
+			expect(settings.saveSettings).toHaveBeenCalledWith(
+				expect.objectContaining({
+					provider: "bedrock",
+					apiKey: undefined,
+					bedrockModel: "anthropic.claude-3-sonnet-20240229-v1:0",
+					bedrockAuthMethod: "iam",
+					awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
+					awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+					awsRegion: "us-west-2",
+					bedrockApiKey: undefined,
+				})
+			);
 		});
 
 		expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -396,16 +406,17 @@ describe("SettingsDialog", () => {
 		fireEvent.click(saveButton);
 
 		await waitFor(() => {
-			expect(settings.saveSettings).toHaveBeenCalledWith({
-				provider: "bedrock",
-				apiKey: undefined,
-				model: undefined,
-				bedrockAuthMethod: "iam",
-				awsAccessKeyId: "AKIATEST",
-				awsSecretAccessKey: "secretkey",
-				awsRegion: "us-east-1",
-				bedrockApiKey: undefined,
-			});
+			expect(settings.saveSettings).toHaveBeenCalledWith(
+				expect.objectContaining({
+					provider: "bedrock",
+					apiKey: undefined,
+					bedrockAuthMethod: "iam",
+					awsAccessKeyId: "AKIATEST",
+					awsSecretAccessKey: "secretkey",
+					awsRegion: "us-east-1",
+					bedrockApiKey: undefined,
+				})
+			);
 		});
 	});
 
@@ -413,7 +424,7 @@ describe("SettingsDialog", () => {
 		vi.mocked(settings.getSettings).mockReturnValue({
 			provider: "google",
 			apiKey: "google-api-key-123",
-			model: "gemini-2.0-flash",
+			googleModel: "gemini-2.0-flash",
 		});
 
 		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
@@ -425,5 +436,78 @@ describe("SettingsDialog", () => {
 		expect(providerSelect.value).toBe("google");
 		expect(apiKeyInput.value).toBe("google-api-key-123");
 		expect(modelInput.value).toBe("gemini-2.0-flash");
+	});
+
+	it("should show server credential banner when Bedrock is selected and server credentials are configured", () => {
+		vi.mocked(settings.getSettings).mockReturnValue({
+			provider: "bedrock",
+		});
+		vi.mocked(settings.getServerCredentialStatus).mockReturnValue({ bedrockConfigured: true });
+
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		expect(
+			screen.getByText("Server-provided Bedrock credentials are active. Entering your own is optional."),
+		).toBeInTheDocument();
+	});
+
+	it("should not show server credential banner when Bedrock is selected but server credentials are not configured", () => {
+		vi.mocked(settings.getSettings).mockReturnValue({
+			provider: "bedrock",
+		});
+		vi.mocked(settings.getServerCredentialStatus).mockReturnValue({ bedrockConfigured: false });
+
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		expect(
+			screen.queryByText("Server-provided Bedrock credentials are active. Entering your own is optional."),
+		).not.toBeInTheDocument();
+	});
+
+	it("should not show server credential banner for non-Bedrock providers even when server credentials are configured", () => {
+		vi.mocked(settings.getSettings).mockReturnValue({
+			provider: "anthropic",
+			apiKey: "",
+		});
+		vi.mocked(settings.getServerCredentialStatus).mockReturnValue({ bedrockConfigured: true });
+
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		expect(
+			screen.queryByText("Server-provided Bedrock credentials are active. Entering your own is optional."),
+		).not.toBeInTheDocument();
+	});
+
+	it("should keep credential input fields visible when server credentials are active", () => {
+		vi.mocked(settings.getSettings).mockReturnValue({
+			provider: "bedrock",
+		});
+		vi.mocked(settings.getServerCredentialStatus).mockReturnValue({ bedrockConfigured: true });
+
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		// Banner should be visible
+		expect(
+			screen.getByText("Server-provided Bedrock credentials are active. Entering your own is optional."),
+		).toBeInTheDocument();
+
+		// Credential fields should still be visible
+		expect(screen.getByLabelText("Authentication Method")).toBeInTheDocument();
+		expect(screen.getByLabelText("AWS Access Key ID")).toBeInTheDocument();
+		expect(screen.getByLabelText("AWS Secret Access Key")).toBeInTheDocument();
+		expect(screen.getByLabelText("AWS Region")).toBeInTheDocument();
+	});
+
+	it("should not show server credential banner when server credential status is null", () => {
+		vi.mocked(settings.getSettings).mockReturnValue({
+			provider: "bedrock",
+		});
+		vi.mocked(settings.getServerCredentialStatus).mockReturnValue(null);
+
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		expect(
+			screen.queryByText("Server-provided Bedrock credentials are active. Entering your own is optional."),
+		).not.toBeInTheDocument();
 	});
 });

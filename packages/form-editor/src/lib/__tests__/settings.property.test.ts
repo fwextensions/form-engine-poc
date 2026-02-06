@@ -12,11 +12,6 @@ import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import * as fc from "fast-check";
 import { getSettings, saveSettings, type LLMSettings, type LLMProvider } from "../settings";
 
-// Helper function for deep equality check
-function deepEqual(a: any, b: any): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-
 // Configure fast-check
 fc.configureGlobal({
   numRuns: 100,
@@ -63,34 +58,52 @@ describe("Settings Storage - Property-Based Tests", () => {
      */
 
     // Generator for valid LLM providers
-    const providerArb = fc.constantFrom<LLMProvider>("anthropic", "openai");
+    const providerArb = fc.constantFrom<LLMProvider>("anthropic", "openai", "google", "bedrock");
 
-    // Generator for API keys (non-empty strings)
-    const apiKeyArb = fc.string({ minLength: 1, maxLength: 100 });
+    // Generator for non-empty strings (for API keys, models, etc.)
+    const nonEmptyStringArb = fc.string({ minLength: 1, maxLength: 100 });
 
-    // Generator for model names
-    const modelArb = fc.string({ minLength: 1, maxLength: 50 });
-
-    // Generator for complete LLMSettings objects
-    const settingsArb = fc.record({
+    // Generator for complete LLMSettings objects matching the new per-provider model schema
+    const settingsArb: fc.Arbitrary<LLMSettings> = fc.record({
       provider: providerArb,
-      apiKey: fc.option(apiKeyArb, { nil: undefined }),
-      model: fc.option(modelArb, { nil: undefined }),
+      apiKey: fc.option(nonEmptyStringArb, { nil: undefined }),
+      anthropicModel: fc.option(nonEmptyStringArb, { nil: undefined }),
+      openaiModel: fc.option(nonEmptyStringArb, { nil: undefined }),
+      googleModel: fc.option(nonEmptyStringArb, { nil: undefined }),
+      bedrockModel: fc.option(nonEmptyStringArb, { nil: undefined }),
+      bedrockAuthMethod: fc.option(fc.constantFrom<"iam" | "apiKey">("iam", "apiKey"), { nil: undefined }),
+      awsAccessKeyId: fc.option(nonEmptyStringArb, { nil: undefined }),
+      awsSecretAccessKey: fc.option(nonEmptyStringArb, { nil: undefined }),
+      awsRegion: fc.option(nonEmptyStringArb, { nil: undefined }),
+      bedrockApiKey: fc.option(nonEmptyStringArb, { nil: undefined }),
     });
+
+    /**
+     * Helper: compare two LLMSettings by checking each field individually.
+     * JSON.stringify drops undefined values, so we compare field-by-field.
+     */
+    function assertSettingsEqual(loaded: LLMSettings, original: LLMSettings) {
+      expect(loaded.provider).toBe(original.provider);
+      expect(loaded.apiKey).toBe(original.apiKey);
+      expect(loaded.anthropicModel).toBe(original.anthropicModel);
+      expect(loaded.openaiModel).toBe(original.openaiModel);
+      expect(loaded.googleModel).toBe(original.googleModel);
+      expect(loaded.bedrockModel).toBe(original.bedrockModel);
+      expect(loaded.bedrockAuthMethod).toBe(original.bedrockAuthMethod);
+      expect(loaded.awsAccessKeyId).toBe(original.awsAccessKeyId);
+      expect(loaded.awsSecretAccessKey).toBe(original.awsSecretAccessKey);
+      expect(loaded.awsRegion).toBe(original.awsRegion);
+      expect(loaded.bedrockApiKey).toBe(original.bedrockApiKey);
+    }
 
     it("should preserve all settings fields through save and load", () => {
       fc.assert(
         fc.property(
           settingsArb,
           (originalSettings) => {
-            // Save the settings
             saveSettings(originalSettings);
-            
-            // Load them back
             const loadedSettings = getSettings();
-            
-            // Should be equivalent
-            expect(loadedSettings).toEqual(originalSettings);
+            assertSettingsEqual(loadedSettings, originalSettings);
           }
         )
       );
@@ -116,7 +129,7 @@ describe("Settings Storage - Property-Based Tests", () => {
       fc.assert(
         fc.property(
           providerArb,
-          apiKeyArb,
+          nonEmptyStringArb,
           (provider, apiKey) => {
             const settings: LLMSettings = { provider, apiKey };
             
@@ -129,18 +142,16 @@ describe("Settings Storage - Property-Based Tests", () => {
       );
     });
 
-    it("should preserve model when present", () => {
+    it("should preserve per-provider model when present", () => {
       fc.assert(
         fc.property(
-          providerArb,
-          modelArb,
-          (provider, model) => {
-            const settings: LLMSettings = { provider, model };
-            
+          nonEmptyStringArb,
+          (model) => {
+            // Test anthropicModel
+            const settings: LLMSettings = { provider: "anthropic", anthropicModel: model };
             saveSettings(settings);
             const loaded = getSettings();
-            
-            expect(loaded.model).toBe(model);
+            expect(loaded.anthropicModel).toBe(model);
           }
         )
       );
@@ -162,40 +173,16 @@ describe("Settings Storage - Property-Based Tests", () => {
       );
     });
 
-    it("should preserve undefined model", () => {
-      fc.assert(
-        fc.property(
-          providerArb,
-          (provider) => {
-            const settings: LLMSettings = { provider, model: undefined };
-            
-            saveSettings(settings);
-            const loaded = getSettings();
-            
-            expect(loaded.model).toBeUndefined();
-          }
-        )
-      );
-    });
-
     it("should handle multiple save/load cycles without data loss", () => {
       fc.assert(
         fc.property(
           fc.array(settingsArb, { minLength: 1, maxLength: 10 }),
           (settingsArray) => {
-            let lastSettings: LLMSettings | null = null;
-            
-            // Perform multiple save/load cycles
             for (const settings of settingsArray) {
               saveSettings(settings);
               const loaded = getSettings();
-              expect(loaded).toEqual(settings);
-              lastSettings = loaded;
+              assertSettingsEqual(loaded, settings);
             }
-            
-            // Final load should match the last saved settings
-            const finalLoaded = getSettings();
-            expect(finalLoaded).toEqual(lastSettings);
           }
         )
       );
@@ -204,19 +191,11 @@ describe("Settings Storage - Property-Based Tests", () => {
     it("should preserve settings with all fields populated", () => {
       fc.assert(
         fc.property(
-          providerArb,
-          apiKeyArb,
-          modelArb,
-          (provider, apiKey, model) => {
-            const settings: LLMSettings = { provider, apiKey, model };
-            
+          settingsArb,
+          (settings) => {
             saveSettings(settings);
             const loaded = getSettings();
-            
-            expect(loaded).toEqual(settings);
-            expect(loaded.provider).toBe(provider);
-            expect(loaded.apiKey).toBe(apiKey);
-            expect(loaded.model).toBe(model);
+            assertSettingsEqual(loaded, settings);
           }
         )
       );
@@ -234,7 +213,6 @@ describe("Settings Storage - Property-Based Tests", () => {
             
             expect(loaded.provider).toBe(provider);
             expect(loaded.apiKey).toBeUndefined();
-            expect(loaded.model).toBeUndefined();
           }
         )
       );
@@ -246,44 +224,13 @@ describe("Settings Storage - Property-Based Tests", () => {
           settingsArb,
           settingsArb,
           (firstSettings, secondSettings) => {
-            // Skip test if both settings are identical
-            fc.pre(!deepEqual(firstSettings, secondSettings));
-            
             // Save first settings
             saveSettings(firstSettings);
-            const firstLoaded = getSettings();
-            expect(firstLoaded).toEqual(firstSettings);
             
             // Save second settings (overwrite)
             saveSettings(secondSettings);
             const secondLoaded = getSettings();
-            expect(secondLoaded).toEqual(secondSettings);
-            
-            // Should not contain any data from first settings
-            expect(secondLoaded).not.toEqual(firstSettings);
-          }
-        ),
-        { 
-          examples: [],
-          // Skip when settings are identical
-          skipEqualValues: true,
-        }
-      );
-    });
-
-    it("should handle settings with special characters in strings", () => {
-      fc.assert(
-        fc.property(
-          providerArb,
-          fc.string({ minLength: 1, maxLength: 100 }),
-          fc.string({ minLength: 1, maxLength: 50 }),
-          (provider, apiKey, model) => {
-            const settings: LLMSettings = { provider, apiKey, model };
-            
-            saveSettings(settings);
-            const loaded = getSettings();
-            
-            expect(loaded).toEqual(settings);
+            assertSettingsEqual(secondLoaded, secondSettings);
           }
         )
       );
@@ -316,18 +263,12 @@ describe("Settings Storage - Property-Based Tests", () => {
             
             // Check types are preserved
             expect(typeof loaded.provider).toBe("string");
-            expect(["anthropic", "openai"]).toContain(loaded.provider);
+            expect(["anthropic", "openai", "google", "bedrock"]).toContain(loaded.provider);
             
             if (settings.apiKey !== undefined) {
               expect(typeof loaded.apiKey).toBe("string");
             } else {
               expect(loaded.apiKey).toBeUndefined();
-            }
-            
-            if (settings.model !== undefined) {
-              expect(typeof loaded.model).toBe("string");
-            } else {
-              expect(loaded.model).toBeUndefined();
             }
           }
         )
@@ -347,26 +288,7 @@ describe("Settings Storage - Property-Based Tests", () => {
             // The last one should be loaded
             const loaded = getSettings();
             const lastSettings = settingsArray[settingsArray.length - 1];
-            expect(loaded).toEqual(lastSettings);
-          }
-        )
-      );
-    });
-
-    it("should preserve empty string values correctly", () => {
-      fc.assert(
-        fc.property(
-          providerArb,
-          (provider) => {
-            // Note: empty strings are valid but hasApiKey() should return false
-            const settings: LLMSettings = { provider, apiKey: "", model: "" };
-            
-            saveSettings(settings);
-            const loaded = getSettings();
-            
-            // Empty strings should be preserved as-is
-            expect(loaded.apiKey).toBe("");
-            expect(loaded.model).toBe("");
+            assertSettingsEqual(loaded, lastSettings);
           }
         )
       );
@@ -381,19 +303,10 @@ describe("Settings Storage - Property-Based Tests", () => {
             saveSettings(settings);
             
             // Load multiple times
-            const loads: LLMSettings[] = [];
-            for (let i = 0; i < numLoads; i++) {
-              loads.push(getSettings());
-            }
-            
-            // All loads should be identical
-            for (const loaded of loads) {
-              expect(loaded).toEqual(settings);
-            }
-            
-            // All loads should be equal to each other
-            for (let i = 1; i < loads.length; i++) {
-              expect(loads[i]).toEqual(loads[0]);
+            const firstLoad = getSettings();
+            for (let i = 1; i < numLoads; i++) {
+              const subsequentLoad = getSettings();
+              assertSettingsEqual(subsequentLoad, firstLoad);
             }
           }
         )

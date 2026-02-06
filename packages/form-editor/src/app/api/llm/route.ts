@@ -69,6 +69,18 @@ export function createProvider(
 			});
 
 		case "bedrock": {
+			// Server-side credentials take precedence
+			const serverApiKey = process.env.BEDROCK_API_KEY;
+			const serverRegion = process.env.AWS_REGION;
+
+			if (serverApiKey && serverRegion) {
+				return createAmazonBedrock({
+					region: serverRegion,
+					apiKey: serverApiKey,
+				});
+			}
+
+			// Fall back to client-supplied credentials (existing logic)
 			const authMethod = credentials.bedrockAuthMethod || "iam";
 			
 			if (authMethod === "apiKey") {

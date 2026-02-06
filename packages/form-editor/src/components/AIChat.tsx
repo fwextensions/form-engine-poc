@@ -8,12 +8,15 @@ import {
 	MessagePrimitive,
 	useMessage,
 	useThread,
+	useAssistantRuntime,
 } from "@assistant-ui/react";
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
-import { hasApiKey, getSettings, getModelForProvider } from "@/lib/settings";
+import { hasApiKey, getSettings, getModelForProvider, fetchServerCredentialStatus, getServerCredentialStatus, saveSettings } from "@/lib/settings";
 import { SchemaGenerator } from "@/lib/schema-generator";
 import { extractYamlFromResponse, extractTextAfterYaml } from "@/lib/yaml-extractor";
 import { validateSchema } from "@/lib/schema-validator";
+import { MarkdownText } from "@/components/assistant-ui/markdown-text";
+import Markdown from "react-markdown";
 
 interface AIChatProps {
 	currentSchema: string;
@@ -45,6 +48,7 @@ function AIChatInner({
 }) {
 	// Access runtime via hooks
 	const thread = useThread();
+	const runtime = useAssistantRuntime();
 
 	// Defer API key check until after hydration to avoid SSR mismatch
 	const [isClient, setIsClient] = useState(false);
@@ -52,7 +56,21 @@ function AIChatInner({
 
 	React.useEffect(() => {
 		setIsClient(true);
-		setHasKey(hasApiKey());
+
+		// Fetch server credential status on mount
+		fetchServerCredentialStatus().then((status) => {
+			if (status.bedrockConfigured) {
+				const settings = getSettings();
+				const currentlyHasKey = hasApiKey();
+
+				// If no client-side credentials exist for any provider, auto-select bedrock
+				if (!currentlyHasKey) {
+					saveSettings({ ...settings, provider: "bedrock" });
+				}
+			}
+			// Re-check hasApiKey after server status is cached
+			setHasKey(hasApiKey());
+		});
 	}, []);
 
 	// Example prompts for empty state
@@ -64,8 +82,8 @@ function AIChatInner({
 
 	const handleExampleClick = (prompt: string) => {
 		if (!hasKey) return;
-		// Send message via thread API
-		thread.append({
+		// Send message via runtime API
+		runtime.append({
 			role: "user",
 			content: [{ type: "text", text: prompt }],
 		});
@@ -78,6 +96,41 @@ function AIChatInner({
 
 	// Check if currently loading
 	const isRunning = thread.isRunning;
+
+	// Markdown component overrides for react-markdown (used when rendering displayContent with YAML stripped)
+	// Matches the styling in MarkdownText for visual consistency
+	const markdownComponents = {
+		p: ({ children }: any) => <p className="mb-2 last:mb-0">{children}</p>,
+		ul: ({ children }: any) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+		ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+		li: ({ children }: any) => <li className="mb-1">{children}</li>,
+		h1: ({ children }: any) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+		h2: ({ children }: any) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+		h3: ({ children }: any) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+		code: ({ className, children, ...props }: any) => {
+			const isInline = !className;
+			if (isInline) {
+				return (
+					<code className="bg-slate-200 text-slate-800 px-1 py-0.5 rounded text-sm" {...props}>
+						{children}
+					</code>
+				);
+			}
+			return (
+				<pre className="bg-slate-800 text-slate-100 p-3 rounded-lg overflow-x-auto my-2">
+					<code className={className} {...props}>{children}</code>
+				</pre>
+			);
+		},
+		a: ({ href, children }: any) => (
+			<a href={href} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">
+				{children}
+			</a>
+		),
+		blockquote: ({ children }: any) => (
+			<blockquote className="border-l-4 border-slate-300 pl-3 italic my-2">{children}</blockquote>
+		),
+	};
 
 	// Custom message component that displays validation results
 	const CustomMessage = () => {
@@ -147,10 +200,28 @@ function AIChatInner({
 						}`}
 					>
 						<div className="flex items-start gap-2">
-							{displayContent && (
-								<div className="whitespace-pre-wrap flex-1">
-									{displayContent}
-								</div>
+							{isAssistant ? (
+								// Assistant messages: render with markdown
+								hasYamlCodeBlock ? (
+									// YAML block detected: render displayContent (YAML stripped) through markdown
+									displayContent ? (
+										<div className="flex-1 prose-sm">
+											<Markdown components={markdownComponents}>{displayContent}</Markdown>
+										</div>
+									) : null
+								) : (
+									// No YAML block: use MessagePrimitive.Parts with MarkdownText for native streaming support
+									<div className="flex-1">
+										<MessagePrimitive.Parts components={{ Text: MarkdownText }} />
+									</div>
+								)
+							) : (
+								// User messages: plain text rendering
+								displayContent ? (
+									<div className="whitespace-pre-wrap flex-1">
+										{displayContent}
+									</div>
+								) : null
 							)}
 							{schemaApplied && (
 								<span className="text-green-600 flex-shrink-0" title="Schema applied">✓</span>
@@ -438,16 +509,23 @@ export default function AIChat(props: AIChatProps) {
 
 				// Add provider-specific credentials
 				if (settings.provider === 'bedrock') {
-					// Bedrock uses either AWS credentials or API key
-					const authMethod = settings.bedrockAuthMethod || 'iam';
-					requestBody.bedrockAuthMethod = authMethod;
-					requestBody.awsRegion = settings.awsRegion;
-
-					if (authMethod === 'apiKey') {
-						requestBody.bedrockApiKey = settings.bedrockApiKey;
+					// Check if server-side Bedrock credentials are configured
+					const serverStatus = getServerCredentialStatus();
+					if (serverStatus?.bedrockConfigured) {
+						// Server has credentials configured; skip sending client Bedrock credentials
+						// The server will use its own env-var credentials
 					} else {
-						requestBody.awsAccessKeyId = settings.awsAccessKeyId;
-						requestBody.awsSecretAccessKey = settings.awsSecretAccessKey;
+						// No server credentials; send client-supplied Bedrock credentials
+						const authMethod = settings.bedrockAuthMethod || 'iam';
+						requestBody.bedrockAuthMethod = authMethod;
+						requestBody.awsRegion = settings.awsRegion;
+
+						if (authMethod === 'apiKey') {
+							requestBody.bedrockApiKey = settings.bedrockApiKey;
+						} else {
+							requestBody.awsAccessKeyId = settings.awsAccessKeyId;
+							requestBody.awsSecretAccessKey = settings.awsSecretAccessKey;
+						}
 					}
 				} else {
 					// Other providers use API key

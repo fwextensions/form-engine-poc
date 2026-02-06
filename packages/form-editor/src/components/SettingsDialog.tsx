@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { getSettings, saveSettings, type LLMProvider } from "@/lib/settings";
+import { getSettings, saveSettings, getServerCredentialStatus, type LLMProvider } from "@/lib/settings";
 
 interface SettingsDialogProps {
 	open: boolean;
@@ -141,6 +141,11 @@ export default function SettingsDialog({
 						{/* AWS Credentials (for Bedrock) */}
 						{provider === "bedrock" && (
 							<>
+								{getServerCredentialStatus()?.bedrockConfigured && (
+									<div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
+										Server-provided Bedrock credentials are active. Entering your own is optional.
+									</div>
+								)}
 								<div>
 									<label
 										htmlFor="bedrockAuthMethod"

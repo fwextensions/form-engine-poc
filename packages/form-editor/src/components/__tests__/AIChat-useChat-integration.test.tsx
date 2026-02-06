@@ -9,7 +9,7 @@
 
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import AIChat from "../AIChat";
 import * as settings from "@/lib/settings";
 
@@ -18,6 +18,9 @@ vi.mock("@/lib/settings", () => ({
 	hasApiKey: vi.fn(),
 	getSettings: vi.fn(),
 	getModelForProvider: vi.fn(() => "claude-3-5-sonnet-20241022"),
+	fetchServerCredentialStatus: vi.fn(() => Promise.resolve({ bedrockConfigured: false })),
+	getServerCredentialStatus: vi.fn(() => null),
+	saveSettings: vi.fn(),
 }));
 
 // Mock AssistantChatTransport
@@ -36,6 +39,7 @@ const mockThread = {
 };
 
 const mockRuntime = {
+	append: vi.fn(),
 	thread: {
 		append: vi.fn(),
 	},
@@ -130,7 +134,7 @@ describe("AIChat - useChatRuntime State Integration", () => {
 			expect(screen.getByText("Send")).toBeInTheDocument();
 		});
 
-		it("should disable input when isRunning is true", () => {
+		it("should disable input when isRunning is true", async () => {
 			mockThread.isRunning = true;
 
 			const { container } = render(
@@ -141,12 +145,14 @@ describe("AIChat - useChatRuntime State Integration", () => {
 				/>
 			);
 
-			const input = container.querySelector('[data-placeholder="Describe your form..."]');
-			expect(input).toBeTruthy();
-			expect(input).toHaveAttribute("disabled");
+			await waitFor(() => {
+				const input = container.querySelector('[data-placeholder="Describe your form..."]');
+				expect(input).toBeTruthy();
+				expect(input).toHaveAttribute("disabled");
+			});
 		});
 
-		it("should enable input when isRunning is false", () => {
+		it("should enable input when isRunning is false", async () => {
 			mockThread.isRunning = false;
 
 			const { container } = render(
@@ -157,9 +163,11 @@ describe("AIChat - useChatRuntime State Integration", () => {
 				/>
 			);
 
-			const input = container.querySelector('[data-placeholder="Describe your form..."]');
-			expect(input).toBeTruthy();
-			expect(input).not.toHaveAttribute("disabled");
+			await waitFor(() => {
+				const input = container.querySelector('[data-placeholder="Describe your form..."]');
+				expect(input).toBeTruthy();
+				expect(input).not.toHaveAttribute("disabled");
+			});
 		});
 	});
 
@@ -310,8 +318,8 @@ describe("AIChat - useChatRuntime State Integration", () => {
 			);
 
 			// Messages are rendered by ThreadPrimitive.Messages with custom component
-			// The actual rendering is mocked, so we just verify the component mounts
-			expect(screen.getByText("AI Assistant")).toBeInTheDocument();
+			// The actual rendering is mocked, so we just verify the chat interface mounts
+			expect(screen.getByText("Send")).toBeInTheDocument();
 		});
 
 		it("should handle messages with multiple text parts", () => {
@@ -335,7 +343,7 @@ describe("AIChat - useChatRuntime State Integration", () => {
 			);
 
 			// Component renders, messages handled by custom message component
-			expect(screen.getByText("AI Assistant")).toBeInTheDocument();
+			expect(screen.getByText("Send")).toBeInTheDocument();
 		});
 	});
 });
