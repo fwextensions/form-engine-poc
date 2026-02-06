@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
@@ -134,13 +134,16 @@ function AIChatInner({
 		),
 	};
 
-	// Image thumbnail preview using object URL from the attachment File
+	// Image thumbnail preview using data URL from the attachment File
 	const ImageThumb = () => {
 		const file = useThreadComposerAttachment((a) => a.file);
-		const src = useMemo(() => (file ? URL.createObjectURL(file) : undefined), [file]);
+		const [src, setSrc] = useState<string | undefined>();
 		useEffect(() => {
-			return () => { if (src) URL.revokeObjectURL(src); };
-		}, [src]);
+			if (!file) return;
+			const reader = new FileReader();
+			reader.onload = () => setSrc(reader.result as string);
+			reader.readAsDataURL(file);
+		}, [file]);
 		if (!src) return null;
 		return <img src={src} alt="preview" className="h-14 w-14 rounded border border-slate-300 object-cover" />;
 	};
