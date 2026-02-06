@@ -6,6 +6,7 @@ import {
 	ThreadPrimitive,
 	ComposerPrimitive,
 	MessagePrimitive,
+	AttachmentPrimitive,
 	useMessage,
 	useThread,
 	useAssistantApi,
@@ -132,6 +133,52 @@ function AIChatInner({
 		),
 	};
 
+	// Attachment thumbnail for display in the composer
+	const ComposerAttachmentImage = () => (
+		<AttachmentPrimitive.Root className="relative inline-block group">
+			<AttachmentPrimitive.unstable_Thumb
+				className="h-14 w-14 rounded border border-slate-300 object-cover"
+			/>
+			<AttachmentPrimitive.Remove className="absolute -top-1.5 -right-1.5 bg-slate-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+				&times;
+			</AttachmentPrimitive.Remove>
+		</AttachmentPrimitive.Root>
+	);
+
+	// Shared composer with attachment support
+	const ComposerWithAttachments = ({ placeholder }: { placeholder: string }) => (
+		<ComposerPrimitive.Root className="flex flex-col gap-2">
+			<ComposerPrimitive.Attachments
+				components={{
+					Image: ComposerAttachmentImage,
+					File: ComposerAttachmentImage,
+				}}
+			/>
+			<div className="flex gap-2">
+				<ComposerPrimitive.AddAttachment
+					className="flex-shrink-0 p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors self-end"
+				>
+					<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+					</svg>
+				</ComposerPrimitive.AddAttachment>
+				<ComposerPrimitive.Input
+					placeholder={placeholder}
+					disabled={isRunning}
+					autoFocus
+					className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+					rows={1}
+				/>
+				<ComposerPrimitive.Send
+					disabled={isRunning}
+					className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+				>
+					{isRunning ? "Generating..." : "Send"}
+				</ComposerPrimitive.Send>
+			</div>
+		</ComposerPrimitive.Root>
+	);
+
 	// Custom message component that displays validation results
 	const CustomMessage = () => {
 		const message = useMessage();
@@ -142,6 +189,14 @@ function AIChatInner({
 			.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
 			.map(part => part.text)
 			.join('');
+
+		// Extract image parts from user messages (from attachments)
+		const imageParts = message.role === 'user'
+			? message.content.filter((part: any) =>
+				(part.type === 'image') ||
+				(part.type === 'file' && typeof part.mimeType === 'string' && part.mimeType.startsWith('image/'))
+			)
+			: [];
 
 		const isAssistant = message.role === 'assistant';
 		const isStreaming = isAssistant &&
@@ -199,6 +254,22 @@ function AIChatInner({
 								: "bg-slate-100 text-slate-900"
 						}`}
 					>
+						{/* Render attached images for user messages */}
+						{imageParts.length > 0 && (
+							<div className="flex flex-wrap gap-2 mb-2">
+								{imageParts.map((part: any, i: number) => {
+									const src = part.type === 'image' ? part.image : part.data;
+									return (
+										<img
+											key={i}
+											src={src}
+											alt="Attached image"
+											className="max-h-32 rounded border border-blue-400/30"
+										/>
+									);
+								})}
+							</div>
+						)}
 						<div className="flex items-start gap-2">
 							{isAssistant ? (
 								// Assistant messages: render with markdown
@@ -403,21 +474,7 @@ function AIChatInner({
 				{/* Message input */}
 				{hasKey && (
 					<div className="border-t border-slate-200 p-4">
-						<ComposerPrimitive.Root className="flex gap-2">
-							<ComposerPrimitive.Input
-								placeholder="Describe your form..."
-								disabled={isRunning}
-								autoFocus
-								className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-								rows={1}
-							/>
-							<ComposerPrimitive.Send
-								disabled={isRunning}
-								className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-							>
-								Send
-							</ComposerPrimitive.Send>
-						</ComposerPrimitive.Root>
+						<ComposerWithAttachments placeholder="Describe your form..." />
 					</div>
 				)}
 			</div>
@@ -450,21 +507,7 @@ function AIChatInner({
 
 			{/* Message input */}
 			<div className="border-t border-slate-200 p-4">
-				<ComposerPrimitive.Root className="flex gap-2">
-					<ComposerPrimitive.Input
-						placeholder="Ask me to modify the form..."
-						disabled={isRunning}
-						autoFocus
-						className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-						rows={1}
-					/>
-					<ComposerPrimitive.Send
-						disabled={isRunning}
-						className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-					>
-						{isRunning ? "Generating..." : "Send"}
-					</ComposerPrimitive.Send>
-				</ComposerPrimitive.Root>
+				<ComposerWithAttachments placeholder="Ask me to modify the form..." />
 			</div>
 		</div>
 	);
@@ -552,9 +595,12 @@ export default function AIChat(props: AIChatProps) {
 							// Build the full edit prompt
 							const fullPrompt = generatorRef.current!.buildEditPrompt(currentSchema, originalText);
 
+							// Preserve non-text parts (e.g. image attachments)
+							const nonTextParts = msg.parts?.filter((part: any) => part.type !== 'text') || [];
+
 							return {
 								...msg,
-								parts: [{ type: 'text' as const, text: fullPrompt }],
+								parts: [{ type: 'text' as const, text: fullPrompt }, ...nonTextParts],
 							};
 						}
 					}

@@ -13,7 +13,11 @@ interface LLMRequest {
 	provider: LLMProvider;
 	apiKey?: string;
 	model: string;
-	messages: Array<{ role: string; content: string }>;
+	messages: Array<{
+		role: string;
+		content?: string;
+		parts?: Array<{ type: string; text?: string; url?: string; mediaType?: string; filename?: string; mimeType?: string; data?: string }>;
+	}>;
 	system?: string;
 	maxTokens?: number;
 	// AWS Bedrock specific
@@ -174,10 +178,36 @@ export async function POST(request: NextRequest) {
 		});
 
 		// Call streamText with the provider's model and messages
-		// Transform UIMessage format to simple {role, content} format
+		// Transform UIMessage format, preserving multi-modal content (images)
 		const transformedMessages = messages.map((msg) => {
 			// Handle UIMessage format with parts array
 			if ('parts' in msg && Array.isArray(msg.parts)) {
+				// Check if message contains any file/image parts
+				const hasFileParts = msg.parts.some(
+					(part: any) => part.type === 'file' || part.type === 'image'
+				);
+
+				if (hasFileParts && msg.role === 'user') {
+					// Build multi-modal content array for the AI SDK
+					const content: Array<{ type: 'text'; text: string } | { type: 'image'; image: string }> = [];
+					for (const part of msg.parts) {
+						if (part.type === 'text') {
+							content.push({ type: 'text', text: part.text || '' });
+						} else if (part.type === 'file' && part.mediaType?.startsWith('image/')) {
+							// File part with image media type (from vercelAttachmentAdapter)
+							content.push({ type: 'image', image: part.url || '' });
+						} else if (part.type === 'image') {
+							content.push({ type: 'image', image: part.url || '' });
+						}
+					}
+
+					return {
+						role: 'user' as const,
+						content,
+					};
+				}
+
+				// Text-only message: flatten to string
 				const textContent = msg.parts
 					.filter((part: any) => part.type === 'text')
 					.map((part: any) => part.text)
