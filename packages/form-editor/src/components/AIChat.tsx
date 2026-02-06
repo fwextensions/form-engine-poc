@@ -28,6 +28,7 @@ type ValidationResults = Map<string, {
 	extractedSchema?: string;
 	validationErrors?: string[];
 	validationWarnings?: string[];
+	schemaApplied?: boolean;
 }>;
 
 /**
@@ -101,9 +102,9 @@ function AIChatInner({
 			'type' in message.status &&
 			message.status.type === 'running';
 
-		// Detect code blocks in assistant messages
-		const codeBlockStartIndex = messageContent.indexOf('```');
-		const hasCodeBlock = isAssistant && codeBlockStartIndex !== -1;
+		// Detect YAML code blocks specifically (```yaml or ```yml)
+		const yamlCodeBlockMatch = messageContent.match(/```ya?ml/i);
+		const hasYamlCodeBlock = isAssistant && yamlCodeBlockMatch !== null;
 
 		let displayContent: string;
 		let showStreamingIndicator = false;
@@ -113,7 +114,8 @@ function AIChatInner({
 			// Streaming just started, no content yet — show immediate indicator
 			displayContent = '';
 			showStreamingIndicator = true;
-		} else if (hasCodeBlock) {
+		} else if (hasYamlCodeBlock) {
+			const codeBlockStartIndex = messageContent.indexOf('```');
 			const textBefore = messageContent.substring(0, codeBlockStartIndex).trim();
 			const textAfter = extractTextAfterYaml(messageContent);
 
@@ -133,8 +135,8 @@ function AIChatInner({
 		}
 
 		// Check if schema was successfully applied (for showing checkmark)
-		const schemaApplied = validation?.extractedSchema &&
-			(!validation.validationErrors || validation.validationErrors.length === 0);
+		// Only show checkmark if schema was valid and actually applied
+		const schemaApplied = validation?.schemaApplied === true;
 
 		return (
 			<>
@@ -412,11 +414,7 @@ function AIChatInner({
 export default function AIChat(props: AIChatProps) {
 	const generatorRef = useRef<SchemaGenerator | null>(null);
 	const currentSchemaRef = useRef<string>(props.currentSchema);
-	const [validationResults, setValidationResults] = useState<Map<string, {
-		extractedSchema?: string;
-		validationErrors?: string[];
-		validationWarnings?: string[];
-	}>>(new Map());
+	const [validationResults, setValidationResults] = useState<ValidationResults>(new Map());
 
 	// Keep currentSchemaRef in sync with props
 	currentSchemaRef.current = props.currentSchema;
@@ -514,6 +512,8 @@ export default function AIChat(props: AIChatProps) {
 					const validationResult = validateSchema(extractedYaml);
 					console.log('[AIChat] validationResult:', validationResult);
 
+					const isValid = validationResult.valid;
+
 					// Store validation results for this message
 					setValidationResults(prev => {
 						const newMap = new Map(prev);
@@ -521,12 +521,13 @@ export default function AIChat(props: AIChatProps) {
 							extractedSchema: extractedYaml,
 							validationErrors: validationResult.errors,
 							validationWarnings: validationResult.warnings,
+							schemaApplied: isValid,
 						});
 						return newMap;
 					});
 
 					// If valid, update the schema
-					if (validationResult.valid) {
+					if (isValid) {
 						console.log('[AIChat] Schema is valid, calling onSchemaGenerated');
 						props.onSchemaGenerated(extractedYaml);
 					} else {
