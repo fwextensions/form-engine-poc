@@ -135,9 +135,6 @@ export async function POST(request: NextRequest) {
 	try {
 		const body: LLMRequest = await request.json();
 		
-		// Debug: Log the received body to understand the structure
-		console.log("Received request body:", JSON.stringify(body, null, 2));
-		
 		const {
 			provider,
 			apiKey,
@@ -151,6 +148,9 @@ export async function POST(request: NextRequest) {
 			awsRegion,
 			bedrockApiKey,
 		} = body;
+		
+		// Log minimal request info (avoid logging full schema/images)
+		console.log(`[LLM API] ${provider}/${model} - ${messages.length} message(s)`);
 
 		// Validate required fields
 		if (!provider) {
