@@ -183,7 +183,7 @@ export default function FormEditorPage() {
 				onNextPage={handleNextPage}
 				onOpenSettings={() => setSettingsOpen(true)}
 			/>
-			<Group direction="horizontal" className="flex-grow">
+			<Group orientation="horizontal" className="flex-grow">
 				<Panel defaultSize={50}>
 					<EditorPane
 						schema={yamlInput}
