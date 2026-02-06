@@ -74,12 +74,16 @@ export function createProvider(
 			const serverRegion = process.env.AWS_REGION;
 
 			if (serverApiKey && serverRegion) {
+				console.log('[LLM API] Using SERVER-SIDE Bedrock credentials');
+				console.log('[LLM API] Region:', serverRegion);
+				console.log('[LLM API] API Key (first 20 chars):', serverApiKey.substring(0, 20) + '...');
 				return createAmazonBedrock({
 					region: serverRegion,
 					apiKey: serverApiKey,
 				});
 			}
 
+			console.log('[LLM API] No server credentials found, using CLIENT-SUPPLIED credentials');
 			// Fall back to client-supplied credentials (existing logic)
 			const authMethod = credentials.bedrockAuthMethod || "iam";
 			

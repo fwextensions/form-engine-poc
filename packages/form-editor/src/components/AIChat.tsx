@@ -8,7 +8,7 @@ import {
 	MessagePrimitive,
 	useMessage,
 	useThread,
-	useAssistantRuntime,
+	useAssistantApi,
 } from "@assistant-ui/react";
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
 import { hasApiKey, getSettings, getModelForProvider, fetchServerCredentialStatus, getServerCredentialStatus, saveSettings } from "@/lib/settings";
@@ -48,7 +48,7 @@ function AIChatInner({
 }) {
 	// Access runtime via hooks
 	const thread = useThread();
-	const runtime = useAssistantRuntime();
+	const api = useAssistantApi();
 
 	// Defer API key check until after hydration to avoid SSR mismatch
 	const [isClient, setIsClient] = useState(false);
@@ -82,8 +82,8 @@ function AIChatInner({
 
 	const handleExampleClick = (prompt: string) => {
 		if (!hasKey) return;
-		// Send message via runtime API
-		runtime.append({
+		// Send message via thread API
+		api.thread().append({
 			role: "user",
 			content: [{ type: "text", text: prompt }],
 		});
@@ -224,7 +224,7 @@ function AIChatInner({
 								) : null
 							)}
 							{schemaApplied && (
-								<span className="text-green-600 flex-shrink-0" title="Schema applied">✓</span>
+								<span className="text-green-600 flex-shrink-0" title="Schema applied">✅</span>
 							)}
 						</div>
 						{showStreamingIndicator && (

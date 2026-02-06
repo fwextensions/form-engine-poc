@@ -20,7 +20,7 @@ npm run dev:schema-viewer    # Demo application
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: React 19, Next.js 15 (app router)
+- **Frontend**: React 19, Next.js 16 (app router)
 - **Language**: TypeScript for type safety
 - **Schema**: YAML with `js-yaml` parsing
 - **Validation**: Zod schemas

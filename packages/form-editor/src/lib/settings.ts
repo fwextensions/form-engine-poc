@@ -33,7 +33,7 @@ export const DEFAULT_MODELS: Record<LLMProvider, string> = {
 	anthropic: "claude-sonnet-4-20250514",
 	openai: "gpt-4o",
 	google: "gemini-2.0-flash",
-	bedrock: "anthropic.claude-3-sonnet-20240229-v1:0",
+	bedrock: "us.anthropic.claude-haiku-4-5-20251001-v1:0",
 };
 
 /**
