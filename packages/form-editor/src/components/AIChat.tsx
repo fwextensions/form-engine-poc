@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
@@ -10,6 +10,7 @@ import {
 	useMessage,
 	useThread,
 	useAssistantApi,
+	useThreadComposerAttachment,
 } from "@assistant-ui/react";
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
 import { hasApiKey, getSettings, getModelForProvider, fetchServerCredentialStatus, getServerCredentialStatus, saveSettings } from "@/lib/settings";
@@ -133,12 +134,21 @@ function AIChatInner({
 		),
 	};
 
+	// Image thumbnail preview using object URL from the attachment File
+	const ImageThumb = () => {
+		const file = useThreadComposerAttachment((a) => a.file);
+		const src = useMemo(() => (file ? URL.createObjectURL(file) : undefined), [file]);
+		useEffect(() => {
+			return () => { if (src) URL.revokeObjectURL(src); };
+		}, [src]);
+		if (!src) return null;
+		return <img src={src} alt="preview" className="h-14 w-14 rounded border border-slate-300 object-cover" />;
+	};
+
 	// Attachment thumbnail for display in the composer
 	const ComposerAttachmentImage = () => (
 		<AttachmentPrimitive.Root className="relative inline-block group">
-			<AttachmentPrimitive.unstable_Thumb
-				className="h-14 w-14 rounded border border-slate-300 object-cover"
-			/>
+			<ImageThumb />
 			<AttachmentPrimitive.Remove className="absolute -top-1.5 -right-1.5 bg-slate-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
 				&times;
 			</AttachmentPrimitive.Remove>
