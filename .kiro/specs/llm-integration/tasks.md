@@ -144,7 +144,7 @@ This plan implements LLM-assisted form schema generation in phases: catalog prom
     - Add gear icon button that opens SettingsDialog
     - _Requirements: 6.1_
 
-- [~] 7. Final Checkpoint - Ensure all tests pass
+- [ ] 7. Final Checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes

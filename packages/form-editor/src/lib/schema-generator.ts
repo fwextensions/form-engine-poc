@@ -53,8 +53,11 @@ export class SchemaGenerator {
 ${currentSchema}
 \`\`\`
 
-Please modify it according to these instructions: ${instructions}
+User request: ${instructions}
 
-Remember to output the COMPLETE modified schema, not just the changes.`;
+Instructions:
+- If the request asks for information about the schema (e.g., "list fields", "what fields are there", "show me the structure"), respond with a text answer only. Do NOT output the schema.
+- If the request asks to modify, add, remove, or change the schema, output the COMPLETE modified schema in a YAML code block.
+- When outputting a schema, use a \`\`\`yaml code block and include the entire schema, not just the changes.`;
 	}
 }
