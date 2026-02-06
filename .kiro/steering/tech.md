@@ -60,7 +60,7 @@ npm run <command> --workspace=<package-name>
 
 ### Shell
 
-Kiro is using git bash as the default shell, not Powershell.
+IMPORTANT: Kiro is using git bash as the default shell, not Powershell.
 
 
 ## Architecture Patterns

@@ -6,6 +6,7 @@
 import React from "react";
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import SettingsDialog from "../SettingsDialog";
 import * as settings from "@/lib/settings";
 
@@ -24,6 +25,8 @@ describe("SettingsDialog", () => {
 			apiKey: "",
 			model: "",
 		});
+		// Ensure saveSettings doesn't throw
+		vi.mocked(settings.saveSettings).mockImplementation(() => {});
 	});
 
 	it("should render the dialog when open is true", () => {
@@ -41,16 +44,18 @@ describe("SettingsDialog", () => {
 		expect(screen.queryByText("LLM Settings")).not.toBeInTheDocument();
 	});
 
-	it("should display provider dropdown with Anthropic and OpenAI options", () => {
+	it("should display provider dropdown with all four provider options", () => {
 		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
 
 		const providerSelect = screen.getByLabelText("Provider");
 		expect(providerSelect).toBeInTheDocument();
 
 		const options = screen.getAllByRole("option");
-		expect(options).toHaveLength(2);
+		expect(options).toHaveLength(4);
 		expect(options[0]).toHaveTextContent("Anthropic (Claude)");
 		expect(options[1]).toHaveTextContent("OpenAI (GPT)");
+		expect(options[2]).toHaveTextContent("Google (Gemini)");
+		expect(options[3]).toHaveTextContent("Amazon Bedrock");
 	});
 
 	it("should display API key password input", () => {
@@ -229,18 +234,26 @@ describe("SettingsDialog", () => {
 		// Default is Anthropic
 		expect(modelInput).toHaveAttribute(
 			"placeholder",
-			"e.g., claude-3-5-sonnet-20241022",
+			"e.g., claude-haiku-4-5-20251001",
 		);
 
 		// Change to OpenAI
 		fireEvent.change(providerSelect, { target: { value: "openai" } });
-		expect(modelInput).toHaveAttribute("placeholder", "e.g., gpt-4");
+		expect(modelInput).toHaveAttribute("placeholder", "e.g., gpt-4o");
+
+		// Change to Google
+		fireEvent.change(providerSelect, { target: { value: "google" } });
+		expect(modelInput).toHaveAttribute("placeholder", "e.g., gemini-2.0-flash");
+
+		// Change to Bedrock
+		fireEvent.change(providerSelect, { target: { value: "bedrock" } });
+		expect(modelInput).toHaveAttribute("placeholder", "e.g., anthropic.claude-3-sonnet-20240229-v1:0");
 
 		// Change back to Anthropic
 		fireEvent.change(providerSelect, { target: { value: "anthropic" } });
 		expect(modelInput).toHaveAttribute(
 			"placeholder",
-			"e.g., claude-3-5-sonnet-20241022",
+			"e.g., claude-haiku-4-5-20251001",
 		);
 	});
 
@@ -258,5 +271,159 @@ describe("SettingsDialog", () => {
 		expect(
 			screen.getByText(/Leave empty to use the default model/i),
 		).toBeInTheDocument();
+	});
+
+	it("should display API key field for non-Bedrock providers", () => {
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		// Default is Anthropic - should show API key
+		expect(screen.getByLabelText("API Key")).toBeInTheDocument();
+		expect(screen.queryByLabelText("AWS Access Key ID")).not.toBeInTheDocument();
+
+		// Change to OpenAI - should still show API key
+		const providerSelect = screen.getByLabelText("Provider");
+		fireEvent.change(providerSelect, { target: { value: "openai" } });
+		expect(screen.getByLabelText("API Key")).toBeInTheDocument();
+		expect(screen.queryByLabelText("AWS Access Key ID")).not.toBeInTheDocument();
+
+		// Change to Google - should still show API key
+		fireEvent.change(providerSelect, { target: { value: "google" } });
+		expect(screen.getByLabelText("API Key")).toBeInTheDocument();
+		expect(screen.queryByLabelText("AWS Access Key ID")).not.toBeInTheDocument();
+	});
+
+	it("should display AWS credential fields when Bedrock is selected", () => {
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		const providerSelect = screen.getByLabelText("Provider");
+		fireEvent.change(providerSelect, { target: { value: "bedrock" } });
+
+		// Should show AWS fields
+		expect(screen.getByLabelText("AWS Access Key ID")).toBeInTheDocument();
+		expect(screen.getByLabelText("AWS Secret Access Key")).toBeInTheDocument();
+		expect(screen.getByLabelText("AWS Region")).toBeInTheDocument();
+
+		// Should NOT show API key field
+		expect(screen.queryByLabelText("API Key")).not.toBeInTheDocument();
+
+		// Should show security notice for AWS credentials
+		expect(
+			screen.getByText(/AWS credentials are stored locally in your browser/i),
+		).toBeInTheDocument();
+	});
+
+	it("should load AWS credentials when dialog opens with Bedrock provider", () => {
+		vi.mocked(settings.getSettings).mockReturnValue({
+			provider: "bedrock",
+			awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
+			awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+			awsRegion: "us-east-1",
+			model: "anthropic.claude-3-sonnet-20240229-v1:0",
+		});
+
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		const providerSelect = screen.getByLabelText("Provider") as HTMLSelectElement;
+		const awsAccessKeyInput = screen.getByLabelText("AWS Access Key ID") as HTMLInputElement;
+		const awsSecretKeyInput = screen.getByLabelText("AWS Secret Access Key") as HTMLInputElement;
+		const awsRegionInput = screen.getByLabelText("AWS Region") as HTMLInputElement;
+		const modelInput = screen.getByLabelText("Model (Optional)") as HTMLInputElement;
+
+		expect(providerSelect.value).toBe("bedrock");
+		expect(awsAccessKeyInput.value).toBe("AKIAIOSFODNN7EXAMPLE");
+		expect(awsSecretKeyInput.value).toBe("wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
+		expect(awsRegionInput.value).toBe("us-east-1");
+		expect(modelInput.value).toBe("anthropic.claude-3-sonnet-20240229-v1:0");
+	});
+
+	it("should save AWS credentials when Bedrock is selected", async () => {
+		const user = userEvent.setup();
+		const onOpenChange = vi.fn();
+		render(<SettingsDialog open={true} onOpenChange={onOpenChange} />);
+
+		const providerSelect = screen.getByLabelText("Provider");
+		await user.selectOptions(providerSelect, "bedrock");
+
+		// Wait for the provider change to take effect
+		await waitFor(() => {
+			expect(screen.getByLabelText("AWS Access Key ID")).toBeInTheDocument();
+		});
+
+		const awsAccessKeyInput = screen.getByLabelText("AWS Access Key ID");
+		const awsSecretKeyInput = screen.getByLabelText("AWS Secret Access Key");
+		const awsRegionInput = screen.getByLabelText("AWS Region");
+		const modelInput = screen.getByLabelText("Model (Optional)");
+
+		await user.type(awsAccessKeyInput, "AKIAIOSFODNN7EXAMPLE");
+		await user.type(awsSecretKeyInput, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
+		await user.type(awsRegionInput, "us-west-2");
+		await user.type(modelInput, "anthropic.claude-3-sonnet-20240229-v1:0");
+
+		const saveButton = screen.getByRole("button", { name: "Save" });
+		await user.click(saveButton);
+
+		await waitFor(() => {
+			expect(settings.saveSettings).toHaveBeenCalledWith({
+				provider: "bedrock",
+				apiKey: undefined,
+				model: "anthropic.claude-3-sonnet-20240229-v1:0",
+				bedrockAuthMethod: "iam",
+				awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
+				awsSecretAccessKey: "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY",
+				awsRegion: "us-west-2",
+				bedrockApiKey: undefined,
+			});
+		});
+
+		expect(onOpenChange).toHaveBeenCalledWith(false);
+	});
+
+	it("should trim whitespace from AWS credentials before saving", async () => {
+		const onOpenChange = vi.fn();
+		render(<SettingsDialog open={true} onOpenChange={onOpenChange} />);
+
+		const providerSelect = screen.getByLabelText("Provider");
+		fireEvent.change(providerSelect, { target: { value: "bedrock" } });
+
+		const awsAccessKeyInput = screen.getByLabelText("AWS Access Key ID");
+		const awsSecretKeyInput = screen.getByLabelText("AWS Secret Access Key");
+		const awsRegionInput = screen.getByLabelText("AWS Region");
+		const saveButton = screen.getByRole("button", { name: "Save" });
+
+		fireEvent.change(awsAccessKeyInput, { target: { value: "  AKIATEST  " } });
+		fireEvent.change(awsSecretKeyInput, { target: { value: "  secretkey  " } });
+		fireEvent.change(awsRegionInput, { target: { value: "  us-east-1  " } });
+		fireEvent.click(saveButton);
+
+		await waitFor(() => {
+			expect(settings.saveSettings).toHaveBeenCalledWith({
+				provider: "bedrock",
+				apiKey: undefined,
+				model: undefined,
+				bedrockAuthMethod: "iam",
+				awsAccessKeyId: "AKIATEST",
+				awsSecretAccessKey: "secretkey",
+				awsRegion: "us-east-1",
+				bedrockApiKey: undefined,
+			});
+		});
+	});
+
+	it("should load Google provider settings correctly", () => {
+		vi.mocked(settings.getSettings).mockReturnValue({
+			provider: "google",
+			apiKey: "google-api-key-123",
+			model: "gemini-2.0-flash",
+		});
+
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		const providerSelect = screen.getByLabelText("Provider") as HTMLSelectElement;
+		const apiKeyInput = screen.getByLabelText("API Key") as HTMLInputElement;
+		const modelInput = screen.getByLabelText("Model (Optional)") as HTMLInputElement;
+
+		expect(providerSelect.value).toBe("google");
+		expect(apiKeyInput.value).toBe("google-api-key-123");
+		expect(modelInput.value).toBe("gemini-2.0-flash");
 	});
 });

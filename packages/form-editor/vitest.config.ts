@@ -1,7 +1,9 @@
 import { defineConfig } from "vitest/config";
 import path from "path";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
+	plugins: [react()],
 	resolve: {
 		alias: {
 			"@": path.resolve(__dirname, "./src"),
@@ -14,6 +16,8 @@ export default defineConfig({
 		css: false,
 		setupFiles: ["./vitest.setup.ts"],
 	},
-	// Override postcss to prevent it from loading
-	css: false,
+	// Disable PostCSS in test environment
+	css: {
+		postcss: false,
+	},
 });

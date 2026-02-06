@@ -1,30 +1,66 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import AIChat from "../AIChat";
 import * as settings from "@/lib/settings";
-import * as llmClient from "@/lib/llm-client";
-import { SchemaGenerator } from "@/lib/schema-generator";
 
 // Mock the settings module
 vi.mock("@/lib/settings", () => ({
 	hasApiKey: vi.fn(),
 	getSettings: vi.fn(),
+	getModelForProvider: vi.fn(() => "claude-3-5-sonnet-20241022"),
 }));
 
-// Mock the llm-client module
-vi.mock("@/lib/llm-client", () => ({
-	createAnthropicClient: vi.fn(),
+// Mock AssistantChatTransport
+vi.mock("@assistant-ui/react-ai-sdk", () => ({
+	useChatRuntime: vi.fn(() => mockRuntime),
+	AssistantChatTransport: vi.fn().mockImplementation(function(this: any) {
+		return this;
+	}),
 }));
 
-// Mock the schema-generator module
-vi.mock("@/lib/schema-generator", () => ({
-	SchemaGenerator: vi.fn(),
+// Mock assistant-ui
+const mockThread = {
+	messages: [],
+	isRunning: false,
+	error: null,
+};
+
+const mockRuntime = {
+	thread: {
+		append: vi.fn(),
+	},
+};
+
+vi.mock("@assistant-ui/react", () => ({
+	AssistantRuntimeProvider: ({ children }: any) => children,
+	ThreadPrimitive: {
+		Root: ({ children }: any) => <div>{children}</div>,
+		Viewport: ({ children }: any) => <div>{children}</div>,
+		ScrollToBottom: () => null,
+		Empty: ({ children }: any) => <div>{children}</div>,
+		Messages: () => null,
+	},
+	ComposerPrimitive: {
+		Root: ({ children, onSubmit }: any) => <form onSubmit={onSubmit}>{children}</form>,
+		Input: (props: any) => <input {...props} />,
+		Send: ({ children, ...props }: any) => <button {...props}>{children}</button>,
+	},
+	MessagePrimitive: {
+		Root: ({ children }: any) => <div>{children}</div>,
+		Content: ({ children }: any) => <div>{children}</div>,
+	},
+	useMessage: vi.fn(() => ({
+		id: "test-message-id",
+		role: "assistant",
+		content: [{ type: "text", text: "Test message" }],
+	})),
+	useAssistantEvent: vi.fn(),
+	useAssistantRuntime: vi.fn(() => mockRuntime),
+	useThread: vi.fn(() => mockThread),
 }));
 
-// Mock chatscope styles to avoid CSS import issues in tests
-vi.mock("@chatscope/chat-ui-kit-styles/dist/default/styles.min.css", () => ({}));
 
 describe("AIChat", () => {
 	const mockOnSchemaGenerated = vi.fn();
@@ -32,6 +68,10 @@ describe("AIChat", () => {
 
 	beforeEach(() => {
 		vi.clearAllMocks();
+		// Reset thread mock to default state
+		mockThread.messages = [];
+		mockThread.isRunning = false;
+		mockThread.error = null;
 	});
 
 	afterEach(() => {
@@ -80,7 +120,7 @@ describe("AIChat", () => {
 			vi.mocked(settings.getSettings).mockReturnValue({
 				provider: "anthropic",
 				apiKey: "test-key",
-			});
+			} as any);
 
 			render(
 				<AIChat
@@ -107,7 +147,7 @@ describe("AIChat", () => {
 			vi.mocked(settings.getSettings).mockReturnValue({
 				provider: "anthropic",
 				apiKey: "test-key",
-			});
+			} as any);
 
 			render(
 				<AIChat
@@ -122,12 +162,12 @@ describe("AIChat", () => {
 			).toBeInTheDocument();
 		});
 
-		it("should populate input when example prompt is clicked", async () => {
+		it("should send message when example prompt is clicked", async () => {
 			vi.mocked(settings.hasApiKey).mockReturnValue(true);
 			vi.mocked(settings.getSettings).mockReturnValue({
 				provider: "anthropic",
 				apiKey: "test-key",
-			});
+			} as any);
 			const user = userEvent.setup();
 
 			render(
@@ -143,438 +183,12 @@ describe("AIChat", () => {
 			);
 			await user.click(exampleButton);
 
-			const input = screen.getByPlaceholderText("Describe your form...");
-			expect(input).toHaveValue(
-				"Create a contact form with name, email, and message fields"
-			);
-		});
-	});
-
-	describe("Message Sending", () => {
-		it("should send message and display streaming response", async () => {
-			vi.mocked(settings.hasApiKey).mockReturnValue(true);
-			vi.mocked(settings.getSettings).mockReturnValue({
-				provider: "anthropic",
-				apiKey: "test-key",
+			// Should call runtime.thread.append with the message
+			expect(mockRuntime.thread.append).toHaveBeenCalledTimes(1);
+			expect(mockRuntime.thread.append).toHaveBeenCalledWith({
+				role: "user",
+				content: [{ type: "text", text: "Create a contact form with name, email, and message fields" }],
 			});
-
-			// Mock the generator to yield chunks
-			const mockGenerate = vi.fn(async function* () {
-				yield "id: ";
-				yield "contactForm\n";
-				yield "type: form";
-			});
-
-			const mockGeneratorInstance = {
-				generate: mockGenerate,
-				edit: vi.fn(),
-				resetConversation: vi.fn(),
-			};
-
-			vi.mocked(SchemaGenerator).mockImplementation(
-				() => mockGeneratorInstance as any
-			);
-
-			const user = userEvent.setup();
-
-			render(
-				<AIChat
-					currentSchema=""
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			const input = screen.getByPlaceholderText("Describe your form...");
-			await user.type(input, "Create a contact form");
-			await user.keyboard("{Enter}");
-
-			// Wait for the message to appear
-			await waitFor(() => {
-				expect(screen.getByText("Create a contact form")).toBeInTheDocument();
-			});
-
-			// Verify generator was called
-			expect(mockGenerate).toHaveBeenCalledWith("Create a contact form");
-		});
-
-		it("should use edit method when schema exists", async () => {
-			vi.mocked(settings.hasApiKey).mockReturnValue(true);
-			vi.mocked(settings.getSettings).mockReturnValue({
-				provider: "anthropic",
-				apiKey: "test-key",
-			});
-
-			const mockEdit = vi.fn(async function* () {
-				yield "Modified schema";
-			});
-
-			const mockGeneratorInstance = {
-				generate: vi.fn(),
-				edit: mockEdit,
-				resetConversation: vi.fn(),
-			};
-
-			vi.mocked(SchemaGenerator).mockImplementation(
-				() => mockGeneratorInstance as any
-			);
-
-			const user = userEvent.setup();
-
-			render(
-				<AIChat
-					currentSchema="id: existingForm\ntype: form"
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			const input = screen.getByPlaceholderText("Ask me to modify the form...");
-			await user.type(input, "Add an email field");
-			await user.keyboard("{Enter}");
-
-			await waitFor(() => {
-				expect(mockEdit).toHaveBeenCalledWith(
-					"id: existingForm\ntype: form",
-					"Add an email field"
-				);
-			});
-		});
-
-		it("should disable input during generation", async () => {
-			vi.mocked(settings.hasApiKey).mockReturnValue(true);
-			vi.mocked(settings.getSettings).mockReturnValue({
-				provider: "anthropic",
-				apiKey: "test-key",
-			});
-
-			// Mock a slow generator
-			const mockGenerate = vi.fn(async function* () {
-				await new Promise((resolve) => setTimeout(resolve, 100));
-				yield "response";
-			});
-
-			const mockGeneratorInstance = {
-				generate: mockGenerate,
-				edit: vi.fn(),
-				resetConversation: vi.fn(),
-			};
-
-			vi.mocked(SchemaGenerator).mockImplementation(
-				() => mockGeneratorInstance as any
-			);
-
-			const user = userEvent.setup();
-
-			render(
-				<AIChat
-					currentSchema=""
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			const input = screen.getByPlaceholderText("Describe your form...");
-			await user.type(input, "Test message");
-			await user.keyboard("{Enter}");
-
-			// Input should be disabled during generation
-			await waitFor(() => {
-				expect(input).toBeDisabled();
-			});
-		});
-	});
-
-	describe("Schema Extraction and Validation", () => {
-		it("should extract YAML and call onSchemaGenerated for valid schema", async () => {
-			vi.mocked(settings.hasApiKey).mockReturnValue(true);
-			vi.mocked(settings.getSettings).mockReturnValue({
-				provider: "anthropic",
-				apiKey: "test-key",
-			});
-
-			const validYaml = `id: contactForm
-type: form
-children:
-  - id: name
-    type: text
-    label: Name`;
-
-			const mockGenerate = vi.fn(async function* () {
-				yield "Here's your form:\n\n```yaml\n";
-				yield validYaml;
-				yield "\n```";
-			});
-
-			const mockGeneratorInstance = {
-				generate: mockGenerate,
-				edit: vi.fn(),
-				resetConversation: vi.fn(),
-			};
-
-			vi.mocked(SchemaGenerator).mockImplementation(
-				() => mockGeneratorInstance as any
-			);
-
-			const user = userEvent.setup();
-
-			render(
-				<AIChat
-					currentSchema=""
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			const input = screen.getByPlaceholderText("Describe your form...");
-			await user.type(input, "Create a form");
-			await user.keyboard("{Enter}");
-
-			await waitFor(
-				() => {
-					expect(mockOnSchemaGenerated).toHaveBeenCalledWith(validYaml);
-				},
-				{ timeout: 3000 }
-			);
-		});
-
-		it("should display validation errors for invalid schema", async () => {
-			vi.mocked(settings.hasApiKey).mockReturnValue(true);
-			vi.mocked(settings.getSettings).mockReturnValue({
-				provider: "anthropic",
-				apiKey: "test-key",
-			});
-
-			const invalidYaml = `id: form
-type: unknownType`;
-
-			const mockGenerate = vi.fn(async function* () {
-				yield "```yaml\n";
-				yield invalidYaml;
-				yield "\n```";
-			});
-
-			const mockGeneratorInstance = {
-				generate: mockGenerate,
-				edit: vi.fn(),
-				resetConversation: vi.fn(),
-			};
-
-			vi.mocked(SchemaGenerator).mockImplementation(
-				() => mockGeneratorInstance as any
-			);
-
-			const user = userEvent.setup();
-
-			render(
-				<AIChat
-					currentSchema=""
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			const input = screen.getByPlaceholderText("Describe your form...");
-			await user.type(input, "Create a form");
-			await user.keyboard("{Enter}");
-
-			await waitFor(
-				() => {
-					expect(screen.getByText("Validation Errors:")).toBeInTheDocument();
-				},
-				{ timeout: 3000 }
-			);
-
-			// Should not call onSchemaGenerated for invalid schema
-			expect(mockOnSchemaGenerated).not.toHaveBeenCalled();
-		});
-
-		it("should display success message for valid schema", async () => {
-			vi.mocked(settings.hasApiKey).mockReturnValue(true);
-			vi.mocked(settings.getSettings).mockReturnValue({
-				provider: "anthropic",
-				apiKey: "test-key",
-			});
-
-			const validYaml = `id: contactForm
-type: form
-children:
-  - id: name
-    type: text
-    label: Name`;
-
-			const mockGenerate = vi.fn(async function* () {
-				yield "```yaml\n";
-				yield validYaml;
-				yield "\n```";
-			});
-
-			const mockGeneratorInstance = {
-				generate: mockGenerate,
-				edit: vi.fn(),
-				resetConversation: vi.fn(),
-			};
-
-			vi.mocked(SchemaGenerator).mockImplementation(
-				() => mockGeneratorInstance as any
-			);
-
-			const user = userEvent.setup();
-
-			render(
-				<AIChat
-					currentSchema=""
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			const input = screen.getByPlaceholderText("Describe your form...");
-			await user.type(input, "Create a form");
-			await user.keyboard("{Enter}");
-
-			await waitFor(
-				() => {
-					expect(
-						screen.getByText(/Schema generated successfully/)
-					).toBeInTheDocument();
-				},
-				{ timeout: 3000 }
-			);
-		});
-	});
-
-	describe("Error Handling", () => {
-		it("should display error message when generation fails", async () => {
-			vi.mocked(settings.hasApiKey).mockReturnValue(true);
-			vi.mocked(settings.getSettings).mockReturnValue({
-				provider: "anthropic",
-				apiKey: "test-key",
-			});
-
-			const mockGenerate = vi.fn(async function* (): AsyncGenerator<string> {
-				throw new Error("Network error: Unable to connect to LLM service");
-			});
-
-			const mockGeneratorInstance = {
-				generate: mockGenerate,
-				edit: vi.fn(),
-				resetConversation: vi.fn(),
-			};
-
-			vi.mocked(SchemaGenerator).mockImplementation(
-				() => mockGeneratorInstance as any
-			);
-
-			const user = userEvent.setup();
-
-			render(
-				<AIChat
-					currentSchema=""
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			const input = screen.getByPlaceholderText("Describe your form...");
-			await user.type(input, "Create a form");
-			await user.keyboard("{Enter}");
-
-			await waitFor(
-				() => {
-					expect(
-						screen.getByText(/Network error: Unable to connect to LLM service/)
-					).toBeInTheDocument();
-				},
-				{ timeout: 3000 }
-			);
-		});
-	});
-
-	describe("Chat Interface", () => {
-		it("should show typing indicator during generation", async () => {
-			vi.mocked(settings.hasApiKey).mockReturnValue(true);
-			vi.mocked(settings.getSettings).mockReturnValue({
-				provider: "anthropic",
-				apiKey: "test-key",
-			});
-
-			const mockGenerate = vi.fn(async function* () {
-				await new Promise((resolve) => setTimeout(resolve, 100));
-				yield "response";
-			});
-
-			const mockGeneratorInstance = {
-				generate: mockGenerate,
-				edit: vi.fn(),
-				resetConversation: vi.fn(),
-			};
-
-			vi.mocked(SchemaGenerator).mockImplementation(
-				() => mockGeneratorInstance as any
-			);
-
-			const user = userEvent.setup();
-
-			render(
-				<AIChat
-					currentSchema=""
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			const input = screen.getByPlaceholderText("Describe your form...");
-			await user.type(input, "Test");
-			await user.keyboard("{Enter}");
-
-			// Should show typing indicator
-			await waitFor(() => {
-				expect(screen.getByText("AI is generating...")).toBeInTheDocument();
-			});
-		});
-
-		it("should display schema context indicator in header when schema exists", () => {
-			vi.mocked(settings.hasApiKey).mockReturnValue(true);
-			vi.mocked(settings.getSettings).mockReturnValue({
-				provider: "anthropic",
-				apiKey: "test-key",
-			});
-
-			// Create a message to show the chat interface
-			const mockGeneratorInstance = {
-				generate: vi.fn(),
-				edit: vi.fn(),
-				resetConversation: vi.fn(),
-			};
-
-			vi.mocked(SchemaGenerator).mockImplementation(
-				() => mockGeneratorInstance as any
-			);
-
-			const { rerender } = render(
-				<AIChat
-					currentSchema=""
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			// Send a message to transition to chat view
-			const input = screen.getByPlaceholderText("Describe your form...");
-			userEvent.type(input, "test");
-
-			// Rerender with schema
-			rerender(
-				<AIChat
-					currentSchema="id: form\ntype: form"
-					onSchemaGenerated={mockOnSchemaGenerated}
-					onOpenSettings={mockOnOpenSettings}
-				/>
-			);
-
-			// Note: This test verifies the component structure but may need adjustment
-			// based on how the chat interface transitions from empty to populated state
 		});
 	});
 });

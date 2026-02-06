@@ -68,7 +68,7 @@ export function validateSchema(yamlString: string): ValidationResult {
     const parseResult = parseRootFormSchema(parsedYaml);
     if (parseResult.errors) {
       // Extract error messages from Zod errors
-      const zodErrors = parseResult.errors.errors.map((err) => {
+      const zodErrors = parseResult.errors.issues.map((err) => {
         const path = err.path.length > 0 ? `${err.path.join(".")}: ` : "";
         return `${path}${err.message}`;
       });

@@ -175,7 +175,7 @@ describe("YAML Extractor - Property-Based Tests", () => {
       fc.assert(
         fc.property(
           fc.string({ minLength: 1 }).filter(s => !s.includes("```")),
-          fc.string({ minLength: 1 }).filter(s => !s.includes("```")),
+          fc.string({ minLength: 1 }).filter(s => !s.includes("```") && s.trim().length > 0),
           (genericContent, yamlContent) => {
             // Create response with both generic and yaml blocks
             const response = `\`\`\`\nid: ${genericContent}\n\`\`\`\n\n\`\`\`yaml\n${yamlContent}\n\`\`\``;

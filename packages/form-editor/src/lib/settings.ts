@@ -5,13 +5,36 @@
 
 const SETTINGS_KEY = "form-editor-llm-settings";
 
-export type LLMProvider = "anthropic" | "openai";
+export type LLMProvider = "anthropic" | "openai" | "google" | "bedrock";
+
+export type BedrockAuthMethod = "iam" | "apiKey";
 
 export interface LLMSettings {
 	provider: LLMProvider;
 	apiKey?: string;
-	model?: string;
+	// Provider-specific models
+	anthropicModel?: string;
+	openaiModel?: string;
+	googleModel?: string;
+	bedrockModel?: string;
+	// AWS Bedrock specific credentials
+	bedrockAuthMethod?: BedrockAuthMethod;
+	awsAccessKeyId?: string;
+	awsSecretAccessKey?: string;
+	awsRegion?: string;
+	bedrockApiKey?: string;
 }
+
+/**
+ * Default models for each provider.
+ * Used when no model is explicitly specified in settings.
+ */
+export const DEFAULT_MODELS: Record<LLMProvider, string> = {
+	anthropic: "claude-sonnet-4-20250514",
+	openai: "gpt-4o",
+	google: "gemini-2.0-flash",
+	bedrock: "anthropic.claude-3-sonnet-20240229-v1:0",
+};
 
 /**
  * Default settings when none are saved or storage is corrupted.
@@ -19,6 +42,25 @@ export interface LLMSettings {
 const DEFAULT_SETTINGS: LLMSettings = {
 	provider: "anthropic",
 };
+
+/**
+ * Gets the model for the current provider.
+ * Returns the provider-specific model or the default if not set.
+ */
+export function getModelForProvider(settings: LLMSettings): string {
+	switch (settings.provider) {
+		case "anthropic":
+			return settings.anthropicModel || DEFAULT_MODELS.anthropic;
+		case "openai":
+			return settings.openaiModel || DEFAULT_MODELS.openai;
+		case "google":
+			return settings.googleModel || DEFAULT_MODELS.google;
+		case "bedrock":
+			return settings.bedrockModel || DEFAULT_MODELS.bedrock;
+		default:
+			return DEFAULT_MODELS[settings.provider];
+	}
+}
 
 /**
  * Retrieves LLM settings from localStorage.
@@ -43,14 +85,29 @@ export function getSettings(): LLMSettings {
 		}
 
 		// Validate provider is valid
-		if (parsed.provider !== "anthropic" && parsed.provider !== "openai") {
+		if (
+			parsed.provider !== "anthropic" &&
+			parsed.provider !== "openai" &&
+			parsed.provider !== "google" &&
+			parsed.provider !== "bedrock"
+		) {
 			return DEFAULT_SETTINGS;
 		}
 
 		return {
 			provider: parsed.provider,
 			apiKey: typeof parsed.apiKey === "string" ? parsed.apiKey : undefined,
-			model: typeof parsed.model === "string" ? parsed.model : undefined,
+			anthropicModel: typeof parsed.anthropicModel === "string" ? parsed.anthropicModel : undefined,
+			openaiModel: typeof parsed.openaiModel === "string" ? parsed.openaiModel : undefined,
+			googleModel: typeof parsed.googleModel === "string" ? parsed.googleModel : undefined,
+			bedrockModel: typeof parsed.bedrockModel === "string" ? parsed.bedrockModel : undefined,
+			bedrockAuthMethod: parsed.bedrockAuthMethod === "iam" || parsed.bedrockAuthMethod === "apiKey"
+				? parsed.bedrockAuthMethod
+				: undefined,
+			awsAccessKeyId: typeof parsed.awsAccessKeyId === "string" ? parsed.awsAccessKeyId : undefined,
+			awsSecretAccessKey: typeof parsed.awsSecretAccessKey === "string" ? parsed.awsSecretAccessKey : undefined,
+			awsRegion: typeof parsed.awsRegion === "string" ? parsed.awsRegion : undefined,
+			bedrockApiKey: typeof parsed.bedrockApiKey === "string" ? parsed.bedrockApiKey : undefined,
 		};
 	} catch (error) {
 		// Handle JSON parse errors or other exceptions
@@ -72,7 +129,15 @@ export function saveSettings(settings: LLMSettings): void {
 		const toStore: LLMSettings = {
 			provider: settings.provider,
 			apiKey: settings.apiKey,
-			model: settings.model,
+			anthropicModel: settings.anthropicModel,
+			openaiModel: settings.openaiModel,
+			googleModel: settings.googleModel,
+			bedrockModel: settings.bedrockModel,
+			bedrockAuthMethod: settings.bedrockAuthMethod,
+			awsAccessKeyId: settings.awsAccessKeyId,
+			awsSecretAccessKey: settings.awsSecretAccessKey,
+			awsRegion: settings.awsRegion,
+			bedrockApiKey: settings.bedrockApiKey,
 		};
 
 		window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(toStore));
@@ -84,10 +149,40 @@ export function saveSettings(settings: LLMSettings): void {
 }
 
 /**
- * Checks if an API key is configured.
- * Returns true if a non-empty API key exists in settings.
+ * Checks if credentials are configured for the current provider.
+ * Returns true if the necessary credentials exist in settings.
  */
 export function hasApiKey(): boolean {
 	const settings = getSettings();
-	return typeof settings.apiKey === "string" && settings.apiKey.length > 0;
+	
+	// Check provider-specific credentials
+	switch (settings.provider) {
+		case "bedrock":
+			// Bedrock requires either AWS credentials or API key
+			const authMethod = settings.bedrockAuthMethod || "iam";
+			if (authMethod === "apiKey") {
+				return !!(
+					settings.bedrockApiKey &&
+					settings.bedrockApiKey.length > 0 &&
+					settings.awsRegion &&
+					settings.awsRegion.length > 0
+				);
+			} else {
+				return !!(
+					settings.awsAccessKeyId &&
+					settings.awsAccessKeyId.length > 0 &&
+					settings.awsSecretAccessKey &&
+					settings.awsSecretAccessKey.length > 0 &&
+					settings.awsRegion &&
+					settings.awsRegion.length > 0
+				);
+			}
+		case "anthropic":
+		case "openai":
+		case "google":
+			// Other providers require API key
+			return typeof settings.apiKey === "string" && settings.apiKey.length > 0;
+		default:
+			return false;
+	}
 }
