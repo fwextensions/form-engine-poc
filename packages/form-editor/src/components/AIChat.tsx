@@ -1,24 +1,22 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
-	ComposerPrimitive,
-	MessagePrimitive,
-	AttachmentPrimitive,
-	useMessage,
 	useThread,
 	useAssistantApi,
-	useThreadComposerAttachment,
 } from "@assistant-ui/react";
-import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
-import { hasApiKey, getSettings, getModelForProvider, fetchServerCredentialStatus, getServerCredentialStatus, saveSettings } from "@/lib/settings";
+import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
+import { hasApiKey, getSettings, fetchServerCredentialStatus, saveSettings } from "@/lib/settings";
 import { SchemaGenerator } from "@/lib/schema-generator";
-import { extractYamlFromResponse, extractTextAfterYaml } from "@/lib/yaml-extractor";
+import { extractYamlFromResponse } from "@/lib/yaml-extractor";
 import { validateSchema } from "@/lib/schema-validator";
-import { MarkdownText } from "@/components/assistant-ui/markdown-text";
-import Markdown from "react-markdown";
+import { createChatTransport } from "@/lib/chat-transport";
+import { ValidationResultsContext, type ValidationResults } from "./chat/ValidationContext";
+import { ChatMessage } from "./chat/ChatMessage";
+import { ChatComposer } from "./chat/ChatComposer";
+import { EmptyState } from "./chat/EmptyState";
 
 interface AIChatProps {
 	currentSchema: string;
@@ -26,29 +24,15 @@ interface AIChatProps {
 	onOpenSettings: () => void;
 }
 
-// Type for validation results
-type ValidationResults = Map<string, {
-	extractedSchema?: string;
-	validationErrors?: string[];
-	validationWarnings?: string[];
-	schemaApplied?: boolean;
-}>;
-
 /**
- * Inner component that has access to assistant-ui hooks
+ * Inner component that has access to assistant-ui hooks.
+ * Handles credential checking, empty state routing, and chat layout.
  */
 function AIChatInner({
-	onSchemaGenerated,
 	onOpenSettings,
-	generatorRef,
-	validationResults,
-	setValidationResults,
-}: Omit<AIChatProps, 'currentSchema'> & {
-	generatorRef: React.MutableRefObject<SchemaGenerator | null>;
-	validationResults: ValidationResults;
-	setValidationResults: React.Dispatch<React.SetStateAction<ValidationResults>>;
+}: {
+	onOpenSettings: () => void;
 }) {
-	// Access runtime via hooks
 	const thread = useThread();
 	const api = useAssistantApi();
 
@@ -75,452 +59,39 @@ function AIChatInner({
 		});
 	}, []);
 
-	// Example prompts for empty state
-	const examplePrompts = [
-		"Create a contact form with name, email, and message fields",
-		"Build a multi-step registration form with personal info and preferences",
-		"Design a survey form with rating scales and text feedback",
-	];
-
 	const handleExampleClick = (prompt: string) => {
 		if (!hasKey) return;
-		// Send message via thread API
 		api.thread().append({
 			role: "user",
 			content: [{ type: "text", text: prompt }],
 		});
 	};
 
-	// Helper to get validation results for a message
-	const getValidationForMessage = (messageId: string) => {
-		return validationResults.get(messageId);
-	};
-
-	// Check if currently loading
-	const isRunning = thread.isRunning;
-
-	// Markdown component overrides for react-markdown (used when rendering displayContent with YAML stripped)
-	// Matches the styling in MarkdownText for visual consistency
-	const markdownComponents = {
-		p: ({ children }: any) => <p className="mb-2 last:mb-0">{children}</p>,
-		ul: ({ children }: any) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-		ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-		li: ({ children }: any) => <li className="mb-1">{children}</li>,
-		h1: ({ children }: any) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-		h2: ({ children }: any) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-		h3: ({ children }: any) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
-		code: ({ className, children, ...props }: any) => {
-			const isInline = !className;
-			if (isInline) {
-				return (
-					<code className="bg-slate-200 text-slate-800 px-1 py-0.5 rounded text-sm" {...props}>
-						{children}
-					</code>
-				);
-			}
-			return (
-				<pre className="bg-slate-800 text-slate-100 p-3 rounded-lg overflow-x-auto my-2">
-					<code className={className} {...props}>{children}</code>
-				</pre>
-			);
-		},
-		a: ({ href, children }: any) => (
-			<a href={href} className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">
-				{children}
-			</a>
-		),
-		blockquote: ({ children }: any) => (
-			<blockquote className="border-l-4 border-slate-300 pl-3 italic my-2">{children}</blockquote>
-		),
-	};
-
-	// Image thumbnail preview using data URL from the attachment File
-	const ImageThumb = () => {
-		const file = useThreadComposerAttachment((a) => a.file);
-		const [src, setSrc] = useState<string | undefined>();
-		useEffect(() => {
-			if (!file) return;
-			const reader = new FileReader();
-			reader.onload = () => setSrc(reader.result as string);
-			reader.readAsDataURL(file);
-		}, [file]);
-		if (!src) return null;
-		return <img src={src} alt="preview" className="h-14 w-14 rounded border border-slate-300 object-cover" />;
-	};
-
-	// Attachment thumbnail for display in the composer
-	const ComposerAttachmentImage = () => (
-		<AttachmentPrimitive.Root className="relative inline-block group">
-			<ImageThumb />
-			<AttachmentPrimitive.Remove className="absolute -top-1.5 -right-1.5 bg-slate-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-				&times;
-			</AttachmentPrimitive.Remove>
-		</AttachmentPrimitive.Root>
-	);
-
-	// Shared composer with attachment support
-	const ComposerWithAttachments = ({ placeholder }: { placeholder: string }) => (
-		<ComposerPrimitive.Root className="flex flex-col gap-2">
-			<ComposerPrimitive.Attachments
-				components={{
-					Image: ComposerAttachmentImage,
-					File: ComposerAttachmentImage,
-				}}
-			/>
-			<div className="flex gap-2">
-				<ComposerPrimitive.AddAttachment
-					className="flex-shrink-0 p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors self-end"
-				>
-					<svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-					</svg>
-				</ComposerPrimitive.AddAttachment>
-				<ComposerPrimitive.Input
-					placeholder={placeholder}
-					disabled={isRunning}
-					autoFocus
-					className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-					rows={1}
-				/>
-				<ComposerPrimitive.Send
-					disabled={isRunning}
-					className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
-				>
-					{isRunning ? "Generating..." : "Send"}
-				</ComposerPrimitive.Send>
-			</div>
-		</ComposerPrimitive.Root>
-	);
-
-	// Custom message component that displays validation results
-	const CustomMessage = () => {
-		const message = useMessage();
-		const validation = getValidationForMessage(message.id);
-
-		// Extract text content from message parts
-		const messageContent = message.content
-			.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
-			.map(part => part.text)
-			.join('');
-
-		// Extract image parts from user messages (from attachments)
-		const imageParts = message.role === 'user'
-			? message.content.filter((part: any) =>
-				(part.type === 'image') ||
-				(part.type === 'file' && typeof part.mimeType === 'string' && part.mimeType.startsWith('image/'))
-			)
-			: [];
-
-		const isAssistant = message.role === 'assistant';
-		const isStreaming = isAssistant &&
-			'status' in message &&
-			typeof message.status === 'object' &&
-			message.status !== null &&
-			'type' in message.status &&
-			message.status.type === 'running';
-
-		// Detect YAML code blocks specifically (```yaml or ```yml)
-		const yamlCodeBlockMatch = messageContent.match(/```ya?ml/i);
-		const hasYamlCodeBlock = isAssistant && yamlCodeBlockMatch !== null;
-
-		let displayContent: string;
-		let showStreamingIndicator = false;
-		let streamingLabel = '';
-
-		if (isAssistant && isStreaming && !messageContent.trim()) {
-			// Streaming just started, no content yet — show immediate indicator
-			displayContent = '';
-			showStreamingIndicator = true;
-		} else if (hasYamlCodeBlock) {
-			const codeBlockStartIndex = messageContent.indexOf('```');
-			const textBefore = messageContent.substring(0, codeBlockStartIndex).trim();
-			const textAfter = extractTextAfterYaml(messageContent);
-
-			if (isStreaming) {
-				// While streaming: hide the code block, show indicator
-				const parts = [textBefore, textAfter].filter(Boolean);
-				displayContent = parts.join('\n\n');
-				showStreamingIndicator = true;
-				streamingLabel = 'Generating schema…';
-			} else {
-				// Complete: hide the code block, show text around it
-				const parts = [textBefore, textAfter].filter(Boolean);
-				displayContent = parts.join('\n\n') || 'Form updated';
-			}
-		} else {
-			displayContent = messageContent;
-		}
-
-		// Check if schema was successfully applied (for showing checkmark)
-		// Only show checkmark if schema was valid and actually applied
-		const schemaApplied = validation?.schemaApplied === true;
-
-		return (
-			<>
-				<MessagePrimitive.Root
-					className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} mb-4`}
-				>
-					<div
-						className={`max-w-[80%] rounded-lg px-4 py-2 ${
-							message.role === "user"
-								? "bg-blue-500 text-white"
-								: "bg-slate-100 text-slate-900"
-						}`}
-					>
-						{/* Render attached images for user messages */}
-						{imageParts.length > 0 && (
-							<div className="flex flex-wrap gap-2 mb-2">
-								{imageParts.map((part: any, i: number) => {
-									const src = part.type === 'image' ? part.image : part.data;
-									return (
-										<img
-											key={i}
-											src={src}
-											alt="Attached image"
-											className="max-h-32 rounded border border-blue-400/30"
-										/>
-									);
-								})}
-							</div>
-						)}
-						<div className="flex items-start gap-2">
-							{isAssistant ? (
-								// Assistant messages: render with markdown
-								hasYamlCodeBlock ? (
-									// YAML block detected: render displayContent (YAML stripped) through markdown
-									displayContent ? (
-										<div className="flex-1 prose-sm">
-											<Markdown components={markdownComponents}>{displayContent}</Markdown>
-										</div>
-									) : null
-								) : (
-									// No YAML block: use MessagePrimitive.Parts with MarkdownText for native streaming support
-									<div className="flex-1">
-										<MessagePrimitive.Parts components={{ Text: MarkdownText }} />
-									</div>
-								)
-							) : (
-								// User messages: plain text rendering
-								displayContent ? (
-									<div className="whitespace-pre-wrap flex-1">
-										{displayContent}
-									</div>
-								) : null
-							)}
-							{schemaApplied && (
-								<span className="text-green-600 flex-shrink-0" title="Schema applied">✅</span>
-							)}
-						</div>
-						{showStreamingIndicator && (
-							<div className={`flex items-center gap-2 text-slate-500 ${displayContent ? 'pt-2' : ''}`}>
-								<span
-									className="inline-block w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
-									style={{ animationDelay: '0ms' }}
-								/>
-								<span
-									className="inline-block w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
-									style={{ animationDelay: '150ms' }}
-								/>
-								<span
-									className="inline-block w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"
-									style={{ animationDelay: '300ms' }}
-								/>
-								{streamingLabel && (
-									<span className="text-sm ml-1">{streamingLabel}</span>
-								)}
-							</div>
-						)}
-					</div>
-				</MessagePrimitive.Root>
-
-				{/* Validation errors */}
-				{validation?.validationErrors &&
-					validation.validationErrors.length > 0 && (
-						<div className="mx-4 my-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-							<p className="text-sm font-medium text-red-800 mb-2">
-								Validation Errors:
-							</p>
-							<ul className="text-sm text-red-700 space-y-1">
-								{validation.validationErrors.map((error, idx) => (
-									<li key={idx}>• {error}</li>
-								))}
-							</ul>
-						</div>
-					)}
-
-				{/* Validation warnings */}
-				{validation?.validationWarnings &&
-					validation.validationWarnings.length > 0 && (
-						<div className="mx-4 my-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-							<p className="text-sm font-medium text-yellow-800 mb-2">
-								Warnings:
-							</p>
-							<ul className="text-sm text-yellow-700 space-y-1">
-								{validation.validationWarnings.map((warning, idx) => (
-									<li key={idx}>• {warning}</li>
-								))}
-							</ul>
-						</div>
-					)}
-
-			</>
-		);
-	};
-
 	// Render empty state when no messages
-	const messages = thread.messages;
-	if (messages.length === 0) {
-		// Show loading state during SSR/hydration
-		if (!isClient) {
-			return (
-				<div className="flex flex-col h-full bg-white">
-					<div className="flex-1 flex items-center justify-center">
-						<div className="text-slate-400">Loading...</div>
-					</div>
-				</div>
-			);
-		}
-
+	if (thread.messages.length === 0) {
 		return (
-			<div className="flex flex-col h-full bg-white">
-				{/* Header */}
-{/*
-				<div className="border-b border-slate-200 p-4">
-					<p className="text-sm text-slate-600 mt-1">
-						Describe your form in natural language and I'll generate the
-						schema for you.
-					</p>
-				</div>
-*/}
-
-				{/* Empty state content */}
-				<div className="flex-1 flex flex-col items-center justify-center p-8">
-					{!hasKey ? (
-						// API key not configured
-						<div className="text-center max-w-md">
-							<div className="mb-4">
-								<svg
-									className="w-16 h-16 mx-auto text-slate-300"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-									/>
-								</svg>
-							</div>
-							<h3 className="text-xl font-semibold text-slate-800 mb-2">
-								API Key Required
-							</h3>
-							<p className="text-slate-600 mb-6">
-								To use the AI assistant, you need to configure your LLM
-								API key in settings.
-							</p>
-							<button
-								onClick={onOpenSettings}
-								className="bg-blue-500 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded transition-colors"
-							>
-								Open Settings
-							</button>
-						</div>
-					) : (
-						// API key configured - show example prompts
-						<div className="text-center max-w-2xl">
-							<div className="mb-6">
-								<svg
-									className="w-16 h-16 mx-auto text-blue-500"
-									fill="none"
-									stroke="currentColor"
-									viewBox="0 0 24 24"
-								>
-									<path
-										strokeLinecap="round"
-										strokeLinejoin="round"
-										strokeWidth={2}
-										d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
-									/>
-								</svg>
-							</div>
-							<h3 className="text-xl font-semibold text-slate-800 mb-2">
-								Start a Conversation
-							</h3>
-							<p className="text-slate-600 mb-6">
-								Describe the form you want to create, and I'll generate
-								the YAML schema for you.
-							</p>
-
-							{/* Schema context indicator */}
-{/*
-							{currentSchema.trim().length > 0 && (
-								<div className="mb-6 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-									<p className="text-sm text-blue-800">
-										<span className="font-medium">Note:</span> I can see
-										your current schema and help you modify it.
-									</p>
-								</div>
-							)}
-*/}
-
-							{/* Example prompts */}
-							<div className="space-y-3">
-								<p className="text-sm font-medium text-slate-700 mb-3">
-									Try these examples:
-								</p>
-								{examplePrompts.map((prompt, index) => (
-									<button
-										key={index}
-										onClick={() => handleExampleClick(prompt)}
-										className="w-full text-left p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
-									>
-										<p className="text-sm text-slate-700">{prompt}</p>
-									</button>
-								))}
-							</div>
-						</div>
-					)}
-				</div>
-
-				{/* Message input */}
-				{hasKey && (
-					<div className="border-t border-slate-200 p-4">
-						<ComposerWithAttachments placeholder="Describe your form..." />
-					</div>
-				)}
-			</div>
+			<EmptyState
+				isClient={isClient}
+				hasKey={hasKey}
+				onOpenSettings={onOpenSettings}
+				onExampleClick={handleExampleClick}
+			/>
 		);
 	}
 
 	// Render chat interface with messages
 	return (
 		<div className="flex flex-col h-full bg-white">
-			{/* Header */}
-{/*
-			<div className="border-b border-slate-200 p-4">
-				{currentSchema.trim().length > 0 && (
-					<p className="text-xs text-blue-600 mt-1">
-						✓ I can see and modify your current schema
-					</p>
-				)}
-			</div>
-*/}
-
-			{/* Chat messages */}
 			<div className="flex-1 overflow-hidden">
 				<ThreadPrimitive.Root className="h-full">
 					<ThreadPrimitive.Viewport className="h-full overflow-y-auto p-4">
-						<ThreadPrimitive.Messages components={{ UserMessage: CustomMessage, AssistantMessage: CustomMessage }} />
+						<ThreadPrimitive.Messages components={{ UserMessage: ChatMessage, AssistantMessage: ChatMessage }} />
 					</ThreadPrimitive.Viewport>
 					<ThreadPrimitive.ScrollToBottom className="absolute bottom-4 right-4" />
 				</ThreadPrimitive.Root>
 			</div>
-
-			{/* Message input */}
 			<div className="border-t border-slate-200 p-4">
-				<ComposerWithAttachments placeholder="Ask me to modify the form..." />
+				<ChatComposer placeholder="Ask me to modify the form..." />
 			</div>
 		</div>
 	);
@@ -529,10 +100,9 @@ function AIChatInner({
 /**
  * AI Chat interface component for schema generation.
  *
- * Uses assistant-ui components for the chat UI and integrates with
- * the Vercel AI SDK's useChatRuntime hook for LLM interactions.
- *
- * Requirements: 2.1, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 7.8, 8.1, 8.2, 8.3, 8.4, 8.5
+ * Sets up the chat runtime with custom transport, validates extracted
+ * YAML schemas on completion, and provides validation results to
+ * child components via context.
  */
 export default function AIChat(props: AIChatProps) {
 	const currentSchemaRef = useRef<string>(props.currentSchema);
@@ -551,105 +121,23 @@ export default function AIChat(props: AIChatProps) {
 
 	// Configure useChatRuntime with custom transport and onFinish callback
 	const runtime = useChatRuntime({
-		transport: React.useMemo(() => new AssistantChatTransport({
-			api: '/api/llm',
-			body: () => {
-				const settings = getSettings();
-
-				// Build request body with only relevant credentials for the provider
-				const requestBody: Record<string, any> = {
-					provider: settings.provider,
-					model: getModelForProvider(settings),
-					system: generatorRef.current!.getSystemPrompt(),
-				};
-
-				// Add provider-specific credentials
-				if (settings.provider === 'bedrock') {
-					// Check if server-side Bedrock credentials are configured
-					const serverStatus = getServerCredentialStatus();
-					if (serverStatus?.bedrockConfigured) {
-						// Server has credentials configured; skip sending client Bedrock credentials
-						// The server will use its own env-var credentials
-					} else {
-						// No server credentials; send client-supplied Bedrock credentials
-						const authMethod = settings.bedrockAuthMethod || 'iam';
-						requestBody.bedrockAuthMethod = authMethod;
-						requestBody.awsRegion = settings.awsRegion;
-
-						if (authMethod === 'apiKey') {
-							requestBody.bedrockApiKey = settings.bedrockApiKey;
-						} else {
-							requestBody.awsAccessKeyId = settings.awsAccessKeyId;
-							requestBody.awsSecretAccessKey = settings.awsSecretAccessKey;
-						}
-					}
-				} else {
-					// Other providers use API key
-					requestBody.apiKey = settings.apiKey;
-				}
-
-				return requestBody;
-			},
-			prepareSendMessagesRequest: ({ messages, body }) => {
-				// Transform the last user message to include current schema context if editing
-				const transformedMessages = messages.map((msg, index) => {
-					// Only transform the last user message
-					if (msg.role === 'user' && index === messages.length - 1) {
-						const currentSchema = currentSchemaRef.current;
-						const isEdit = currentSchema.trim().length > 0;
-
-						if (isEdit) {
-							// Get the original text from the message parts
-							const originalText = msg.parts
-								?.filter((part: any) => part.type === 'text')
-								.map((part: any) => part.text)
-								.join('') || '';
-
-							// Build the full edit prompt
-							const fullPrompt = generatorRef.current!.buildEditPrompt(currentSchema, originalText);
-
-							// Preserve non-text parts (e.g. image attachments)
-							const nonTextParts = msg.parts?.filter((part: any) => part.type !== 'text') || [];
-
-							return {
-								...msg,
-								parts: [{ type: 'text' as const, text: fullPrompt }, ...nonTextParts],
-							};
-						}
-					}
-					return msg;
-				});
-
-				return {
-					body: {
-						...body,
-						messages: transformedMessages,
-					},
-				};
-			},
-		}), []),
+		transport: React.useMemo(
+			() => createChatTransport(generatorRef, currentSchemaRef),
+			[],
+		),
 		onFinish: ({ message }) => {
-			console.log('[AIChat] onFinish called', message);
-
 			if (message.role === 'assistant') {
-				// Extract text content from message parts
 				const messageContent = message.parts
 					?.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
 					.map(part => part.text)
 					.join('') || '';
 
-				console.log('[AIChat] messageContent:', messageContent);
 				const extractedYaml = extractYamlFromResponse(messageContent);
-				console.log('[AIChat] extractedYaml:', extractedYaml);
 
 				if (extractedYaml) {
-					// Validate the extracted schema
 					const validationResult = validateSchema(extractedYaml);
-					console.log('[AIChat] validationResult:', validationResult);
-
 					const isValid = validationResult.valid;
 
-					// Store validation results for this message
 					setValidationResults(prev => {
 						const newMap = new Map(prev);
 						newMap.set(message.id, {
@@ -661,15 +149,9 @@ export default function AIChat(props: AIChatProps) {
 						return newMap;
 					});
 
-					// If valid, update the schema
 					if (isValid) {
-						console.log('[AIChat] Schema is valid, calling onSchemaGenerated');
 						props.onSchemaGenerated(extractedYaml);
-					} else {
-						console.log('[AIChat] Schema is invalid, not updating');
 					}
-				} else {
-					console.log('[AIChat] No YAML extracted from response');
 				}
 			}
 		},
@@ -680,7 +162,9 @@ export default function AIChat(props: AIChatProps) {
 
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
-			<AIChatInner {...props} generatorRef={generatorRef} validationResults={validationResults} setValidationResults={setValidationResults} />
+			<ValidationResultsContext.Provider value={validationResults}>
+				<AIChatInner onOpenSettings={props.onOpenSettings} />
+			</ValidationResultsContext.Provider>
 		</AssistantRuntimeProvider>
 	);
 }

@@ -4,7 +4,7 @@ import { memo } from "react";
 import { MarkdownTextPrimitive } from "@assistant-ui/react-markdown";
 
 // Custom component overrides for styling within the chat theme
-const defaultComponents = {
+export const defaultComponents = {
   p: ({ children }: any) => <p className="mb-2 last:mb-0">{children}</p>,
   ul: ({ children }: any) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
   ol: ({ children }: any) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
