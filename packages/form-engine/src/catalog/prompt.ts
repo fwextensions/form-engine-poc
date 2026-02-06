@@ -57,7 +57,7 @@ export function generateCatalogPrompt(
 export function formatPropsFromZodSchema(schema: z.ZodType<any>): string {
 	try {
 		// Convert Zod schema to JSON Schema for easier introspection
-		const jsonSchema = zodToJsonSchema(schema, { $refStrategy: "none" });
+		const jsonSchema = zodToJsonSchema(schema as any, { $refStrategy: "none" });
 		
 		if (!jsonSchema || typeof jsonSchema !== "object" || !("properties" in jsonSchema)) {
 			return "No properties defined.";

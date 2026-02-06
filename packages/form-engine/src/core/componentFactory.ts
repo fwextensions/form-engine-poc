@@ -5,7 +5,7 @@ import type { CatalogEntry, Catalog } from "../catalog/catalog";
 
 export interface ComponentDefinition<ConfigType = any, PropsType = any> {
 	type: string;
-	schema: z.ZodType<ConfigType, z.ZodTypeDef, any>; // Zod schema for the component's configuration
+	schema: z.ZodType<ConfigType, any, any>; // Zod schema for the component's configuration
 	component: React.ComponentType<PropsType & { children?: React.ReactNode }>; // The React component
 	validateConfig: (data: unknown) => ConfigType; // Parses and validates the raw config data
 	transformProps?: (
@@ -28,7 +28,7 @@ type CreateComponentArgs<
 	PropsType extends object
 > = {
 	type: string;
-	schema: z.ZodType<ConfigType, z.ZodTypeDef, any>;
+	schema: z.ZodType<ConfigType, any, any>;
 	component: React.ComponentType<PropsType & { children?: React.ReactNode }>;
 	transformProps?: (
 		parsedConfig: ConfigType,

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import yaml from "js-yaml";
-import { Group, Panel, Separator } from "react-resizable-panels";
+import { Panel, Separator } from "react-resizable-panels";
 import {
 	FormEngine,
 	parseRootFormSchema,
@@ -19,7 +19,7 @@ import {
 	saveFormContent,
 	deleteFormContent,
 } from "@/lib/storage";
-import { defaultForm, newForm } from "./default-yaml";
+import { defaultForm } from "./default-yaml";
 
 export default function FormEditorPage() {
 	const [forms, setForms] = useState<string[]>([]);
@@ -183,7 +183,7 @@ export default function FormEditorPage() {
 				onNextPage={handleNextPage}
 				onOpenSettings={() => setSettingsOpen(true)}
 			/>
-			<Group direction="horizontal" className="flex-grow">
+			<div className="flex flex-grow">
 				<Panel defaultSize={50}>
 					<EditorPane
 						schema={yamlInput}
@@ -204,7 +204,7 @@ export default function FormEditorPage() {
 						)}
 					</div>
 				</Panel>
-			</Group>
+			</div>
 			<SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 		</div>
 	);

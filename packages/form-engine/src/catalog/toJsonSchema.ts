@@ -20,7 +20,7 @@ export function entryToJsonSchema(
 	schema: Catalog["components"][string]["schema"],
 	name?: string
 ): Record<string, any> {
-	return zodToJsonSchema(schema, name);
+	return zodToJsonSchema(schema as any, name);
 }
 
 /**
@@ -35,7 +35,7 @@ export function catalogToJsonSchema(
 	const schemas: Record<string, any> = {};
 
 	for (const [type, entry] of Object.entries(catalog.components)) {
-		const jsonSchema = zodToJsonSchema(entry.schema, type);
+		const jsonSchema = zodToJsonSchema(entry.schema as any, type);
 
 		// Optionally add description from catalog entry
 		if (includeDescriptions && entry.description) {

@@ -7,8 +7,6 @@ import {
 	ComposerPrimitive,
 	MessagePrimitive,
 	useMessage,
-	useAssistantEvent,
-	useAssistantRuntime,
 	useThread,
 } from "@assistant-ui/react";
 import { useChatRuntime, AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
@@ -35,19 +33,17 @@ type ValidationResults = Map<string, {
  * Inner component that has access to assistant-ui hooks
  */
 function AIChatInner({
-	currentSchema,
 	onSchemaGenerated,
 	onOpenSettings,
 	generatorRef,
 	validationResults,
 	setValidationResults,
-}: AIChatProps & {
+}: Omit<AIChatProps, 'currentSchema'> & {
 	generatorRef: React.MutableRefObject<SchemaGenerator | null>;
 	validationResults: ValidationResults;
 	setValidationResults: React.Dispatch<React.SetStateAction<ValidationResults>>;
 }) {
 	// Access runtime via hooks
-	const runtime = useAssistantRuntime();
 	const thread = useThread();
 
 	// Defer API key check until after hydration to avoid SSR mismatch
@@ -68,8 +64,8 @@ function AIChatInner({
 
 	const handleExampleClick = (prompt: string) => {
 		if (!hasKey) return;
-		// Send message via runtime API
-		runtime.append({
+		// Send message via thread API
+		thread.append({
 			role: "user",
 			content: [{ type: "text", text: prompt }],
 		});
@@ -412,21 +408,23 @@ function AIChatInner({
  * Requirements: 2.1, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 7.8, 8.1, 8.2, 8.3, 8.4, 8.5
  */
 export default function AIChat(props: AIChatProps) {
-	const generatorRef = useRef<SchemaGenerator | null>(null);
 	const currentSchemaRef = useRef<string>(props.currentSchema);
 	const [validationResults, setValidationResults] = useState<ValidationResults>(new Map());
 
 	// Keep currentSchemaRef in sync with props
-	currentSchemaRef.current = props.currentSchema;
+	React.useEffect(() => {
+		currentSchemaRef.current = props.currentSchema;
+	}, [props.currentSchema]);
 
 	// Initialize schema generator
-	if (!generatorRef.current) {
+	const generatorRef = useRef<SchemaGenerator | null>(null);
+	if (generatorRef.current === null) {
 		generatorRef.current = new SchemaGenerator();
 	}
 
 	// Configure useChatRuntime with custom transport and onFinish callback
 	const runtime = useChatRuntime({
-		transport: new AssistantChatTransport({
+		transport: React.useMemo(() => new AssistantChatTransport({
 			api: '/api/llm',
 			body: () => {
 				const settings = getSettings();
@@ -492,7 +490,7 @@ export default function AIChat(props: AIChatProps) {
 					},
 				};
 			},
-		}),
+		}), []),
 		onFinish: ({ message }) => {
 			console.log('[AIChat] onFinish called', message);
 

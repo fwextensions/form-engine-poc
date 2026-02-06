@@ -18,6 +18,6 @@ export default defineConfig({
 	},
 	// Disable PostCSS in test environment
 	css: {
-		postcss: false,
+		postcss: false as any,
 	},
 });

@@ -40,7 +40,7 @@ const ruleWhenSchema = z.object({
 // Defines the 'set' action, which updates component properties.
 // e.g., set: { required: true, label: 'A new dynamic label' }
 const setActionSchema = z.object({
-	set: z.record(z.any()),
+	set: z.record(z.string(), z.any()),
 });
 
 // Defines the 'log' action for debugging purposes.
