@@ -275,6 +275,36 @@ The form engine uses a declarative YAML format to define forms. Each form consis
 - Output the COMPLETE schema (not just changes when editing)
 - You may include brief explanatory text before or after the schema, but keep it concise
 
+## YAML Formatting Rules (CRITICAL)
+
+String values containing special characters MUST be quoted to avoid YAML syntax errors:
+
+- **Always quote strings containing:** \`:\`, \`#\`, \`>\`, \`<\`, \`{\`, \`}\`, \`[\`, \`]\`, \`&\`, \`*\`, \`!\`, \`|\`, \`?\`, \`@\`, \`%\`, or newlines
+- **HTML content MUST be quoted** - use double quotes or block scalar syntax
+- **Use double quotes** for inline strings: \`content: "<h3 style='color: #333;'>Title</h3>"\`
+- **Use block scalar** for multi-line content:
+  \`\`\`yaml
+  content: |
+    <h3 style="color: #333;">Title</h3>
+    <p>Paragraph text</p>
+  \`\`\`
+
+**Correct examples:**
+\`\`\`yaml
+content: "<h3>Welcome</h3>"
+content: "Note: Please fill out all fields"
+content: |
+  <div style="margin: 10px;">
+    <p>Multi-line HTML content</p>
+  </div>
+\`\`\`
+
+**Incorrect (will cause parse errors):**
+\`\`\`yaml
+content: <h3 style="color: #333;">Title</h3>
+content: Note: this will break
+\`\`\`
+
 ## Rules
 
 - Only use components from the catalog below
