@@ -4,6 +4,8 @@ import React from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import Editor from "@monaco-editor/react";
 import AIChat from "./AIChat";
+import AIChatJsonl from "./AIChatJsonl";
+import type { SchemaComponent, PatchOp } from "@/lib/jsonl";
 
 interface EditorPaneProps {
 	schema: string;
@@ -11,6 +13,11 @@ interface EditorPaneProps {
 	activeTab: "yaml" | "ai";
 	onTabChange: (tab: "yaml" | "ai") => void;
 	onOpenSettings: () => void;
+	/** JSONL mode props — when provided, uses patch-based AI editing */
+	jsonlMode?: {
+		currentSchema: SchemaComponent | null;
+		onSchemaChange: (schema: SchemaComponent, patches: PatchOp[], userMessage: string) => void;
+	};
 }
 
 /**
@@ -20,7 +27,8 @@ interface EditorPaneProps {
  * - YAML Editor: Monaco editor for manual schema editing
  * - AI Assistant: Chat interface for LLM-assisted schema generation
  *
- * Requirements: 4.1, 4.2, 4.3, 4.5
+ * When `jsonlMode` props are provided, uses the JSONL patch-based AI chat
+ * instead of the YAML-based one.
  */
 export default function EditorPane({
 	schema,
@@ -28,6 +36,7 @@ export default function EditorPane({
 	activeTab,
 	onTabChange,
 	onOpenSettings,
+	jsonlMode,
 }: EditorPaneProps) {
 	return (
 		<Tabs.Root
@@ -73,11 +82,19 @@ export default function EditorPane({
 				className="flex-1 overflow-hidden data-[state=inactive]:hidden"
 				forceMount
 			>
-				<AIChat
-					currentSchema={schema}
-					onSchemaGenerated={onSchemaChange}
-					onOpenSettings={onOpenSettings}
-				/>
+				{jsonlMode ? (
+					<AIChatJsonl
+						currentSchema={jsonlMode.currentSchema}
+						onSchemaChange={jsonlMode.onSchemaChange}
+						onOpenSettings={onOpenSettings}
+					/>
+				) : (
+					<AIChat
+						currentSchema={schema}
+						onSchemaGenerated={onSchemaChange}
+						onOpenSettings={onOpenSettings}
+					/>
+				)}
 			</Tabs.Content>
 		</Tabs.Root>
 	);

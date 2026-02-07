@@ -18,7 +18,6 @@ const VALID_OPS = new Set(["add", "update", "remove", "move", "replace", "messag
  */
 export function createPatchStreamCompiler() {
 	let buffer = "";
-	let processedLength = 0;
 
 	return {
 		/**
@@ -42,8 +41,6 @@ export function createPatchStreamCompiler() {
 				const result = parsePatchLine(cleaned);
 				results.push(result);
 			}
-
-			processedLength += chunk.length;
 
 			return {
 				patches: results,
@@ -74,7 +71,6 @@ export function createPatchStreamCompiler() {
 		 */
 		reset() {
 			buffer = "";
-			processedLength = 0;
 		},
 
 		/**
