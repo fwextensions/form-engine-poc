@@ -6,6 +6,7 @@ import Editor from "@monaco-editor/react";
 import AIChat from "./AIChat";
 import AIChatJsonl from "./AIChatJsonl";
 import type { SchemaComponent, PatchOp } from "@/lib/jsonl";
+import type { UIMessage } from "ai";
 
 interface EditorPaneProps {
 	schema: string;
@@ -13,6 +14,10 @@ interface EditorPaneProps {
 	activeTab: "yaml" | "ai";
 	onTabChange: (tab: "yaml" | "ai") => void;
 	onOpenSettings: () => void;
+	/** Current form name — used to key the chat component per form */
+	formId: string;
+	/** Pre-loaded messages for the current form */
+	initialMessages: UIMessage[];
 	/** JSONL mode props — when provided, uses patch-based AI editing */
 	jsonlMode?: {
 		currentSchema: SchemaComponent | null;
@@ -29,6 +34,9 @@ interface EditorPaneProps {
  *
  * When `jsonlMode` props are provided, uses the JSONL patch-based AI chat
  * instead of the YAML-based one.
+ *
+ * The chat component is keyed by `formId` so it remounts when the user
+ * switches forms, loading the saved conversation for each form.
  */
 export default function EditorPane({
 	schema,
@@ -36,6 +44,8 @@ export default function EditorPane({
 	activeTab,
 	onTabChange,
 	onOpenSettings,
+	formId,
+	initialMessages,
 	jsonlMode,
 }: EditorPaneProps) {
 	return (
@@ -84,12 +94,18 @@ export default function EditorPane({
 			>
 				{jsonlMode ? (
 					<AIChatJsonl
+						key={formId}
+						formId={formId}
+						initialMessages={initialMessages}
 						currentSchema={jsonlMode.currentSchema}
 						onSchemaChange={jsonlMode.onSchemaChange}
 						onOpenSettings={onOpenSettings}
 					/>
 				) : (
 					<AIChat
+						key={formId}
+						formId={formId}
+						initialMessages={initialMessages}
 						currentSchema={schema}
 						onSchemaGenerated={onSchemaChange}
 						onOpenSettings={onOpenSettings}

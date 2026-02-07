@@ -26,6 +26,8 @@ import {
 	type PatchOp,
 	type HistoryState,
 } from "@/lib/jsonl";
+import { loadChatMessages, deleteChatMessages } from "@/lib/chat-storage";
+import type { UIMessage } from "ai";
 
 /**
  * Convert a SchemaComponent JSON tree to a YAML string.
@@ -69,6 +71,9 @@ export default function FormEditorPage() {
 	const [activeTab, setActiveTab] = useState<"yaml" | "ai">("yaml");
 	const [settingsOpen, setSettingsOpen] = useState(false);
 
+	// Per-form chat messages (loaded from localStorage on form switch)
+	const [chatMessages, setChatMessages] = useState<UIMessage[]>([]);
+
 	// JSONL state: the current schema as JSON and history
 	const [schemaJson, setSchemaJson] = useState<SchemaComponent | null>(null);
 	const [historyState, setHistoryState] = useState<HistoryState | null>(null);
@@ -111,6 +116,9 @@ export default function FormEditorPage() {
 		// Initialize JSON state from saved YAML
 		const parsed = yamlToSchema(yamlContent);
 		initHistory(parsed);
+
+		// Load saved chat messages for this form
+		setChatMessages(loadChatMessages(firstForm));
 	}, [initHistory]);
 
 	// Save content when yamlInput changes for the selected form
@@ -247,6 +255,7 @@ export default function FormEditorPage() {
 			setForms([...forms, name]);
 			setSelectedForm(name);
 			setYamlInput(emptySchema);
+			setChatMessages([]);
 			initHistory(null);
 			setActiveTab("ai");
 		} else if (name) {
@@ -260,6 +269,7 @@ export default function FormEditorPage() {
 		if (content !== null) {
 			setSelectedForm(name);
 			setYamlInput(content);
+			setChatMessages(loadChatMessages(name));
 			initHistory(yamlToSchema(content));
 		}
 	};
@@ -273,6 +283,7 @@ export default function FormEditorPage() {
 			)
 		) {
 			deleteFormContent(selectedForm);
+			deleteChatMessages(selectedForm);
 
 			const remainingForms = forms.filter((f) => f !== selectedForm);
 			setForms(remainingForms);
@@ -282,6 +293,7 @@ export default function FormEditorPage() {
 				setSelectedForm(newSelectedForm);
 				const content = getFormContent(newSelectedForm) || "";
 				setYamlInput(content);
+				setChatMessages(loadChatMessages(newSelectedForm));
 				initHistory(yamlToSchema(content));
 			} else {
 				const name = "sample-form";
@@ -289,6 +301,7 @@ export default function FormEditorPage() {
 				setForms([name]);
 				setSelectedForm(name);
 				setYamlInput(defaultForm);
+				setChatMessages([]);
 				initHistory(yamlToSchema(defaultForm));
 			}
 		}
@@ -358,6 +371,8 @@ export default function FormEditorPage() {
 						activeTab={activeTab}
 						onTabChange={handleTabChange}
 						onOpenSettings={() => setSettingsOpen(true)}
+						formId={selectedForm}
+						initialMessages={chatMessages}
 						jsonlMode={jsonlModeProps}
 					/>
 				</Panel>

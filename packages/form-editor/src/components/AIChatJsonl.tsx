@@ -21,7 +21,9 @@ import {
 	type SchemaComponent,
 	type PatchOp,
 } from "@/lib/jsonl";
+import type { UIMessage } from "ai";
 import { createJsonlChatTransport } from "@/lib/jsonl/chat-transport";
+import { saveChatMessages } from "@/lib/chat-storage";
 import {
 	ValidationResultsContext,
 	type ValidationResults,
@@ -31,9 +33,13 @@ import { ChatComposer } from "./chat/ChatComposer";
 import { EmptyState } from "./chat/EmptyState";
 
 interface AIChatJsonlProps {
+	/** Which form this chat belongs to — used for localStorage persistence */
+	formId: string;
 	currentSchema: SchemaComponent | null;
 	onSchemaChange: (schema: SchemaComponent, patches: PatchOp[], userMessage: string) => void;
 	onOpenSettings: () => void;
+	/** Pre-loaded messages from localStorage (loaded by parent before mount) */
+	initialMessages?: UIMessage[];
 }
 
 /**
@@ -110,11 +116,10 @@ function AIChatJsonlInner({
 /**
  * AI Chat component for JSONL patch-based schema editing.
  *
- * Instead of extracting YAML from the LLM response, this component:
- * 1. Sends the current schema as JSON to the LLM
- * 2. Receives JSONL patch operations in the response
- * 3. Applies patches to produce the new schema
- * 4. Reports the patches and new schema to the parent for history tracking
+ * Each form gets its own conversation, persisted to localStorage.
+ * The parent component passes `formId` and uses it as a React `key`
+ * so the component remounts when the form changes, loading the
+ * saved conversation for the new form.
  */
 export default function AIChatJsonl(props: AIChatJsonlProps) {
 	const currentSchemaRef = useRef<SchemaComponent | null>(props.currentSchema);
@@ -122,7 +127,6 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 		new Map(),
 	);
 
-	// Track the user message for each assistant response
 	const lastUserMessageRef = useRef<string>("");
 
 	React.useEffect(() => {
@@ -178,7 +182,6 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 				const currentSchema = currentSchemaRef.current;
 
 				if (currentSchema) {
-					// Apply patches to current schema
 					const result = applyPatches(currentSchema, schemaPatches);
 
 					if (result.successCount > 0) {
@@ -214,7 +217,6 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 						});
 					}
 				} else {
-					// No current schema — check for a replace op
 					const replaceOp = schemaPatches.find((p) => p.op === "replace");
 
 					if (replaceOp && replaceOp.op === "replace") {
@@ -243,7 +245,6 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 					}
 				}
 			} else if (errors.length > 0) {
-				// Only errors, no valid patches
 				setValidationResults((prev) => {
 					const newMap = new Map(prev);
 					newMap.set(message.id, {
@@ -253,12 +254,13 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 					return newMap;
 				});
 			}
-			// If only message ops and no errors, no validation result needed
 		},
 		[props.onSchemaChange],
 	);
 
 	const runtime = useChatRuntime({
+		id: props.formId,
+		messages: props.initialMessages,
 		transport: React.useMemo(
 			() => createJsonlChatTransport(generatorRef, currentSchemaRef),
 			[],
@@ -269,12 +271,14 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 		},
 	});
 
-	// Capture user messages for history descriptions
+	// Capture user messages for history descriptions + persist to localStorage
 	React.useEffect(() => {
 		const unsubscribe = runtime.thread.subscribe(() => {
-			const messages = runtime.thread.getState().messages;
-			const lastMsg = messages[messages.length - 1];
+			const state = runtime.thread.getState();
+			const messages = state.messages;
 
+			// Capture last user message for history descriptions
+			const lastMsg = messages[messages.length - 1];
 			if (lastMsg?.role === "user") {
 				const text =
 					lastMsg.content
@@ -286,10 +290,27 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 						.join("") || "";
 				lastUserMessageRef.current = text;
 			}
+
+			// Persist messages to localStorage whenever they change
+			if (messages.length > 0) {
+				saveChatMessages(
+					props.formId,
+					messages.map((msg) => ({
+						id: msg.id,
+						role: msg.role,
+						parts: msg.content
+							.filter(
+								(part): part is { type: "text"; text: string } =>
+									part.type === "text",
+							)
+							.map((part) => ({ type: "text" as const, text: part.text })),
+					})),
+				);
+			}
 		});
 
 		return unsubscribe;
-	}, [runtime]);
+	}, [runtime, props.formId]);
 
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
