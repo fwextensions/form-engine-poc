@@ -12,16 +12,22 @@ import { hasApiKey, getSettings, fetchServerCredentialStatus, saveSettings } fro
 import { SchemaGenerator } from "@/lib/schema-generator";
 import { extractYamlFromResponse } from "@/lib/yaml-extractor";
 import { validateSchema } from "@/lib/schema-validator";
+import type { UIMessage } from "ai";
 import { createChatTransport } from "@/lib/chat-transport";
+import { saveChatMessages } from "@/lib/chat-storage";
 import { ValidationResultsContext, type ValidationResults } from "./chat/ValidationContext";
 import { ChatMessage } from "./chat/ChatMessage";
 import { ChatComposer } from "./chat/ChatComposer";
 import { EmptyState } from "./chat/EmptyState";
 
 interface AIChatProps {
+	/** Which form this chat belongs to — used for localStorage persistence */
+	formId: string;
 	currentSchema: string;
 	onSchemaGenerated: (schema: string) => void;
 	onOpenSettings: () => void;
+	/** Pre-loaded messages from localStorage (loaded by parent before mount) */
+	initialMessages?: UIMessage[];
 }
 
 /**
@@ -121,6 +127,8 @@ export default function AIChat(props: AIChatProps) {
 
 	// Configure useChatRuntime with custom transport and onFinish callback
 	const runtime = useChatRuntime({
+		id: props.formId,
+		messages: props.initialMessages,
 		transport: React.useMemo(
 			() => createChatTransport(generatorRef, currentSchemaRef),
 			[],
@@ -159,6 +167,29 @@ export default function AIChat(props: AIChatProps) {
 			console.error('[AIChat] onError:', error);
 		},
 	});
+
+	// Persist messages to localStorage whenever they change
+	React.useEffect(() => {
+		const unsubscribe = runtime.thread.subscribe(() => {
+			const messages = runtime.thread.getState().messages;
+			if (messages.length > 0) {
+				saveChatMessages(
+					props.formId,
+					messages.map((msg) => ({
+						id: msg.id,
+						role: msg.role,
+						parts: msg.content
+							.filter(
+								(part): part is { type: "text"; text: string } =>
+									part.type === "text",
+							)
+							.map((part) => ({ type: "text" as const, text: part.text })),
+					})),
+				);
+			}
+		});
+		return unsubscribe;
+	}, [runtime, props.formId]);
 
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>

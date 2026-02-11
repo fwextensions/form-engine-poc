@@ -16,12 +16,24 @@ The Form Editor is a Next.js application that provides a split-pane interface fo
 - **Error Display**: Inline validation errors with schema preservation
 
 ### 🤖 AI-Powered Schema Generation
+- **Two AI Modes**: YAML mode (complete schema replacement) and JSONL mode (incremental patch operations)
 - **Natural Language Interface**: Describe forms in plain English
 - **Multi-Provider Support**: Choose from Anthropic Claude, OpenAI GPT, Google Gemini, or Amazon Bedrock
 - **Streaming Responses**: Real-time markdown-formatted responses with syntax highlighting
 - **Schema Validation**: Automatic validation and error reporting for generated schemas
 - **Context-Aware Editing**: AI understands the current schema when making modifications
-- **YAML Extraction**: Automatically extracts and applies YAML code blocks from AI responses
+- **JSONL Patch Transport**: LLM outputs incremental JSON Lines patches instead of complete YAML (see [JSONL Patch Transport](#-jsonl-patch-transport) below)
+
+### 🔄 Undo/Redo
+- **Snapshot-Based History**: O(1) undo and redo via before/after schema snapshots
+- **Per-Form Persistence**: History stack saved to localStorage per form
+- **Manual Edit Tracking**: YAML edits captured as history entries on tab switch
+- **Toolbar Controls**: Undo/redo buttons with tooltip descriptions in the editor toolbar
+
+### 💬 Per-Form Chat Persistence
+- **Separate Conversations**: Each form maintains its own chat history
+- **localStorage Backed**: Conversations persist across page reloads and form switches
+- **Automatic Save/Restore**: Messages saved on form switch, restored when returning
 
 ### 🔐 Flexible Authentication
 - **Client-Side Credentials**: Store API keys locally in browser localStorage
@@ -59,7 +71,7 @@ The Form Editor is a Next.js application that provides a split-pane interface fo
 graph TB
     subgraph "Main Application"
         PAGE["FormEditorPage<br/>(page.tsx)"]
-        TOOLBAR["EditorToolbar<br/>Form management & navigation"]
+        TOOLBAR["EditorToolbar<br/>Form management + undo/redo"]
         EDITOR["EditorPane<br/>YAML editor + AI chat"]
         PREVIEW["FormEngine<br/>Live form preview"]
     end
@@ -67,14 +79,22 @@ graph TB
     subgraph "Editor Pane"
         TABS["Tab Switcher<br/>YAML | AI"]
         MONACO["Monaco Editor<br/>YAML editing"]
-        AICHAT["AIChat<br/>LLM conversation"]
+        AICHAT["AIChat<br/>YAML mode LLM conversation"]
+        AICHAT_JSONL["AIChatJsonl<br/>JSONL mode LLM conversation"]
     end
 
     subgraph "AI Chat System"
         RUNTIME["useChatRuntime<br/>Streaming runtime"]
-        TRANSPORT["AssistantChatTransport<br/>API communication"]
-        MESSAGES["Message Display<br/>Markdown rendering"]
-        COMPOSER["Message Input<br/>User prompts"]
+        TRANSPORT["Chat Transport<br/>YAML or JSONL mode"]
+        MESSAGES["ChatMessage<br/>Markdown + JSONL display"]
+        COMPOSER["ChatComposer<br/>User prompts"]
+    end
+
+    subgraph "JSONL Pipeline"
+        COMPILER["Patch Stream Compiler<br/>text chunks → patches"]
+        APPLIER["Patch Applier<br/>patches → new schema"]
+        HISTORY["History Manager<br/>snapshot undo/redo"]
+        PERSIST["Chat Storage<br/>localStorage persistence"]
     end
 
     subgraph "API Layer"
@@ -86,22 +106,30 @@ graph TB
     PAGE --> TOOLBAR
     PAGE --> EDITOR
     PAGE --> PREVIEW
-    
+
     EDITOR --> TABS
     TABS --> MONACO
     TABS --> AICHAT
-    
+    TABS --> AICHAT_JSONL
+
     AICHAT --> RUNTIME
+    AICHAT_JSONL --> RUNTIME
     RUNTIME --> TRANSPORT
     RUNTIME --> MESSAGES
     RUNTIME --> COMPOSER
-    
+
     TRANSPORT --> LLM_ROUTE
-    AICHAT --> CRED_ROUTE
     LLM_ROUTE --> PROVIDERS
+
+    AICHAT_JSONL --> COMPILER
+    COMPILER --> APPLIER
+    APPLIER --> HISTORY
+    HISTORY --> PERSIST
 ```
 
 ### Data Flow
+
+#### YAML Mode (original)
 
 ```mermaid
 sequenceDiagram
@@ -127,6 +155,36 @@ sequenceDiagram
     Editor->>Preview: Re-render
 ```
 
+#### JSONL Mode
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Chat as AIChatJsonl
+    participant API
+    participant Compiler as Patch Compiler
+    participant Applier as Patch Applier
+    participant History as History Manager
+    participant Storage as localStorage
+    participant Editor
+    participant Preview
+
+    User->>Chat: Send prompt
+    Chat->>API: POST /api/llm (schema + JSONL prompt)
+    API->>Chat: Stream JSONL response
+    Chat->>Compiler: Accumulate text chunks
+    Compiler->>Applier: Parsed patch operations
+    Applier->>History: Push new schema snapshot
+    History->>Storage: Persist history
+    Chat->>Storage: Persist messages
+    Chat->>Editor: Update YAML from new schema
+    Editor->>Preview: Re-render form
+
+    User->>History: Undo
+    History->>Editor: Restore previous snapshot
+    Editor->>Preview: Re-render form
+```
+
 ## File Structure
 
 ```
@@ -141,24 +199,44 @@ packages/form-editor/
 │   │   ├── page.tsx                      # Main application page
 │   │   ├── layout.tsx                    # Root layout
 │   │   ├── globals.css                   # Global styles
-│   │   └── default-yaml.ts               # Default form schema
+│   │   └── default-yaml.ts              # Default form schema
 │   │
 │   ├── components/
-│   │   ├── AIChat.tsx                    # AI chat interface
-│   │   ├── EditorPane.tsx                # Editor + AI tabs
-│   │   ├── EditorToolbar.tsx             # Top toolbar
-│   │   ├── SettingsDialog.tsx            # LLM settings modal
+│   │   ├── AIChat.tsx                    # YAML-mode AI chat interface
+│   │   ├── AIChatJsonl.tsx              # JSONL-mode AI chat interface
+│   │   ├── EditorPane.tsx               # Editor + AI tabs (supports both modes)
+│   │   ├── EditorToolbar.tsx            # Top toolbar with undo/redo
+│   │   ├── SettingsDialog.tsx           # LLM settings modal
 │   │   ├── assistant-ui/
-│   │   │   └── markdown-text.tsx         # Markdown renderer
-│   │   └── __tests__/                    # Component tests
+│   │   │   └── markdown-text.tsx        # Markdown renderer
+│   │   ├── chat/
+│   │   │   ├── ChatComposer.tsx         # Message input component
+│   │   │   ├── ChatMessage.tsx          # Message display (markdown + JSONL)
+│   │   │   ├── EmptyState.tsx           # Empty chat state with examples
+│   │   │   ├── StreamingIndicator.tsx   # Streaming progress indicator
+│   │   │   ├── ValidationContext.ts     # Per-message validation results
+│   │   │   └── ValidationFeedback.tsx   # Schema validation indicators
+│   │   └── __tests__/                   # Component tests
 │   │
 │   └── lib/
-│       ├── schema-generator.ts           # AI prompt builder
-│       ├── schema-validator.ts           # Schema validation
-│       ├── settings.ts                   # LLM settings management
-│       ├── storage.ts                    # localStorage utilities
-│       ├── yaml-extractor.ts             # YAML extraction from AI responses
-│       └── __tests__/                    # Library tests
+│       ├── chat-storage.ts              # Per-form chat + history persistence
+│       ├── chat-transport.ts            # YAML-mode chat transport
+│       ├── jsonl-display.ts             # JSONL → human-readable text for chat UI
+│       ├── schema-generator.ts          # YAML-mode AI prompt builder
+│       ├── schema-validator.ts          # Schema validation
+│       ├── settings.ts                  # LLM settings management
+│       ├── storage.ts                   # localStorage utilities
+│       ├── yaml-extractor.ts            # YAML extraction from AI responses
+│       ├── jsonl/
+│       │   ├── index.ts                 # Barrel exports
+│       │   ├── types.ts                 # Patch operation types
+│       │   ├── patch-compiler.ts        # Stream text → typed patches
+│       │   ├── patch-applier.ts         # Apply patches to schema tree
+│       │   ├── history.ts              # Snapshot-based undo/redo manager
+│       │   ├── prompt.ts               # JSONL-specific LLM system prompt
+│       │   ├── schema-generator.ts     # Catalog + JSONL preamble builder
+│       │   └── chat-transport.ts       # JSONL-mode chat transport
+│       └── __tests__/                   # Library tests
 │
 ├── package.json
 ├── next.config.js
@@ -170,35 +248,53 @@ packages/form-editor/
 ## Key Components
 
 ### FormEditorPage (`src/app/page.tsx`)
-Main application component that orchestrates the editor, preview, and toolbar. Manages form state, YAML parsing, and page navigation.
+Main application component that orchestrates the editor, preview, and toolbar. Manages form state, YAML parsing, page navigation, and JSONL history.
 
 **State Management:**
 - `forms`: List of saved form names
 - `selectedForm`: Currently active form
-- `yamlInput`: Current YAML content
+- `yamlInput`: Current YAML content (displayed in Monaco)
+- `schemaJson`: Current schema as JSON (internal representation for JSONL operations)
 - `formConfig`: Parsed form configuration
 - `currentPage`: Active page in multi-page forms
 - `activeTab`: Current tab (YAML or AI)
+- `historyState`: Undo/redo state from the history manager
+- `chatMessages`: Initial messages for the AI chat (loaded from localStorage)
+
+**YAML/JSON Synchronization:**
+- Schema is maintained as JSON internally for JSONL patch operations
+- YAML is generated from JSON for display in Monaco editor
+- Manual YAML edits are synced to JSON when switching from the YAML tab to the AI tab (draft model)
+- A `suppressYamlSyncRef` flag prevents feedback loops during programmatic YAML updates
 
 ### EditorPane (`src/components/EditorPane.tsx`)
-Tabbed interface containing the Monaco editor and AI chat. Handles tab switching and schema updates from both sources.
+Tabbed interface containing the Monaco editor and AI chat. Accepts a `jsonlMode` prop to switch between YAML-mode (`AIChat`) and JSONL-mode (`AIChatJsonl`) AI chat components.
 
 **Features:**
 - Monaco editor with YAML syntax highlighting
-- AI chat with streaming responses
-- Tab state preservation
-- Schema synchronization
+- Conditional AI chat rendering based on mode
+- Uses `key={formId}` to force remount on form switch (loading saved conversation)
+- Passes `formId` and `initialMessages` for per-form chat persistence
 
 ### AIChat (`src/components/AIChat.tsx`)
-AI assistant interface using `@assistant-ui/react` for chat UI and Vercel AI SDK for LLM integration.
+YAML-mode AI assistant using `@assistant-ui/react` for chat UI and Vercel AI SDK for LLM integration. The LLM generates complete YAML schemas that are extracted and applied.
 
 **Features:**
 - Multi-provider LLM support (Anthropic, OpenAI, Google, Bedrock)
 - Streaming markdown responses
 - YAML extraction and validation
-- Server credential detection
-- Example prompts for quick start
+- Per-form chat persistence via `formId` and `initialMessages` props
 - Message history with validation indicators
+
+### AIChatJsonl (`src/components/AIChatJsonl.tsx`)
+JSONL-mode AI assistant that receives incremental patch operations from the LLM instead of complete YAML. Parses the streamed JSONL response, applies patches to the current schema, and reports changes to the parent.
+
+**Features:**
+- Same multi-provider support and chat UI as AIChat
+- On response finish: parses JSONL via `createPatchStreamCompiler`, applies via `applyPatches`
+- Calls `onSchemaChange(newSchema, patches, description)` to update parent state and push to history
+- Per-form chat persistence
+- Validation results context for per-message status indicators
 
 ### SettingsDialog (`src/components/SettingsDialog.tsx`)
 Modal for configuring LLM provider and credentials.
@@ -209,6 +305,95 @@ Modal for configuring LLM provider and credentials.
 - Model selection (optional, uses defaults)
 - AWS credentials for Bedrock (IAM or API key auth)
 - Server credential status indicator
+
+### EditorToolbar (`src/components/EditorToolbar.tsx`)
+Top toolbar for form management. Optionally renders undo/redo buttons when a `history` prop is provided.
+
+**History Prop:**
+- `canUndo` / `canRedo`: Enable/disable buttons
+- `undoDescription` / `redoDescription`: Tooltip text
+- `onUndo` / `onRedo`: Click handlers
+
+## 🔄 JSONL Patch Transport
+
+The form-editor supports an alternative AI interaction mode inspired by [Vercel Labs' json-render](https://github.com/vercel-labs/json-render). Instead of the LLM generating a complete YAML schema on every request, it outputs **JSONL (JSON Lines) patches** — one operation per line — that are applied incrementally to the current schema.
+
+### Why JSONL?
+
+- **Efficiency**: Only the changed parts of the schema are transmitted, not the entire document
+- **Undo/Redo**: Each set of patches creates a history entry with before/after snapshots
+- **Granularity**: Individual operations (add, update, remove) are easier to validate and display
+- **Streaming**: Patches can be parsed and applied as they arrive from the LLM
+
+### Patch Operations
+
+Each line in the LLM response is a JSON object with an `op` field:
+
+| Operation | Purpose | Key Fields |
+|-----------|---------|------------|
+| `add` | Insert a new component | `parentId`, `component`, `position?` |
+| `update` | Modify an existing component's props | `id`, `props` |
+| `remove` | Delete a component by ID | `id` |
+| `move` | Relocate a component to a new parent | `id`, `newParentId`, `position?` |
+| `replace` | Replace the entire schema | `schema` |
+| `message` | Human-readable explanation (not a schema change) | `text` |
+
+Example LLM response:
+
+```jsonl
+{"op":"add","parentId":"contactPage","component":{"type":"email","id":"userEmail","label":"Email Address*"}}
+{"op":"update","id":"fullName","props":{"label":"Full Name*","placeholder":"Enter your name"}}
+{"op":"remove","id":"legacyField"}
+{"op":"message","text":"Added an email field and updated the name field label."}
+```
+
+### Pipeline
+
+The JSONL system lives in `src/lib/jsonl/` and follows a streaming pipeline:
+
+1. **Patch Stream Compiler** (`patch-compiler.ts`) — Accumulates streamed text chunks from the LLM and yields parsed, validated patch operations line-by-line. Handles SSE prefixes, markdown code fences, and incomplete lines.
+
+2. **Patch Applier** (`patch-applier.ts`) — Applies patches to a `SchemaComponent` tree immutably. Finds components by `id`, manages parent-child relationships, and returns success/error status per operation.
+
+3. **History Manager** (`history.ts`) — Stores each batch of patches as a `PatchGroup` with before/after schema snapshots. Undo and redo are O(1) — just restore the stored snapshot, no inverse patch computation needed. Supports up to 50 entries (configurable) with automatic truncation.
+
+4. **Chat Transport** (`chat-transport.ts`) — Custom AssistantUI transport that intercepts user messages, injects the current schema as JSON along with JSONL format instructions, and handles provider credential injection.
+
+5. **Prompt** (`prompt.ts`) + **Schema Generator** (`schema-generator.ts`) — Build the LLM system prompt by combining the form-engine component catalog documentation with JSONL-specific format instructions and examples.
+
+### Undo/Redo
+
+```typescript
+const manager = createHistoryManager(initialSchema);
+
+// After applying patches from the LLM:
+manager.push(patchGroup);
+
+// Navigate history:
+const prev = manager.undo();   // returns previous schema snapshot
+const next = manager.redo();   // returns next schema snapshot
+
+// Persistence:
+const serialized = manager.serialize();   // save to localStorage
+manager.restore(serialized);              // restore from localStorage
+```
+
+- Manual YAML edits are captured as history entries when switching from the YAML tab to the AI tab
+- History is serialized to localStorage per form, persisting across form switches and page reloads
+- The toolbar shows undo/redo buttons with descriptions of what each action will restore
+
+### Per-Form Chat Persistence
+
+Chat conversations and undo/redo history are stored separately for each form via `chat-storage.ts`:
+
+- **Keys**: `form-editor-chat-{formName}` and `form-editor-history-{formName}`
+- On form switch: current form's state is saved, new form's state is loaded
+- Chat components remount with `key={formId}` to load the restored conversation
+- Only text content is persisted (tool calls, images, etc. are excluded)
+
+### JSONL Display in Chat
+
+Raw JSONL is not shown to the user. `jsonl-display.ts` detects JSONL content in assistant messages and extracts the human-readable `message` operation text for display, along with a count of schema changes applied. During streaming, a "Updating schema..." indicator is shown instead of raw JSON lines.
 
 ## API Routes
 
@@ -484,11 +669,11 @@ Messages show validation status:
 - [ ] Schema templates library
 - [ ] Export/import forms (JSON/YAML)
 - [ ] Collaborative editing (real-time sync)
-- [ ] Version history and undo/redo
+- [x] Version history and undo/redo (via JSONL history manager)
 - [ ] Schema diff viewer
 - [ ] Custom AI instructions per form
 - [ ] Batch schema generation
-- [ ] Integration with form-engine component library
+- [x] Integration with form-engine component library (via catalog prompt generation)
 
 ## Related Packages
 
