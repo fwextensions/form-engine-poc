@@ -7,6 +7,7 @@ import {
 import { MarkdownText, defaultComponents as markdownComponents } from "@/components/assistant-ui/markdown-text";
 import Markdown from "react-markdown";
 import { extractTextAfterYaml } from "@/lib/yaml-extractor";
+import { looksLikeJsonl, extractJsonlDisplay } from "@/lib/jsonl-display";
 import { useValidationResult } from "./ValidationContext";
 import { StreamingIndicator } from "./StreamingIndicator";
 import { ValidationFeedback } from "./ValidationFeedback";
@@ -41,6 +42,9 @@ export function ChatMessage() {
 	const yamlCodeBlockMatch = messageContent.match(/```ya?ml/i);
 	const hasYamlCodeBlock = isAssistant && yamlCodeBlockMatch !== null;
 
+	// Detect JSONL patch content
+	const hasJsonl = isAssistant && looksLikeJsonl(messageContent);
+
 	let displayContent: string;
 	let showStreamingIndicator = false;
 	let streamingLabel = '';
@@ -49,6 +53,17 @@ export function ChatMessage() {
 		// Streaming just started, no content yet — show immediate indicator
 		displayContent = '';
 		showStreamingIndicator = true;
+	} else if (hasJsonl) {
+		// JSONL patch mode: extract message op texts, hide raw JSON
+		const jsonlResult = extractJsonlDisplay(messageContent);
+
+		if (isStreaming) {
+			displayContent = jsonlResult.displayText;
+			showStreamingIndicator = true;
+			streamingLabel = 'Updating schema…';
+		} else {
+			displayContent = jsonlResult.displayText || 'Form updated';
+		}
 	} else if (hasYamlCodeBlock) {
 		const codeBlockStartIndex = messageContent.indexOf('```');
 		const textBefore = messageContent.substring(0, codeBlockStartIndex).trim();
@@ -71,6 +86,10 @@ export function ChatMessage() {
 
 	// Check if schema was successfully applied (for showing checkmark)
 	const schemaApplied = validation?.schemaApplied === true;
+
+	// For JSONL and YAML block content, use static markdown rendering
+	// (since we've transformed the content, we can't use native streaming parts)
+	const useStaticMarkdown = hasJsonl || hasYamlCodeBlock;
 
 	return (
 		<>
@@ -103,15 +122,15 @@ export function ChatMessage() {
 					<div className="flex items-start gap-2">
 						{isAssistant ? (
 							// Assistant messages: render with markdown
-							hasYamlCodeBlock ? (
-								// YAML block detected: render displayContent (YAML stripped) through markdown
+							useStaticMarkdown ? (
+								// YAML or JSONL detected: render transformed displayContent through markdown
 								displayContent ? (
 									<div className="flex-1 prose-sm">
 										<Markdown components={markdownComponents}>{displayContent}</Markdown>
 									</div>
 								) : null
 							) : (
-								// No YAML block: use MessagePrimitive.Parts with MarkdownText for native streaming support
+								// Plain text: use MessagePrimitive.Parts with MarkdownText for native streaming support
 								<div className="flex-1">
 									<MessagePrimitive.Parts components={{ Text: MarkdownText }} />
 								</div>

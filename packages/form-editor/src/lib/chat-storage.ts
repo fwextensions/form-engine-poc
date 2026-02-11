@@ -6,8 +6,10 @@
  */
 
 import type { UIMessage } from "ai";
+import type { SerializedHistory } from "@/lib/jsonl";
 
 const CHAT_STORAGE_PREFIX = "form-editor-chat-";
+const HISTORY_STORAGE_PREFIX = "form-editor-history-";
 
 function getChatKey(formName: string): string {
 	return `${CHAT_STORAGE_PREFIX}${formName}`;
@@ -80,4 +82,52 @@ export function deleteChatMessages(formName: string): void {
 	if (typeof window === "undefined") return;
 
 	localStorage.removeItem(getChatKey(formName));
+}
+
+// --- History persistence ---
+
+function getHistoryKey(formName: string): string {
+	return `${HISTORY_STORAGE_PREFIX}${formName}`;
+}
+
+/**
+ * Save undo/redo history for a form to localStorage.
+ */
+export function saveHistory(
+	formName: string,
+	history: SerializedHistory,
+): void {
+	if (typeof window === "undefined") return;
+
+	try {
+		localStorage.setItem(getHistoryKey(formName), JSON.stringify(history));
+	} catch {
+		// localStorage might be full — silently fail
+	}
+}
+
+/**
+ * Load undo/redo history for a form from localStorage.
+ * Returns null if none found.
+ */
+export function loadHistory(formName: string): SerializedHistory | null {
+	if (typeof window === "undefined") return null;
+
+	try {
+		const raw = localStorage.getItem(getHistoryKey(formName));
+		if (!raw) return null;
+
+		return JSON.parse(raw) as SerializedHistory;
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * Delete undo/redo history for a form from localStorage.
+ */
+export function deleteHistory(formName: string): void {
+	if (typeof window === "undefined") return;
+
+	localStorage.removeItem(getHistoryKey(formName));
 }

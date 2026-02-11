@@ -26,6 +26,6 @@ export { createPatchStreamCompiler } from "./patch-compiler";
 export { applyPatch, applyPatches } from "./patch-applier";
 export type { ApplyResult, BatchApplyResult } from "./patch-applier";
 export { createHistoryManager } from "./history";
-export type { HistoryManager, HistoryState } from "./history";
+export type { HistoryManager, HistoryState, SerializedHistory } from "./history";
 export { JsonlSchemaGenerator } from "./schema-generator";
 export { getJsonlPreamble, buildJsonlEditPrompt, buildJsonlCreatePrompt } from "./prompt";

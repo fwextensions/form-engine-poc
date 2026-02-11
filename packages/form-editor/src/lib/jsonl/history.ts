@@ -34,6 +34,16 @@ export interface HistoryState {
 }
 
 /**
+ * Serializable snapshot of the entire history state.
+ * Used for localStorage persistence.
+ */
+export interface SerializedHistory {
+	baseSchema: SchemaComponent;
+	entries: PatchGroup[];
+	currentIndex: number;
+}
+
+/**
  * Create a new history manager.
  *
  * @param initialSchema - The starting schema state
@@ -203,6 +213,26 @@ export function createHistoryManager(initialSchema: SchemaComponent, maxEntries 
 				return deepClone(entries[currentIndex].snapshotAfter);
 			}
 			return deepClone(baseSchema);
+		},
+
+		/**
+		 * Export the full history state for serialization (e.g. localStorage).
+		 */
+		serialize(): SerializedHistory {
+			return {
+				baseSchema: deepClone(baseSchema),
+				entries: deepClone(entries),
+				currentIndex,
+			};
+		},
+
+		/**
+		 * Import a previously serialized history state.
+		 */
+		restore(data: SerializedHistory) {
+			baseSchema = deepClone(data.baseSchema);
+			entries = deepClone(data.entries);
+			currentIndex = data.currentIndex;
 		},
 	};
 }

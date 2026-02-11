@@ -26,7 +26,7 @@ import {
 	type PatchOp,
 	type HistoryState,
 } from "@/lib/jsonl";
-import { loadChatMessages, deleteChatMessages } from "@/lib/chat-storage";
+import { loadChatMessages, deleteChatMessages, saveHistory, loadHistory, deleteHistory } from "@/lib/chat-storage";
 import type { UIMessage } from "ai";
 
 /**
@@ -85,11 +85,35 @@ export default function FormEditorPage() {
 	const suppressYamlSyncRef = useRef(false);
 
 	/**
-	 * Initialize or reset the history manager for a schema.
+	 * Persist current history state to localStorage.
 	 */
-	const initHistory = useCallback((schema: SchemaComponent | null) => {
+	const persistHistory = useCallback((formName: string) => {
+		if (historyRef.current) {
+			saveHistory(formName, historyRef.current.serialize());
+		}
+	}, []);
+
+	/**
+	 * Initialize or reset the history manager for a schema.
+	 * Attempts to load saved history for the given form first.
+	 */
+	const initHistory = useCallback((schema: SchemaComponent | null, formName?: string) => {
 		const base = schema || EMPTY_SCHEMA;
 		historyRef.current = createHistoryManager(base);
+
+		// Try to restore saved history
+		if (formName) {
+			const saved = loadHistory(formName);
+			if (saved && saved.entries.length > 0) {
+				historyRef.current.restore(saved);
+				// Use the schema from the restored history position
+				const restoredSchema = historyRef.current.getCurrentSchema();
+				setSchemaJson(restoredSchema);
+				setHistoryState(historyRef.current.getState());
+				return;
+			}
+		}
+
 		setSchemaJson(schema);
 		setHistoryState(historyRef.current.getState());
 	}, []);
@@ -113,9 +137,9 @@ export default function FormEditorPage() {
 		const yamlContent = content || defaultForm;
 		setYamlInput(yamlContent);
 
-		// Initialize JSON state from saved YAML
+		// Initialize JSON state from saved YAML (try restoring history)
 		const parsed = yamlToSchema(yamlContent);
-		initHistory(parsed);
+		initHistory(parsed, firstForm);
 
 		// Load saved chat messages for this form
 		setChatMessages(loadChatMessages(firstForm));
@@ -167,15 +191,16 @@ export default function FormEditorPage() {
 						historyRef.current.recordManualEdit(schemaJson, parsed);
 						setSchemaJson(parsed);
 						setHistoryState(historyRef.current.getState());
+						persistHistory(selectedForm);
 					}
 				} else if (parsed && !schemaJson) {
 					// First time having a schema
-					initHistory(parsed);
+					initHistory(parsed, selectedForm);
 				}
 			}
 			setActiveTab(tab);
 		},
-		[activeTab, yamlInput, schemaJson, initHistory],
+		[activeTab, yamlInput, schemaJson, selectedForm, initHistory, persistHistory],
 	);
 
 	// Reset page when selected form changes
@@ -194,6 +219,7 @@ export default function FormEditorPage() {
 			if (historyRef.current) {
 				historyRef.current.push(patches, snapshotBefore, newSchema, userMessage);
 				setHistoryState(historyRef.current.getState());
+				persistHistory(selectedForm);
 			}
 
 			setSchemaJson(newSchema);
@@ -206,7 +232,7 @@ export default function FormEditorPage() {
 				suppressYamlSyncRef.current = false;
 			});
 		},
-		[schemaJson],
+		[schemaJson, selectedForm, persistHistory],
 	);
 
 	/**
@@ -221,11 +247,12 @@ export default function FormEditorPage() {
 			suppressYamlSyncRef.current = true;
 			setYamlInput(schemaToYaml(schema));
 			setHistoryState(historyRef.current.getState());
+			persistHistory(selectedForm);
 			requestAnimationFrame(() => {
 				suppressYamlSyncRef.current = false;
 			});
 		}
-	}, []);
+	}, [selectedForm, persistHistory]);
 
 	/**
 	 * Redo the last undone AI change.
@@ -239,11 +266,12 @@ export default function FormEditorPage() {
 			suppressYamlSyncRef.current = true;
 			setYamlInput(schemaToYaml(schema));
 			setHistoryState(historyRef.current.getState());
+			persistHistory(selectedForm);
 			requestAnimationFrame(() => {
 				suppressYamlSyncRef.current = false;
 			});
 		}
-	}, []);
+	}, [selectedForm, persistHistory]);
 
 	const handleNewForm = () => {
 		const name = prompt("Enter new form name:");
@@ -256,7 +284,7 @@ export default function FormEditorPage() {
 			setSelectedForm(name);
 			setYamlInput(emptySchema);
 			setChatMessages([]);
-			initHistory(null);
+			initHistory(null, name);
 			setActiveTab("ai");
 		} else if (name) {
 			alert("A form with this name already exists.");
@@ -270,7 +298,7 @@ export default function FormEditorPage() {
 			setSelectedForm(name);
 			setYamlInput(content);
 			setChatMessages(loadChatMessages(name));
-			initHistory(yamlToSchema(content));
+			initHistory(yamlToSchema(content), name);
 		}
 	};
 
@@ -284,6 +312,7 @@ export default function FormEditorPage() {
 		) {
 			deleteFormContent(selectedForm);
 			deleteChatMessages(selectedForm);
+			deleteHistory(selectedForm);
 
 			const remainingForms = forms.filter((f) => f !== selectedForm);
 			setForms(remainingForms);
@@ -294,7 +323,7 @@ export default function FormEditorPage() {
 				const content = getFormContent(newSelectedForm) || "";
 				setYamlInput(content);
 				setChatMessages(loadChatMessages(newSelectedForm));
-				initHistory(yamlToSchema(content));
+				initHistory(yamlToSchema(content), newSelectedForm);
 			} else {
 				const name = "sample-form";
 				saveFormContent(name, defaultForm);
@@ -302,7 +331,7 @@ export default function FormEditorPage() {
 				setSelectedForm(name);
 				setYamlInput(defaultForm);
 				setChatMessages([]);
-				initHistory(yamlToSchema(defaultForm));
+				initHistory(yamlToSchema(defaultForm), name);
 			}
 		}
 	};
