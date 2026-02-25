@@ -19,6 +19,7 @@
     "start:form-preview": "npm run start --workspace=form-preview",
     "lint:form-preview": "npm run lint --workspace=form-preview",
     "generate-schema": "npm run generate-schema --workspace=form-engine",
+    "build:catalog-builder": "npm run build --workspace=catalog-builder",
     "lint:all": "npm run lint --workspaces --if-present",
     "build:all": "npm run build --workspaces --if-present"
   }
