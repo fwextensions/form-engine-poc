@@ -12,9 +12,6 @@ npm install
 # Start the form editor with live preview
 npm run dev
 
-# Or try other applications
-npm run dev:form-preview     # Vite-based preview to run inside VS Code while editing a YAML schema
-npm run dev:schema-viewer    # Demo application
 ```
 
 
@@ -26,7 +23,7 @@ npm run dev:schema-viewer    # Demo application
 - **Validation**: Zod schemas
 - **UI Components**: Radix UI primitives
 - **Styling**: Tailwind CSS
-- **Build**: npm workspaces, Vite
+- **Build**: npm workspaces
 
 
 ## 📦 Monorepo Structure
@@ -35,8 +32,6 @@ npm run dev:schema-viewer    # Demo application
 |---------|---------|------------|
 | **form-engine** | Core rendering library | React, TypeScript, Zod |
 | **form-editor** | Schema editor with live preview | Next.js, Monaco Editor |
-| **schema-viewer** | Demo application | Next.js |
-| **form-preview** | Standalone form preview | Vite |
 
 
 ## ✨ Core Features
@@ -170,7 +165,7 @@ flowchart LR
     MERGE --> FINAL
 ```
 
-Example conditional logic: [schema.yaml](/packages/form-preview/schema.yaml#L101-107)
+Example conditional logic: [multi-step-example.yaml](/packages/form-engine/test-schemas/multi-step-example.yaml#L101-107)
 
 
 ## 📋 Example Schema
@@ -227,7 +222,7 @@ children:
 
 ### Build Process
 
-The `form-engine` package doesn't currently output a proper reusable package.  It's only used by other packages like `form-preview` in the monorepo.
+The `form-engine` package doesn't currently output a proper reusable package.  It's consumed by `form-editor` in the monorepo.
 
 ```bash
 npm run generate-schema  # Generate JSON schema from all of the components' Zod definitions

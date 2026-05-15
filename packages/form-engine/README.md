@@ -43,10 +43,8 @@ To enable schema validation and autocompletion for your YAML form files in Visua
           // Add patterns for your YAML form definition files
           // For example, if your forms are in a 'schemas' directory at the root:
           "schemas/**/*.yaml",
-          // Or for specific files in the schema-viewer package:
-          "packages/schema-viewer/src/schemas/**/*.yaml",
-          // Or if you have a specific file you're working on:
-          "poc-simple-form.yaml"
+          // Or for test schemas in form-engine:
+          "packages/form-engine/test-schemas/**/*.yaml"
         ]
       }
     }

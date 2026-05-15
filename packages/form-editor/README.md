@@ -678,8 +678,6 @@ Messages show validation status:
 ## Related Packages
 
 - **form-engine**: Core form rendering library
-- **form-preview**: Standalone Vite preview app
-- **schema-viewer**: Demo application with example schemas
 
 ## License
 
