@@ -41,12 +41,9 @@ export function ChatComposer({ placeholder }: { placeholder: string }) {
 
 	return (
 		<ComposerPrimitive.Root className="flex flex-col gap-2">
-			<ComposerPrimitive.Attachments
-				components={{
-					Image: ComposerAttachmentImage,
-					File: ComposerAttachmentImage,
-				}}
-			/>
+			<ComposerPrimitive.Attachments>
+				{() => <ComposerAttachmentImage />}
+			</ComposerPrimitive.Attachments>
 			<div className="flex gap-2">
 				<ComposerPrimitive.AddAttachment
 					className="flex-shrink-0 p-2 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors self-end"

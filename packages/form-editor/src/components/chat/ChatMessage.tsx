@@ -132,7 +132,12 @@ export function ChatMessage() {
 							) : (
 								// Plain text: use MessagePrimitive.Parts with MarkdownText for native streaming support
 								<div className="flex-1">
-									<MessagePrimitive.Parts components={{ Text: MarkdownText }} />
+									<MessagePrimitive.Parts>
+										{({ part }) => {
+											if (part.type === "text") return <MarkdownText />;
+											return null;
+										}}
+									</MessagePrimitive.Parts>
 								</div>
 							)
 						) : (

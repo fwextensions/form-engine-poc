@@ -5,7 +5,7 @@ import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
 	useThread,
-	useAssistantApi,
+	useAssistantRuntime,
 } from "@assistant-ui/react";
 import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import {
@@ -51,7 +51,7 @@ function AIChatJsonlInner({
 	onOpenSettings: () => void;
 }) {
 	const thread = useThread();
-	const api = useAssistantApi();
+	const runtime = useAssistantRuntime();
 
 	const [isClient, setIsClient] = useState(false);
 	const [hasKey, setHasKey] = useState(false);
@@ -74,7 +74,7 @@ function AIChatJsonlInner({
 
 	const handleExampleClick = (prompt: string) => {
 		if (!hasKey) return;
-		api.thread().append({
+		runtime.thread.append({
 			role: "user",
 			content: [{ type: "text", text: prompt }],
 		});
@@ -96,12 +96,12 @@ function AIChatJsonlInner({
 			<div className="flex-1 overflow-hidden">
 				<ThreadPrimitive.Root className="h-full">
 					<ThreadPrimitive.Viewport className="h-full overflow-y-auto p-4">
-						<ThreadPrimitive.Messages
-							components={{
-								UserMessage: ChatMessage,
-								AssistantMessage: ChatMessage,
+						<ThreadPrimitive.Messages>
+							{({ message }) => {
+								if (message.role === "user") return <ChatMessage />;
+								return <ChatMessage />;
 							}}
-						/>
+						</ThreadPrimitive.Messages>
 					</ThreadPrimitive.Viewport>
 					<ThreadPrimitive.ScrollToBottom className="absolute bottom-4 right-4" />
 				</ThreadPrimitive.Root>
