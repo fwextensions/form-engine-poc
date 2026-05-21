@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useSyncExternalStore } from "react";
 import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
@@ -32,6 +32,8 @@ import { ChatMessage } from "./chat/ChatMessage";
 import { ChatComposer } from "./chat/ChatComposer";
 import { EmptyState } from "./chat/EmptyState";
 
+const subscribeToClientSnapshot = () => () => {};
+
 interface AIChatJsonlProps {
 	/** Which form this chat belongs to — used for localStorage persistence */
 	formId: string;
@@ -53,12 +55,14 @@ function AIChatJsonlInner({
 	const thread = useThread();
 	const runtime = useAssistantRuntime();
 
-	const [isClient, setIsClient] = useState(false);
+	const isClient = useSyncExternalStore(
+		subscribeToClientSnapshot,
+		() => true,
+		() => false,
+	);
 	const [hasKey, setHasKey] = useState(false);
 
 	React.useEffect(() => {
-		setIsClient(true);
-
 		fetchServerCredentialStatus().then((status) => {
 			if (status.bedrockConfigured) {
 				const settings = getSettings();
@@ -122,22 +126,25 @@ function AIChatJsonlInner({
  * saved conversation for the new form.
  */
 export default function AIChatJsonl(props: AIChatJsonlProps) {
-	const currentSchemaRef = useRef<SchemaComponent | null>(props.currentSchema);
+	const {
+		formId,
+		currentSchema,
+		onSchemaChange,
+		onOpenSettings,
+		initialMessages,
+	} = props;
 	const [validationResults, setValidationResults] = useState<ValidationResults>(
 		new Map(),
 	);
 
 	const lastUserMessageRef = useRef<string>("");
 
-	React.useEffect(() => {
-		currentSchemaRef.current = props.currentSchema;
-	}, [props.currentSchema]);
-
 	// Initialize JSONL schema generator
-	const generatorRef = useRef<JsonlSchemaGenerator | null>(null);
-	if (generatorRef.current === null) {
-		generatorRef.current = new JsonlSchemaGenerator();
-	}
+	const generator = React.useMemo(() => new JsonlSchemaGenerator(), []);
+	const transport = React.useMemo(
+		() => createJsonlChatTransport(generator, () => currentSchema),
+		[generator, currentSchema],
+	);
 
 	// Process JSONL response on completion
 	const handleFinish = useCallback(
@@ -179,8 +186,6 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 			const schemaPatches = patches.filter((p) => p.op !== "message");
 
 			if (schemaPatches.length > 0) {
-				const currentSchema = currentSchemaRef.current;
-
 				if (currentSchema) {
 					const result = applyPatches(currentSchema, schemaPatches);
 
@@ -199,7 +204,7 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 							return newMap;
 						});
 
-						props.onSchemaChange(
+						onSchemaChange(
 							result.schema,
 							patches,
 							lastUserMessageRef.current,
@@ -226,7 +231,7 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 							return newMap;
 						});
 
-						props.onSchemaChange(
+						onSchemaChange(
 							replaceOp.schema,
 							patches,
 							lastUserMessageRef.current,
@@ -255,16 +260,13 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 				});
 			}
 		},
-		[props.onSchemaChange],
+		[onSchemaChange, currentSchema],
 	);
 
 	const runtime = useChatRuntime({
-		id: props.formId,
-		messages: props.initialMessages,
-		transport: React.useMemo(
-			() => createJsonlChatTransport(generatorRef, currentSchemaRef),
-			[],
-		),
+		id: formId,
+		messages: initialMessages,
+		transport,
 		onFinish: handleFinish,
 		onError: (error) => {
 			console.error("[AIChatJsonl] onError:", error);
@@ -294,7 +296,7 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 			// Persist messages to localStorage whenever they change
 			if (messages.length > 0) {
 				saveChatMessages(
-					props.formId,
+					formId,
 					messages.map((msg) => ({
 						id: msg.id,
 						role: msg.role,
@@ -310,12 +312,12 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 		});
 
 		return unsubscribe;
-	}, [runtime, props.formId]);
+	}, [runtime, formId]);
 
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
 			<ValidationResultsContext.Provider value={validationResults}>
-				<AIChatJsonlInner onOpenSettings={props.onOpenSettings} />
+				<AIChatJsonlInner onOpenSettings={onOpenSettings} />
 			</ValidationResultsContext.Provider>
 		</AssistantRuntimeProvider>
 	);

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
@@ -19,6 +19,8 @@ import { ValidationResultsContext, type ValidationResults } from "./chat/Validat
 import { ChatMessage } from "./chat/ChatMessage";
 import { ChatComposer } from "./chat/ChatComposer";
 import { EmptyState } from "./chat/EmptyState";
+
+const subscribeToClientSnapshot = () => () => {};
 
 interface AIChatProps {
 	/** Which form this chat belongs to — used for localStorage persistence */
@@ -43,12 +45,14 @@ function AIChatInner({
 	const runtime = useAssistantRuntime();
 
 	// Defer API key check until after hydration to avoid SSR mismatch
-	const [isClient, setIsClient] = useState(false);
+	const isClient = useSyncExternalStore(
+		subscribeToClientSnapshot,
+		() => true,
+		() => false,
+	);
 	const [hasKey, setHasKey] = useState(false);
 
 	React.useEffect(() => {
-		setIsClient(true);
-
 		// Fetch server credential status on mount
 		fetchServerCredentialStatus().then((status) => {
 			if (status.bedrockConfigured) {
@@ -116,34 +120,33 @@ function AIChatInner({
  * child components via context.
  */
 export default function AIChat(props: AIChatProps) {
-	const currentSchemaRef = useRef<string>(props.currentSchema);
+	const {
+		formId,
+		currentSchema,
+		onSchemaGenerated,
+		onOpenSettings,
+		initialMessages,
+	} = props;
 	const [validationResults, setValidationResults] = useState<ValidationResults>(new Map());
 
-	// Keep currentSchemaRef in sync with props
-	React.useEffect(() => {
-		currentSchemaRef.current = props.currentSchema;
-	}, [props.currentSchema]);
-
 	// Initialize schema generator
-	const generatorRef = useRef<SchemaGenerator | null>(null);
-	if (generatorRef.current === null) {
-		generatorRef.current = new SchemaGenerator();
-	}
+	const generator = React.useMemo(() => new SchemaGenerator(), []);
+	const transport = React.useMemo(
+		() => createChatTransport(generator, () => currentSchema),
+		[generator, currentSchema],
+	);
 
 	// Configure useChatRuntime with custom transport and onFinish callback
 	const runtime = useChatRuntime({
-		id: props.formId,
-		messages: props.initialMessages,
-		transport: React.useMemo(
-			() => createChatTransport(generatorRef, currentSchemaRef),
-			[],
-		),
+		id: formId,
+		messages: initialMessages,
+		transport,
 		onFinish: ({ message }) => {
-			if (message.role === 'assistant') {
+			if (message.role === "assistant") {
 				const messageContent = message.parts
-					?.filter((part): part is { type: 'text'; text: string } => part.type === 'text')
-					.map(part => part.text)
-					.join('') || '';
+					?.filter((part): part is { type: "text"; text: string } => part.type === "text")
+					.map((part) => part.text)
+					.join("") || "";
 
 				const extractedYaml = extractYamlFromResponse(messageContent);
 
@@ -151,7 +154,7 @@ export default function AIChat(props: AIChatProps) {
 					const validationResult = validateSchema(extractedYaml);
 					const isValid = validationResult.valid;
 
-					setValidationResults(prev => {
+					setValidationResults((prev) => {
 						const newMap = new Map(prev);
 						newMap.set(message.id, {
 							extractedSchema: extractedYaml,
@@ -163,13 +166,13 @@ export default function AIChat(props: AIChatProps) {
 					});
 
 					if (isValid) {
-						props.onSchemaGenerated(extractedYaml);
+						onSchemaGenerated(extractedYaml);
 					}
 				}
 			}
 		},
 		onError: (error) => {
-			console.error('[AIChat] onError:', error);
+			console.error("[AIChat] onError:", error);
 		},
 	});
 
@@ -179,7 +182,7 @@ export default function AIChat(props: AIChatProps) {
 			const messages = runtime.thread.getState().messages;
 			if (messages.length > 0) {
 				saveChatMessages(
-					props.formId,
+					formId,
 					messages.map((msg) => ({
 						id: msg.id,
 						role: msg.role,
@@ -194,12 +197,12 @@ export default function AIChat(props: AIChatProps) {
 			}
 		});
 		return unsubscribe;
-	}, [runtime, props.formId]);
+	}, [runtime, formId]);
 
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
 			<ValidationResultsContext.Provider value={validationResults}>
-				<AIChatInner onOpenSettings={props.onOpenSettings} />
+				<AIChatInner onOpenSettings={onOpenSettings} />
 			</ValidationResultsContext.Provider>
 		</AssistantRuntimeProvider>
 	);
