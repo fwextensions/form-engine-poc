@@ -18,8 +18,8 @@ import type { SchemaComponent } from "./types";
  * transport sends the current schema as JSON and expects JSONL patches.
  */
 export function createJsonlChatTransport(
-	generatorRef: { current: JsonlSchemaGenerator | null },
-	currentSchemaRef: { current: SchemaComponent | null },
+	generator: JsonlSchemaGenerator,
+	getCurrentSchema: () => SchemaComponent | null,
 ): AssistantChatTransport<UIMessage> {
 	return new AssistantChatTransport({
 		api: "/api/llm",
@@ -29,7 +29,7 @@ export function createJsonlChatTransport(
 			const requestBody: Record<string, any> = {
 				provider: settings.provider,
 				model: getModelForProvider(settings),
-				system: generatorRef.current!.getSystemPrompt(),
+				system: generator.getSystemPrompt(),
 			};
 
 			// Add provider-specific credentials (same as existing transport)
@@ -59,7 +59,7 @@ export function createJsonlChatTransport(
 			const transformedMessages = messages.map((msg, index) => {
 				// Only transform the last user message
 				if (msg.role === "user" && index === messages.length - 1) {
-					const currentSchema = currentSchemaRef.current;
+					const currentSchema = getCurrentSchema();
 					const hasSchema = currentSchema !== null;
 
 					const originalText =
@@ -73,13 +73,13 @@ export function createJsonlChatTransport(
 					if (hasSchema) {
 						// Edit mode: include current schema as JSON
 						const schemaJson = JSON.stringify(currentSchema, null, 2);
-						fullPrompt = generatorRef.current!.buildEditPrompt(
+						fullPrompt = generator.buildEditPrompt(
 							schemaJson,
 							originalText,
 						);
 					} else {
 						// Create mode: no existing schema
-						fullPrompt = generatorRef.current!.buildCreatePrompt(originalText);
+						fullPrompt = generator.buildCreatePrompt(originalText);
 					}
 
 					// Preserve non-text parts (e.g. image attachments)

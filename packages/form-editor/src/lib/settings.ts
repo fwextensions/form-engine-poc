@@ -78,7 +78,7 @@ export function getSettings(): LLMSettings {
 		}
 
 		const parsed = JSON.parse(stored);
-		
+
 		// Validate that parsed data has expected structure
 		if (typeof parsed !== "object" || parsed === null) {
 			return DEFAULT_SETTINGS;
@@ -194,7 +194,7 @@ export function getServerCredentialStatus(): { bedrockConfigured: boolean } | nu
  */
 export function hasApiKey(): boolean {
 	const settings = getSettings();
-	
+
 	// Check provider-specific credentials
 	switch (settings.provider) {
 		case "bedrock": {
