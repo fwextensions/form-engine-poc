@@ -17,8 +17,6 @@ export function parseRootFormSchema(rawSchema: unknown): { config: any;	errors?:
 	const rootParseResult = AnyRootComponentConfigSchema.safeParse(rawSchema);
 
 	if (!rootParseResult.success) {
-		console.error("Invalid root schema: 'type' attribute is missing or invalid.", rootParseResult.error.flatten());
-
 		return { config: null, errors: rootParseResult.error };
 	}
 

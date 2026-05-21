@@ -12,6 +12,7 @@ import {
 } from "form-engine";
 import EditorToolbar from "@/components/EditorToolbar";
 import EditorPane from "@/components/EditorPane";
+import FormSidebar from "@/components/FormSidebar";
 import SettingsDialog from "@/components/SettingsDialog";
 import {
 	getSavedForms,
@@ -406,11 +407,6 @@ export default function FormEditorPage() {
 	return (
 		<div className="flex flex-col h-screen w-screen">
 			<EditorToolbar
-				forms={forms}
-				selectedForm={selectedForm}
-				onNewForm={handleNewForm}
-				onSelectForm={handleSelectForm}
-				onDeleteForm={handleDeleteForm}
 				currentPage={currentPage}
 				totalPages={totalPages}
 				pageTitle={pageTitle}
@@ -419,31 +415,40 @@ export default function FormEditorPage() {
 				onOpenSettings={() => setSettingsOpen(true)}
 				history={historyProps}
 			/>
-			<Group orientation="horizontal" className="flex-grow">
-				<Panel defaultSize={50}>
-					<EditorPane
-						schema={yamlInput}
-						onSchemaChange={setYamlInput}
-						activeTab={activeTab}
-						onTabChange={handleTabChange}
-						onOpenSettings={() => setSettingsOpen(true)}
-						formId={selectedForm}
-						initialMessages={chatMessages}
-						jsonlMode={jsonlModeProps}
-					/>
-				</Panel>
-				<Separator className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
-				<Panel defaultSize={50}>
-					<div className="p-6 h-full overflow-auto">
-						{error && <pre className="error-message">{error}</pre>}
-						{error && formOutput ? (
-							<div className="opacity-50">{formOutput}</div>
-						) : (
-							formOutput
-						)}
-					</div>
-				</Panel>
-			</Group>
+			<div className="flex flex-row flex-grow min-h-0">
+				<FormSidebar
+					forms={forms}
+					selectedForm={selectedForm}
+					onSelectForm={handleSelectForm}
+					onNewForm={handleNewForm}
+					onDeleteForm={handleDeleteForm}
+				/>
+				<Group orientation="horizontal" className="flex-grow min-w-0">
+					<Panel defaultSize={50}>
+						<EditorPane
+							schema={yamlInput}
+							onSchemaChange={setYamlInput}
+							activeTab={activeTab}
+							onTabChange={handleTabChange}
+							onOpenSettings={() => setSettingsOpen(true)}
+							formId={selectedForm}
+							initialMessages={chatMessages}
+							jsonlMode={jsonlModeProps}
+						/>
+					</Panel>
+					<Separator className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
+					<Panel defaultSize={50}>
+						<div className="p-6 h-full overflow-auto">
+							{error && <pre className="error-message">{error}</pre>}
+							{error && formOutput ? (
+								<div className="opacity-50">{formOutput}</div>
+							) : (
+								formOutput
+							)}
+						</div>
+					</Panel>
+				</Group>
+			</div>
 			<SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
 		</div>
 	);
