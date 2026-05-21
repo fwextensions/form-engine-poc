@@ -144,7 +144,9 @@ export function saveSettings(settings: LLMSettings): void {
 	} catch (error) {
 		// Handle storage quota exceeded or other errors
 		console.error("Failed to save LLM settings to localStorage:", error);
-		throw new Error("Failed to save settings. Storage may be full.");
+		throw new Error("Failed to save settings. Storage may be full.", {
+			cause: error,
+		});
 	}
 }
 

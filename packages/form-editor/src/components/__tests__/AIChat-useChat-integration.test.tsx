@@ -52,7 +52,7 @@ vi.mock("@assistant-ui/react", () => ({
 		Viewport: ({ children }: any) => <div>{children}</div>,
 		ScrollToBottom: () => null,
 		Empty: ({ children }: any) => <div>{children}</div>,
-		Messages: ({ components }: any) => null,
+		Messages: () => null,
 	},
 	ComposerPrimitive: {
 		Root: ({ children }: any) => <div>{children}</div>,

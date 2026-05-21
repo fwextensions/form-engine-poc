@@ -64,8 +64,6 @@ export default function FormEditorPage() {
 	const [forms, setForms] = useState<string[]>([]);
 	const [selectedForm, setSelectedForm] = useState<string>("");
 	const [yamlInput, setYamlInput] = useState("");
-	const [formConfig, setFormConfig] = useState<FormConfig | null>(null);
-	const [error, setError] = useState<string | null>(null);
 	const [currentPage, setCurrentPage] = useState(0);
 	const [formMeta, setFormMeta] = useState<FormMeta | null>(null);
 	const [activeTab, setActiveTab] = useState<"yaml" | "ai">("yaml");
@@ -120,29 +118,39 @@ export default function FormEditorPage() {
 
 	// Load forms and select the first one on initial render
 	useEffect(() => {
-		let savedForms = getSavedForms();
+		let isActive = true;
 
-		if (savedForms.length === 0) {
-			const name = "sample-form";
-			saveFormContent(name, defaultForm);
-			savedForms = [name];
-		}
+		queueMicrotask(() => {
+			if (!isActive) return;
 
-		setForms(savedForms);
+			let savedForms = getSavedForms();
 
-		const firstForm = savedForms[0];
-		setSelectedForm(firstForm);
+			if (savedForms.length === 0) {
+				const name = "sample-form";
+				saveFormContent(name, defaultForm);
+				savedForms = [name];
+			}
 
-		const content = getFormContent(firstForm);
-		const yamlContent = content || defaultForm;
-		setYamlInput(yamlContent);
+			setForms(savedForms);
 
-		// Initialize JSON state from saved YAML (try restoring history)
-		const parsed = yamlToSchema(yamlContent);
-		initHistory(parsed, firstForm);
+			const firstForm = savedForms[0];
+			setSelectedForm(firstForm);
 
-		// Load saved chat messages for this form
-		setChatMessages(loadChatMessages(firstForm));
+			const content = getFormContent(firstForm);
+			const yamlContent = content || defaultForm;
+			setYamlInput(yamlContent);
+
+			// Initialize JSON state from saved YAML (try restoring history)
+			const parsed = yamlToSchema(yamlContent);
+			initHistory(parsed, firstForm);
+
+			// Load saved chat messages for this form
+			setChatMessages(loadChatMessages(firstForm));
+		});
+
+		return () => {
+			isActive = false;
+		};
 	}, [initHistory]);
 
 	// Save content when yamlInput changes for the selected form
@@ -153,11 +161,15 @@ export default function FormEditorPage() {
 	}, [yamlInput, selectedForm]);
 
 	// Parse YAML and update form config
-	useEffect(() => {
+	const { formConfig, error } = useMemo((): {
+		formConfig: FormConfig | null;
+		error: string | null;
+	} => {
 		if (!yamlInput) {
-			setFormConfig(null);
-			setError("");
-			return;
+			return {
+				formConfig: null,
+				error: "",
+			};
 		}
 
 		try {
@@ -165,15 +177,28 @@ export default function FormEditorPage() {
 			const { config, errors } = parseRootFormSchema(parsedYaml);
 
 			if (config) {
-				setFormConfig(config);
-				setError(null);
-			} else if (errors) {
-				setError(JSON.stringify(errors.flatten(), null, 2));
-			} else {
-				setError("An unknown parsing error occurred.");
+				return {
+					formConfig: config,
+					error: null,
+				};
 			}
-		} catch (e: any) {
-			setError(e.message);
+
+			if (errors) {
+				return {
+					formConfig: null,
+					error: JSON.stringify(errors.flatten(), null, 2),
+				};
+			}
+
+			return {
+				formConfig: null,
+				error: "An unknown parsing error occurred.",
+			};
+		} catch (error) {
+			return {
+				formConfig: null,
+				error: error instanceof Error ? error.message : String(error),
+			};
 		}
 	}, [yamlInput]);
 
@@ -205,8 +230,10 @@ export default function FormEditorPage() {
 
 	// Reset page when selected form changes
 	useEffect(() => {
-		setCurrentPage(0);
-		setFormMeta(null);
+		queueMicrotask(() => {
+			setCurrentPage(0);
+			setFormMeta(null);
+		});
 	}, [selectedForm]);
 
 	/**

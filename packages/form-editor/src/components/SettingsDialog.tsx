@@ -34,18 +34,20 @@ export default function SettingsDialog({
 	// Load settings when dialog opens
 	useEffect(() => {
 		if (open) {
-			const settings = getSettings();
-			setProvider(settings.provider);
-			setApiKey(settings.apiKey || "");
-			setAnthropicModel(settings.anthropicModel || "");
-			setOpenaiModel(settings.openaiModel || "");
-			setGoogleModel(settings.googleModel || "");
-			setBedrockModel(settings.bedrockModel || "");
-			setBedrockAuthMethod(settings.bedrockAuthMethod || "iam");
-			setAwsAccessKeyId(settings.awsAccessKeyId || "");
-			setAwsSecretAccessKey(settings.awsSecretAccessKey || "");
-			setAwsRegion(settings.awsRegion || "");
-			setBedrockApiKey(settings.bedrockApiKey || "");
+			queueMicrotask(() => {
+				const settings = getSettings();
+				setProvider(settings.provider);
+				setApiKey(settings.apiKey || "");
+				setAnthropicModel(settings.anthropicModel || "");
+				setOpenaiModel(settings.openaiModel || "");
+				setGoogleModel(settings.googleModel || "");
+				setBedrockModel(settings.bedrockModel || "");
+				setBedrockAuthMethod(settings.bedrockAuthMethod || "iam");
+				setAwsAccessKeyId(settings.awsAccessKeyId || "");
+				setAwsSecretAccessKey(settings.awsSecretAccessKey || "");
+				setAwsRegion(settings.awsRegion || "");
+				setBedrockApiKey(settings.bedrockApiKey || "");
+			});
 		}
 	}, [open]);
 

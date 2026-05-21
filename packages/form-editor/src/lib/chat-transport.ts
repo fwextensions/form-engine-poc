@@ -10,11 +10,11 @@ import type { SchemaGenerator } from "@/lib/schema-generator";
  * for edit mode (prepending current schema context to user messages).
  */
 export function createChatTransport(
-	generatorRef: { current: SchemaGenerator | null },
-	currentSchemaRef: { current: string },
+	generator: SchemaGenerator,
+	getCurrentSchema: () => string,
 ): AssistantChatTransport<UIMessage> {
 	return new AssistantChatTransport({
-		api: '/api/llm',
+		api: "/api/llm",
 		body: () => {
 			const settings = getSettings();
 
@@ -22,22 +22,22 @@ export function createChatTransport(
 			const requestBody: Record<string, any> = {
 				provider: settings.provider,
 				model: getModelForProvider(settings),
-				system: generatorRef.current!.getSystemPrompt(),
+				system: generator.getSystemPrompt(),
 			};
 
 			// Add provider-specific credentials
-			if (settings.provider === 'bedrock') {
+			if (settings.provider === "bedrock") {
 				// Check if server-side Bedrock credentials are configured
 				const serverStatus = getServerCredentialStatus();
 				if (serverStatus?.bedrockConfigured) {
 					// Server has credentials configured; skip sending client Bedrock credentials
 				} else {
 					// No server credentials; send client-supplied Bedrock credentials
-					const authMethod = settings.bedrockAuthMethod || 'iam';
+					const authMethod = settings.bedrockAuthMethod || "iam";
 					requestBody.bedrockAuthMethod = authMethod;
 					requestBody.awsRegion = settings.awsRegion;
 
-					if (authMethod === 'apiKey') {
+					if (authMethod === "apiKey") {
 						requestBody.bedrockApiKey = settings.bedrockApiKey;
 					} else {
 						requestBody.awsAccessKeyId = settings.awsAccessKeyId;
@@ -55,26 +55,26 @@ export function createChatTransport(
 			// Transform the last user message to include current schema context if editing
 			const transformedMessages = messages.map((msg, index) => {
 				// Only transform the last user message
-				if (msg.role === 'user' && index === messages.length - 1) {
-					const currentSchema = currentSchemaRef.current;
+				if (msg.role === "user" && index === messages.length - 1) {
+					const currentSchema = getCurrentSchema();
 					const isEdit = currentSchema.trim().length > 0;
 
 					if (isEdit) {
 						// Get the original text from the message parts
 						const originalText = msg.parts
-							?.filter((part: any) => part.type === 'text')
+							?.filter((part: any) => part.type === "text")
 							.map((part: any) => part.text)
-							.join('') || '';
+							.join("") || "";
 
 						// Build the full edit prompt
-						const fullPrompt = generatorRef.current!.buildEditPrompt(currentSchema, originalText);
+						const fullPrompt = generator.buildEditPrompt(currentSchema, originalText);
 
 						// Preserve non-text parts (e.g. image attachments)
-						const nonTextParts = msg.parts?.filter((part: any) => part.type !== 'text') || [];
+						const nonTextParts = msg.parts?.filter((part: any) => part.type !== "text") || [];
 
 						return {
 							...msg,
-							parts: [{ type: 'text' as const, text: fullPrompt }, ...nonTextParts],
+							parts: [{ type: "text" as const, text: fullPrompt }, ...nonTextParts],
 						};
 					}
 				}

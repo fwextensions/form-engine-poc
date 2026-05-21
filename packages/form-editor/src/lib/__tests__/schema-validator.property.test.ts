@@ -458,7 +458,7 @@ parent:
           fc.string({ minLength: 1, maxLength: 20 }).filter(s => /^[a-zA-Z][a-zA-Z0-9]*$/.test(s)),
           (validType, id) => {
             // Create minimal valid schema with this type
-            let schema: any = {
+            const schema: any = {
               id,
               type: validType,
             };

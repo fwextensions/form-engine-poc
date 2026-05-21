@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import EditorPane from "../EditorPane";
 
@@ -202,8 +202,7 @@ describe("EditorPane", () => {
 		expect(mockOnOpenSettings).toHaveBeenCalled();
 	});
 
-	it("preserves schema state when switching tabs", async () => {
-		const user = userEvent.setup();
+	it("preserves schema state when switching tabs", () => {
 		const testSchema = "id: myForm\ntype: form";
 
 		const { rerender } = render(
