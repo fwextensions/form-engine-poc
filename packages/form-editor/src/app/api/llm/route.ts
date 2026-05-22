@@ -224,9 +224,12 @@ export async function POST(request: NextRequest) {
 			};
 		});
 
+		// Remove messages with empty string content — Anthropic/Bedrock rejects them
+		const filteredMessages = transformedMessages.filter((msg) => msg.content.length > 0);
+
 		const result = streamText({
 			model: providerInstance(model),
-			messages: transformedMessages,
+			messages: filteredMessages,
 			...(system && { system }),
 			...(maxTokens && { maxTokens }),
 		});
