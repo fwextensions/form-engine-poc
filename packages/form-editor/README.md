@@ -71,7 +71,8 @@ The Form Editor is a Next.js application that provides a split-pane interface fo
 graph TB
     subgraph "Main Application"
         PAGE["FormEditorPage<br/>(page.tsx)"]
-        TOOLBAR["EditorToolbar<br/>Form management + undo/redo"]
+        SIDEBAR["FormSidebar<br/>Form list + management"]
+        TOOLBAR["EditorToolbar<br/>Undo/redo + settings"]
         EDITOR["EditorPane<br/>YAML editor + AI chat"]
         PREVIEW["FormEngine<br/>Live form preview"]
     end
@@ -103,6 +104,7 @@ graph TB
         PROVIDERS["Provider Factory<br/>Anthropic | OpenAI | Google | Bedrock"]
     end
 
+    PAGE --> SIDEBAR
     PAGE --> TOOLBAR
     PAGE --> EDITOR
     PAGE --> PREVIEW
@@ -255,7 +257,7 @@ Main application component that orchestrates the editor, preview, and toolbar. M
 - `selectedForm`: Currently active form
 - `yamlInput`: Current YAML content (displayed in Monaco)
 - `schemaJson`: Current schema as JSON (internal representation for JSONL operations)
-- `formConfig`: Parsed form configuration
+- `formMeta`: Metadata reported by `FormEngine` via `onMetaChange` (page count, etc.)
 - `currentPage`: Active page in multi-page forms
 - `activeTab`: Current tab (YAML or AI)
 - `historyState`: Undo/redo state from the history manager
@@ -306,8 +308,11 @@ Modal for configuring LLM provider and credentials.
 - AWS credentials for Bedrock (IAM or API key auth)
 - Server credential status indicator
 
+### FormSidebar (`src/components/FormSidebar.tsx`)
+Left-side panel displaying the list of saved forms. Provides keyboard-navigable form switching (arrow keys), and buttons to create or delete a form.
+
 ### EditorToolbar (`src/components/EditorToolbar.tsx`)
-Top toolbar for form management. Optionally renders undo/redo buttons when a `history` prop is provided.
+Top toolbar with settings access and undo/redo controls. Optionally renders undo/redo buttons when a `history` prop is provided.
 
 **History Prop:**
 - `canUndo` / `canRedo`: Enable/disable buttons
@@ -495,9 +500,6 @@ npm run test --workspace=form-editor
 
 # Run tests in watch mode
 npm run test:watch --workspace=form-editor
-
-# Run tests with UI
-npm run test:ui --workspace=form-editor
 ```
 
 ### Building
