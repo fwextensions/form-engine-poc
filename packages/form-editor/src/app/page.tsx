@@ -378,9 +378,19 @@ export default function FormEditorPage() {
 		/>
 	) : null;
 
-	const totalPages = formMeta?.pageCount ?? 0;
+	const pageComponents = useMemo(() => {
+		if (formConfig?.type === "form" && Array.isArray(formConfig.children)) {
+			return formConfig.children.filter((child) => child?.type === "page");
+		}
+		return [];
+	}, [formConfig]);
+
+	const totalPages = pageComponents.length;
 	const pageTitle =
-		formMeta?.pageTitles[currentPage] ?? formMeta?.formTitle ?? "Form";
+		(pageComponents[currentPage] as { title?: string } | undefined)?.title ??
+		formConfig?.title ??
+		formMeta?.formTitle ??
+		"Form";
 
 	// Build history props for toolbar
 	const historyProps = useMemo(() => {
