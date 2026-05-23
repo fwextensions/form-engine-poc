@@ -24,7 +24,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Project Architecture
 
 ### Monorepo Structure
-This is an npm workspace monorepo with 2 packages:
+This is an npm workspace monorepo with 3 packages:
 
 1. **form-engine** (`packages/form-engine/`) - Core rendering library
    - Main entry point: `src/index.ts`
@@ -35,6 +35,11 @@ This is an npm workspace monorepo with 2 packages:
 2. **form-editor** (`packages/form-editor/`) - Schema editor with live preview  
    - Next.js 16 application with Monaco editor
    - Real-time YAML editing with form preview
+
+3. **form-exporters** (`packages/form-exporters/`) - Export adapters for external platforms
+   - Converts form-engine schemas to other form platform formats
+   - Currently supports: Fillout (v2 export JSON)
+   - Best-effort export with diagnostics for unmappable features
 
 ### Core Components & Architecture
 
@@ -107,9 +112,18 @@ This is an npm workspace monorepo with 2 packages:
 - Conditional logic: `rules` array with `when`/`then` structure
 - Required fields: Use asterisk notation in `label` (e.g., "Name*")
 
+### Form Exporters (`packages/form-exporters/`)
+- Converts form-engine `FormConfig` schemas to external platform formats
+- **Fillout exporter** (`src/fillout/`): Maps form-engine types to Fillout v2 export JSON
+  - `exportToFillout(schema)` → `{ output, diagnostics }`
+  - Always produces output (best-effort), with diagnostics for lossy mappings
+  - Component mapping: text→ShortAnswer, email→EmailInput, select→Dropdown, radiogroup→MultipleChoice, checkbox→Checkbox, date→DatePicker, textarea→LongAnswer, file→FileUpload, html→Html/Paragraph
+  - Warns on: rules/conditions (no Fillout equivalent), disabled fields, unknown component types
+
 ### Build Process
 - `form-engine` package builds TypeScript to `dist/` and generates JSON schema
 - `form-editor` is a Next.js application
+- `form-exporters` package builds TypeScript to `dist/`
 - No current CI/CD - packages used within monorepo only
 - JSON schema generation: `npm run generate-schema` creates schema from Zod definitions
 
