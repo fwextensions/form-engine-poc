@@ -15,6 +15,7 @@ import EditorToolbar from "@/components/EditorToolbar";
 import EditorPane from "@/components/EditorPane";
 import FormSidebar from "@/components/FormSidebar";
 import SettingsDialog from "@/components/SettingsDialog";
+import ExportDiagnosticsDialog from "@/components/ExportDiagnosticsDialog";
 import {
 	getSavedForms,
 	getFormContent,
@@ -70,6 +71,9 @@ export default function FormEditorPage() {
 	const [formMeta, setFormMeta] = useState<FormMeta | null>(null);
 	const [activeTab, setActiveTab] = useState<"yaml" | "ai">("yaml");
 	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [exportDiagnostics, setExportDiagnostics] = useState<ExportDiagnostic[]>([]);
+	const [exportFilename, setExportFilename] = useState("");
+	const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
 	// Per-form chat messages (loaded from localStorage on form switch)
 	const [chatMessages, setChatMessages] = useState<UIMessage[]>([]);
@@ -316,25 +320,22 @@ export default function FormEditorPage() {
 		const { output, diagnostics } = exportToFillout(schema);
 
 		// Trigger download
+		const filename = `${selectedForm || "form"}-fillout.json`;
 		const blob = new Blob([JSON.stringify(output, null, 2)], { type: "application/json" });
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
 		a.href = url;
-		a.download = `${selectedForm || "form"}-fillout.json`;
+		a.download = filename;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
 		URL.revokeObjectURL(url);
 
-		// Show diagnostics summary if there are warnings
-		const warnings = diagnostics.filter((d: ExportDiagnostic) => d.severity === "warning");
-		if (warnings.length > 0) {
-			const summary = warnings
-				.map((d: ExportDiagnostic) => `- ${d.message}`)
-				.join("\n");
-			alert(
-				`Fillout export complete with ${warnings.length} warning${warnings.length === 1 ? "" : "s"}:\n\n${summary}`
-			);
+		// Show diagnostics dialog if there are any
+		if (diagnostics.length > 0) {
+			setExportFilename(filename);
+			setExportDiagnostics(diagnostics);
+			setExportDialogOpen(true);
 		}
 	}, [schemaJson, yamlInput, selectedForm]);
 
@@ -498,6 +499,12 @@ export default function FormEditorPage() {
 				</Group>
 			</div>
 			<SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+			<ExportDiagnosticsDialog
+				open={exportDialogOpen}
+				onOpenChange={setExportDialogOpen}
+				diagnostics={exportDiagnostics}
+				filename={exportFilename}
+			/>
 		</div>
 	);
 }
