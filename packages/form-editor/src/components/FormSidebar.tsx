@@ -40,13 +40,13 @@ const FormSidebar = ({
 	return (
 		<div className="flex flex-col h-full w-48 shrink-0 bg-slate-100 border-r border-slate-200">
 			{/* Header — height matches the tab bar in EditorPane (py-3 + text-sm) */}
-			<div className="flex items-center justify-between px-3 py-[9px] border-b border-slate-200 bg-slate-50">
-				<span className="text-sm font-semibold text-slate-500 tracking-wide">Forms</span>
-				<div className="flex items-center gap-1">
+			<div className="flex items-center justify-between px-3 py-[7px] border-b border-slate-200 bg-slate-50">
+				<span className="text-sm font-semibold text-slate-600 tracking-wide">Forms</span>
+				<div className="flex items-center gap-0">
 					<button
 						onClick={onNewForm}
 						title="New form"
-						className="text-slate-500 hover:text-blue-600 rounded p-1.5 hover:bg-slate-200 transition-colors"
+						className="text-slate-600 hover:text-blue-600 rounded p-2 hover:bg-slate-200 transition-colors"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<line x1="12" y1="5" x2="12" y2="19" />
@@ -57,7 +57,7 @@ const FormSidebar = ({
 						onClick={onDeleteForm}
 						disabled={!selectedForm}
 						title="Delete selected form"
-						className="text-slate-500 hover:text-red-600 rounded p-1.5 hover:bg-slate-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+						className="text-slate-600 hover:text-red-600 rounded p-2 hover:bg-slate-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<polyline points="3 6 5 6 21 6" />

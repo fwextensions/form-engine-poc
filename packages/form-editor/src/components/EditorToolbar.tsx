@@ -45,7 +45,7 @@ const EditorToolbar = ({
 			</div>
 
 			<div className="flex items-center gap-2">
-				<span className="text-sm font-semibold">
+				<span className="text-sm text-slate-600 font-semibold">
 					{pageTitle} ({currentPage + 1} / {totalPages})
 				</span>
 				<button
