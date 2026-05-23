@@ -462,7 +462,6 @@ export default function FormEditorPage() {
 				onNextPage={handleNextPage}
 				onOpenSettings={() => setSettingsOpen(true)}
 				onExportFillout={handleExportFillout}
-				history={historyProps}
 			/>
 			<div className="flex flex-row flex-grow min-h-0">
 				<FormSidebar
@@ -483,6 +482,7 @@ export default function FormEditorPage() {
 							formId={selectedForm}
 							initialMessages={chatMessages}
 							jsonlMode={jsonlModeProps}
+							history={historyProps}
 						/>
 					</Panel>
 					<Separator className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />

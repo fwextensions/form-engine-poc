@@ -24,6 +24,14 @@ interface EditorPaneProps {
 		currentSchema: SchemaComponent | null;
 		onSchemaChange: (schema: SchemaComponent, patches: PatchOp[], userMessage: string) => void;
 	};
+	history?: {
+		canUndo: boolean;
+		canRedo: boolean;
+		undoDescription?: string;
+		redoDescription?: string;
+		onUndo: () => void;
+		onRedo: () => void;
+	};
 }
 
 /**
@@ -48,6 +56,7 @@ export default function EditorPane({
 	formId,
 	initialMessages,
 	jsonlMode,
+	history,
 }: EditorPaneProps) {
 	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 	const localSchemaEchoesRef = useRef<Set<string>>(new Set());
@@ -82,20 +91,70 @@ export default function EditorPane({
 			className="flex flex-col h-full"
 		>
 			{/* Tab List */}
-			<Tabs.List className="flex border-b border-slate-200 bg-slate-50">
-				<Tabs.Trigger
-					value="yaml"
-					className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
-				>
-					YAML Editor
-				</Tabs.Trigger>
-				<Tabs.Trigger
-					value="ai"
-					className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
-				>
-					AI Assistant
-				</Tabs.Trigger>
-			</Tabs.List>
+			<div className="flex items-center justify-between border-b border-slate-200 bg-slate-50">
+				<Tabs.List className="flex">
+					<Tabs.Trigger
+						value="yaml"
+						className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
+					>
+						YAML Editor
+					</Tabs.Trigger>
+					<Tabs.Trigger
+						value="ai"
+						className="px-6 py-3 text-sm font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 transition-colors data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
+					>
+						AI Assistant
+					</Tabs.Trigger>
+				</Tabs.List>
+				{history && (
+					<div className="flex items-center gap-1 px-2">
+						<button
+							type="button"
+							onClick={history.onUndo}
+							disabled={!history.canUndo}
+							className="inline-flex h-8 w-8 items-center justify-center rounded border border-slate-300 bg-white text-slate-700 enabled:hover:bg-slate-100 disabled:opacity-50"
+							title={history.undoDescription ? `Undo: ${history.undoDescription}` : "Undo"}
+							aria-label="Undo"
+						>
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								className="h-4 w-4"
+								aria-hidden="true"
+							>
+								<path d="M9 14 4 9l5-5" />
+								<path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+							</svg>
+						</button>
+						<button
+							type="button"
+							onClick={history.onRedo}
+							disabled={!history.canRedo}
+							className="inline-flex h-8 w-8 items-center justify-center rounded border border-slate-300 bg-white text-slate-700 enabled:hover:bg-slate-100 disabled:opacity-50"
+							title={history.redoDescription ? `Redo: ${history.redoDescription}` : "Redo"}
+							aria-label="Redo"
+						>
+							<svg
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								strokeWidth="2"
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								className="h-4 w-4"
+								aria-hidden="true"
+							>
+								<path d="m15 14 5-5-5-5" />
+								<path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
+							</svg>
+						</button>
+					</div>
+				)}
+			</div>
 
 			{/* YAML Editor Tab Content */}
 			<Tabs.Content value="yaml" className="flex-1 overflow-hidden">
