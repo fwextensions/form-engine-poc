@@ -7,6 +7,8 @@ interface EditorToolbarProps {
 	onPrevPage: () => void;
 	onNextPage: () => void;
 	onOpenSettings: () => void;
+	/** Export the current form to an external format. */
+	onExportFillout?: () => void;
 	/** Undo/redo props — shown when provided */
 	history?: {
 		canUndo: boolean;
@@ -25,6 +27,7 @@ const EditorToolbar = ({
 	onPrevPage,
 	onNextPage,
 	onOpenSettings,
+	onExportFillout,
 	history,
 }: EditorToolbarProps) => {
 	return (
@@ -55,6 +58,18 @@ const EditorToolbar = ({
 							title={history.redoDescription ? `Redo: ${history.redoDescription}` : "Redo"}
 						>
 							Redo
+						</button>
+					</>
+				)}
+				{onExportFillout && (
+					<>
+						<div className="w-px h-6 bg-slate-300 mx-1" />
+						<button
+							onClick={onExportFillout}
+							className="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded text-sm"
+							title="Export current form as Fillout JSON"
+						>
+							Export Fillout
 						</button>
 					</>
 				)}

@@ -2,7 +2,7 @@
 export default {
 	reactStrictMode: true,
 	devIndicators: false,
-	transpilePackages: ["form-engine"],
+	transpilePackages: ["form-engine", "form-exporters"],
 
 	async rewrites()
 	{

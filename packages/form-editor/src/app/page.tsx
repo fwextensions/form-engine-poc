@@ -10,6 +10,7 @@ import {
 	type FormEngineHandle,
 	type FormMeta,
 } from "form-engine";
+import { exportToFillout, type ExportDiagnostic } from "form-exporters";
 import EditorToolbar from "@/components/EditorToolbar";
 import EditorPane from "@/components/EditorPane";
 import FormSidebar from "@/components/FormSidebar";
@@ -301,6 +302,42 @@ export default function FormEditorPage() {
 		}
 	}, [selectedForm, persistHistory]);
 
+	/**
+	 * Export the current schema as Fillout JSON and trigger a download.
+	 */
+	const handleExportFillout = useCallback(() => {
+		// Prefer the JSON schema if available; fall back to parsing YAML
+		const schema = schemaJson ?? yamlToSchema(yamlInput);
+		if (!schema) {
+			alert("Cannot export: the current schema is empty or invalid.");
+			return;
+		}
+
+		const { output, diagnostics } = exportToFillout(schema);
+
+		// Trigger download
+		const blob = new Blob([JSON.stringify(output, null, 2)], { type: "application/json" });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = `${selectedForm || "form"}-fillout.json`;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+		URL.revokeObjectURL(url);
+
+		// Show diagnostics summary if there are warnings
+		const warnings = diagnostics.filter((d: ExportDiagnostic) => d.severity === "warning");
+		if (warnings.length > 0) {
+			const summary = warnings
+				.map((d: ExportDiagnostic) => `- ${d.message}`)
+				.join("\n");
+			alert(
+				`Fillout export complete with ${warnings.length} warning${warnings.length === 1 ? "" : "s"}:\n\n${summary}`
+			);
+		}
+	}, [schemaJson, yamlInput, selectedForm]);
+
 	const handleNewForm = () => {
 		const name = prompt("Enter new form name:");
 
@@ -423,6 +460,7 @@ export default function FormEditorPage() {
 				onPrevPage={handlePrevPage}
 				onNextPage={handleNextPage}
 				onOpenSettings={() => setSettingsOpen(true)}
+				onExportFillout={handleExportFillout}
 				history={historyProps}
 			/>
 			<div className="flex flex-row flex-grow min-h-0">
