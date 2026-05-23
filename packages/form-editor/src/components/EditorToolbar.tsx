@@ -52,7 +52,7 @@ const EditorToolbar = ({
 				<Toolbar.Button
 					onClick={onPrevPage}
 					disabled={currentPage === 0 || totalPages <= 1}
-					className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 disabled:opacity-30"
+					className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 enabled:active:bg-slate-300 enabled:active:text-blue-700 disabled:opacity-30"
 					title="Previous page"
 					aria-label="Previous page"
 				>
@@ -72,7 +72,7 @@ const EditorToolbar = ({
 				<Toolbar.Button
 					onClick={onNextPage}
 					disabled={currentPage >= totalPages - 1 || totalPages <= 1}
-					className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 disabled:opacity-30"
+					className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 enabled:active:bg-slate-300 enabled:active:text-blue-700 disabled:opacity-30"
 					title="Next page"
 					aria-label="Next page"
 				>

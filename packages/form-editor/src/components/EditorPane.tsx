@@ -112,7 +112,7 @@ export default function EditorPane({
 						<Toolbar.Button
 							onClick={history.onUndo}
 							disabled={!history.canUndo}
-							className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 disabled:opacity-30"
+							className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 enabled:active:bg-slate-300 enabled:active:text-blue-700 disabled:opacity-30"
 							title={history.undoDescription ? `Undo: ${history.undoDescription}` : "Undo"}
 							aria-label="Undo"
 						>
@@ -133,7 +133,7 @@ export default function EditorPane({
 						<Toolbar.Button
 							onClick={history.onRedo}
 							disabled={!history.canRedo}
-							className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 disabled:opacity-30"
+							className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 enabled:active:bg-slate-300 enabled:active:text-blue-700 disabled:opacity-30"
 							title={history.redoDescription ? `Redo: ${history.redoDescription}` : "Redo"}
 							aria-label="Redo"
 						>

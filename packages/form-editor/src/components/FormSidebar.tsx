@@ -47,7 +47,7 @@ const FormSidebar = ({
 					<Toolbar.Button
 						onClick={onNewForm}
 						title="New form"
-						className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors hover:bg-slate-200 hover:text-blue-600"
+						className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors hover:bg-slate-200 hover:text-blue-600 active:bg-slate-300 active:text-blue-700"
 						aria-label="New form"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -59,7 +59,7 @@ const FormSidebar = ({
 						onClick={onDeleteForm}
 						disabled={!selectedForm}
 						title="Delete selected form"
-						className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-red-600 disabled:opacity-30"
+						className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-red-600 enabled:active:bg-slate-300 enabled:active:text-red-700 disabled:opacity-30"
 						aria-label="Delete selected form"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
