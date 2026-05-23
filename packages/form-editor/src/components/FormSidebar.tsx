@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from "react";
+import * as Toolbar from "@radix-ui/react-toolbar";
 
 interface FormSidebarProps {
 	forms: string[];
@@ -42,22 +43,24 @@ const FormSidebar = ({
 			{/* Header — height matches the tab bar in EditorPane (py-3 + text-sm) */}
 			<div className="flex items-center justify-between px-3 py-[7px] border-b border-slate-200 bg-slate-50">
 				<span className="text-sm font-semibold text-slate-600 tracking-wide">Forms</span>
-				<div className="flex items-center gap-0">
-					<button
+				<Toolbar.Root className="flex items-center gap-0" aria-label="Form actions">
+					<Toolbar.Button
 						onClick={onNewForm}
 						title="New form"
-						className="text-slate-600 hover:text-blue-600 rounded p-2 hover:bg-slate-200 transition-colors"
+						className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors hover:bg-slate-200 hover:text-blue-600"
+						aria-label="New form"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<line x1="12" y1="5" x2="12" y2="19" />
 							<line x1="5" y1="12" x2="19" y2="12" />
 						</svg>
-					</button>
-					<button
+					</Toolbar.Button>
+					<Toolbar.Button
 						onClick={onDeleteForm}
 						disabled={!selectedForm}
 						title="Delete selected form"
-						className="text-slate-600 hover:text-red-600 rounded p-2 hover:bg-slate-200 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+						className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-red-600 disabled:opacity-30"
+						aria-label="Delete selected form"
 					>
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 							<polyline points="3 6 5 6 21 6" />
@@ -66,8 +69,8 @@ const FormSidebar = ({
 							<path d="M14 11v6" />
 							<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
 						</svg>
-					</button>
-				</div>
+					</Toolbar.Button>
+				</Toolbar.Root>
 			</div>
 
 			{/* Form list */}

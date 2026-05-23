@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
+import * as Toolbar from "@radix-ui/react-toolbar";
 import Editor from "@monaco-editor/react";
 import AIChat from "./AIChat";
 import AIChatJsonl from "./AIChatJsonl";
@@ -107,12 +108,11 @@ export default function EditorPane({
 					</Tabs.Trigger>
 				</Tabs.List>
 				{history && (
-					<div className="flex items-center gap-1 px-2">
-						<button
-							type="button"
+					<Toolbar.Root className="flex items-center gap-0 px-2" aria-label="Editor history actions">
+						<Toolbar.Button
 							onClick={history.onUndo}
 							disabled={!history.canUndo}
-							className="inline-flex h-8 w-8 items-center justify-center rounded border border-slate-300 bg-white text-slate-700 enabled:hover:bg-slate-100 disabled:opacity-50"
+							className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 disabled:opacity-30"
 							title={history.undoDescription ? `Undo: ${history.undoDescription}` : "Undo"}
 							aria-label="Undo"
 						>
@@ -129,12 +129,11 @@ export default function EditorPane({
 								<path d="M9 14 4 9l5-5" />
 								<path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
 							</svg>
-						</button>
-						<button
-							type="button"
+						</Toolbar.Button>
+						<Toolbar.Button
 							onClick={history.onRedo}
 							disabled={!history.canRedo}
-							className="inline-flex h-8 w-8 items-center justify-center rounded border border-slate-300 bg-white text-slate-700 enabled:hover:bg-slate-100 disabled:opacity-50"
+							className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 disabled:opacity-30"
 							title={history.redoDescription ? `Redo: ${history.redoDescription}` : "Redo"}
 							aria-label="Redo"
 						>
@@ -151,8 +150,8 @@ export default function EditorPane({
 								<path d="m15 14 5-5-5-5" />
 								<path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
 							</svg>
-						</button>
-					</div>
+						</Toolbar.Button>
+					</Toolbar.Root>
 				)}
 			</div>
 

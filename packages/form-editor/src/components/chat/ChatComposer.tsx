@@ -61,7 +61,7 @@ export function ChatComposer({ placeholder }: { placeholder: string }) {
 				/>
 				<ComposerPrimitive.Send
 					disabled={isRunning}
-					className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-slate-300 disabled:cursor-not-allowed transition-colors"
+					className="px-6 py-2 bg-blue-500 text-white rounded-lg enabled:hover:bg-blue-600 disabled:bg-slate-300 transition-colors"
 				>
 					{isRunning ? "Generating..." : "Send"}
 				</ComposerPrimitive.Send>
