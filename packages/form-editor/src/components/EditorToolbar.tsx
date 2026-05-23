@@ -69,7 +69,7 @@ const EditorToolbar = ({
 							className="bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded text-sm"
 							title="Export current form as Fillout JSON"
 						>
-							Export Fillout
+							Export to Fillout
 						</button>
 					</>
 				)}

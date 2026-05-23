@@ -8,12 +8,25 @@
  * Adapted from the FilloutFormBuilder reverse-engineered format.
  */
 
-import { randomBytes } from "crypto";
-
 // ─── ID generation ─────────────────────────────────────────────────────────────
 
 export function genId(): string {
-  return randomBytes(16).toString("base64url").slice(0, 22);
+  const bytes = new Uint8Array(16);
+  if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    // Node.js fallback
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { randomBytes } = require("crypto") as typeof import("crypto");
+    const buf = randomBytes(16);
+    bytes.set(buf);
+  }
+  // Base64url encode without padding, matching Fillout's 22-char IDs
+  const base64 = btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  return base64.slice(0, 22);
 }
 
 // ─── Logic field primitives ────────────────────────────────────────────────────
