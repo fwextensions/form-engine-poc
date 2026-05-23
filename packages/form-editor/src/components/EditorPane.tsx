@@ -1,12 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import Editor from "@monaco-editor/react";
 import AIChat from "./AIChat";
 import AIChatJsonl from "./AIChatJsonl";
 import type { SchemaComponent, PatchOp } from "@/lib/jsonl";
 import type { UIMessage } from "ai";
+import type { editor } from "monaco-editor";
 
 interface EditorPaneProps {
 	schema: string;
@@ -48,6 +49,32 @@ export default function EditorPane({
 	initialMessages,
 	jsonlMode,
 }: EditorPaneProps) {
+	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+	const localSchemaEchoesRef = useRef<Set<string>>(new Set());
+	const previousFormIdRef = useRef(formId);
+
+	useEffect(() => {
+		const editor = editorRef.current;
+		const model = editor?.getModel();
+		const hasChangedForm = previousFormIdRef.current !== formId;
+		previousFormIdRef.current = formId;
+		if (!editor || !model) return;
+
+		if (hasChangedForm) {
+			localSchemaEchoesRef.current.clear();
+		}
+		if (model.getValue() === schema) return;
+		if (!hasChangedForm && localSchemaEchoesRef.current.delete(schema)) {
+			return;
+		}
+
+		const selection = editor.getSelection();
+		model.setValue(schema);
+		if (selection) {
+			editor.setSelection(selection);
+		}
+	}, [schema, formId]);
+
 	return (
 		<Tabs.Root
 			value={activeTab}
@@ -75,8 +102,15 @@ export default function EditorPane({
 				<Editor
 					height="100%"
 					language="yaml"
-					value={schema}
-					onChange={(value) => onSchemaChange(value || "")}
+					defaultValue={schema}
+					onMount={(editor) => {
+						editorRef.current = editor;
+					}}
+					onChange={(value) => {
+						const nextSchema = value || "";
+						localSchemaEchoesRef.current.add(nextSchema);
+						onSchemaChange(nextSchema);
+					}}
 					options={{
 						minimap: { enabled: false },
 						scrollBeyondLastLine: false,

@@ -41,8 +41,6 @@ export function parseRootFormSchema(rawSchema: unknown): { config: any;	errors?:
 		return { config: validatedConfig };
 	} catch (error) {
 		if (error instanceof z.ZodError) {
-			console.error(`Validation errors for root component "${componentType}":`, error.flatten());
-
 			return { config: null, errors: error };
 		}
 

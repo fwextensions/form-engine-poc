@@ -390,7 +390,7 @@ export default function FormEditorPage() {
 		(pageComponents[currentPage] as { title?: string } | undefined)?.title ??
 		formConfig?.title ??
 		formMeta?.formTitle ??
-		"Form";
+		"Untitled Form";
 
 	// Build history props for toolbar
 	const historyProps = useMemo(() => {
