@@ -472,7 +472,7 @@ export default function FormEditorPage() {
 					onDeleteForm={handleDeleteForm}
 				/>
 				<Group orientation="horizontal" className="flex-grow min-w-0">
-					<Panel defaultSize={50}>
+					<Panel id="editorPanel" defaultSize={"50%"} minSize={100}>
 						<EditorPane
 							schema={yamlInput}
 							onSchemaChange={setYamlInput}
@@ -486,7 +486,7 @@ export default function FormEditorPage() {
 						/>
 					</Panel>
 					<Separator className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
-					<Panel defaultSize={50}>
+					<Panel id="previewPanel" defaultSize={"50%"} minSize={100}>
 						<div className="p-6 h-full overflow-auto">
 							{error && <pre className="error-message">{error}</pre>}
 							{error && formOutput ? (
