@@ -3,6 +3,8 @@
 import React, { useEffect, useRef } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Toolbar from "@radix-ui/react-toolbar";
+import ToolbarIconButton from "./ToolbarIconButton";
+import { UndoIcon, RedoIcon } from "./icons";
 import Editor from "@monaco-editor/react";
 import AIChat from "./AIChat";
 import AIChatJsonl from "./AIChatJsonl";
@@ -109,48 +111,22 @@ export default function EditorPane({
 				</Tabs.List>
 				{history && (
 					<Toolbar.Root className="flex items-center gap-0 px-2" aria-label="Editor history actions">
-						<Toolbar.Button
+						<ToolbarIconButton
 							onClick={history.onUndo}
 							disabled={!history.canUndo}
-							className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 enabled:active:bg-slate-300 enabled:active:text-blue-700 disabled:opacity-30"
 							title={history.undoDescription ? `Undo: ${history.undoDescription}` : "Undo"}
 							aria-label="Undo"
 						>
-							<svg
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								className="h-4 w-4"
-								aria-hidden="true"
-							>
-								<path d="M9 14 4 9l5-5" />
-								<path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
-							</svg>
-						</Toolbar.Button>
-						<Toolbar.Button
+							<UndoIcon />
+						</ToolbarIconButton>
+						<ToolbarIconButton
 							onClick={history.onRedo}
 							disabled={!history.canRedo}
-							className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-blue-600 enabled:active:bg-slate-300 enabled:active:text-blue-700 disabled:opacity-30"
 							title={history.redoDescription ? `Redo: ${history.redoDescription}` : "Redo"}
 							aria-label="Redo"
 						>
-							<svg
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								strokeWidth="2"
-								strokeLinecap="round"
-								strokeLinejoin="round"
-								className="h-4 w-4"
-								aria-hidden="true"
-							>
-								<path d="m15 14 5-5-5-5" />
-								<path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
-							</svg>
-						</Toolbar.Button>
+							<RedoIcon />
+						</ToolbarIconButton>
 					</Toolbar.Root>
 				)}
 			</div>

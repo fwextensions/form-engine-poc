@@ -1,5 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import * as Toolbar from "@radix-ui/react-toolbar";
+import ToolbarIconButton from "./ToolbarIconButton";
+import { PlusIcon, TrashIcon } from "./icons";
 
 interface FormSidebarProps {
 	forms: string[];
@@ -44,32 +46,20 @@ const FormSidebar = ({
 			<div className="flex items-center justify-between px-3 py-[7px] border-b border-slate-200 bg-slate-50">
 				<span className="text-sm font-semibold text-slate-600 tracking-wide">Forms</span>
 				<Toolbar.Root className="flex items-center gap-0" aria-label="Form actions">
-					<Toolbar.Button
+					<ToolbarIconButton
 						onClick={onNewForm}
 						title="New form"
-						className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors hover:bg-slate-200 hover:text-blue-600 active:bg-slate-300 active:text-blue-700"
-						aria-label="New form"
 					>
-						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-							<line x1="12" y1="5" x2="12" y2="19" />
-							<line x1="5" y1="12" x2="19" y2="12" />
-						</svg>
-					</Toolbar.Button>
-					<Toolbar.Button
+						<PlusIcon />
+					</ToolbarIconButton>
+					<ToolbarIconButton
 						onClick={onDeleteForm}
 						disabled={!selectedForm}
 						title="Delete selected form"
-						className="inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:hover:text-red-600 enabled:active:bg-slate-300 enabled:active:text-red-700 disabled:opacity-30"
-						aria-label="Delete selected form"
+						variant="red"
 					>
-						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-							<polyline points="3 6 5 6 21 6" />
-							<path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-							<path d="M10 11v6" />
-							<path d="M14 11v6" />
-							<path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-						</svg>
-					</Toolbar.Button>
+						<TrashIcon />
+					</ToolbarIconButton>
 				</Toolbar.Root>
 			</div>
 
