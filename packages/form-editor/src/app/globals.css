@@ -37,46 +37,53 @@
 	}
 
 	/* Field highlight animation for patch card clicks */
-	@keyframes field-highlight-pulse {
-		0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
-		70% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
-		100% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0); }
+	@keyframes field-highlight-ring {
+		0%   { outline-color: rgba(59, 130, 246, 0.7); outline-offset: 0px; }
+		100% { outline-color: rgba(59, 130, 246, 0);   outline-offset: 8px; }
 	}
 
 	.field-highlight {
-		animation: field-highlight-pulse 0.6s ease-out;
+		animation: field-highlight-ring 0.7s ease-out forwards;
+		outline: 2px solid rgba(59, 130, 246, 0.7);
 		border-radius: 6px;
-		background-color: rgba(59, 130, 246, 0.08);
-		transition: background-color 2s ease-out 1s;
+		background-color: rgba(59, 130, 246, 0.12);
 	}
 
-	.field-highlight-fade {
+	.field-highlight.field-highlight-fade {
 		background-color: transparent;
+		transition: background-color 2.5s ease-out;
 	}
 
 	/* Edge highlight for remove ops — shows where the field used to be */
 	@keyframes field-edge-pulse-bottom {
-		0% { box-shadow: inset 0 -3px 0 0 rgba(239, 68, 68, 0.6); }
-		100% { box-shadow: inset 0 -3px 0 0 rgba(239, 68, 68, 0); }
+		0%   { outline-color: rgba(239, 68, 68, 0.7); outline-offset: 0px; }
+		100% { outline-color: rgba(239, 68, 68, 0);   outline-offset: 6px; }
 	}
 
 	@keyframes field-edge-pulse-top {
-		0% { box-shadow: inset 0 3px 0 0 rgba(239, 68, 68, 0.6); }
-		100% { box-shadow: inset 0 3px 0 0 rgba(239, 68, 68, 0); }
+		0%   { outline-color: rgba(239, 68, 68, 0.7); outline-offset: 0px; }
+		100% { outline-color: rgba(239, 68, 68, 0);   outline-offset: 6px; }
+	}
+
+	.field-highlight-edge-bottom,
+	.field-highlight-edge-top {
+		border-radius: 6px;
+		outline-style: solid;
+		outline-width: 2px;
 	}
 
 	.field-highlight-edge-bottom {
-		border-radius: 6px;
 		animation: field-edge-pulse-bottom 2s ease-out forwards;
+		outline-color: rgba(239, 68, 68, 0.7);
 	}
 
 	.field-highlight-edge-top {
-		border-radius: 6px;
 		animation: field-edge-pulse-top 2s ease-out forwards;
+		outline-color: rgba(239, 68, 68, 0.7);
 	}
 
 	.field-highlight-edge-fade {
-		box-shadow: none !important;
+		outline-color: transparent !important;
 	}
 
 	/* Basic styling for error messages */

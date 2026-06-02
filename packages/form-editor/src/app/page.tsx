@@ -417,14 +417,17 @@ export default function FormEditorPage() {
 				});
 			};
 
-			if (pageIndex !== null && pageIndex !== currentPage) {
-				formRef.current?.goToPage(pageIndex);
-				setTimeout(doHighlight, 100);
-			} else {
-				doHighlight();
+			if (pageIndex !== null) {
+				const currentPageIndex = formRef.current?.getMeta().currentPageIndex;
+				if (currentPageIndex !== undefined && currentPageIndex !== pageIndex) {
+					formRef.current?.goToPage(pageIndex);
+					setTimeout(doHighlight, 150);
+					return;
+				}
 			}
+			doHighlight();
 		},
-		[schemaJson, currentPage],
+		[schemaJson],
 	);
 
 	const formOutput = formConfig ? (
