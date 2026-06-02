@@ -5,8 +5,9 @@ const config: Config = {
 		"./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
 		"./src/components/**/*.{js,ts,jsx,tsx,mdx}",
 		"./src/app/**/*.{js,ts,jsx,tsx,mdx}",
-		// Path to the form-engine package
 		"../form-engine/src/**/*.{js,ts,jsx,tsx}",
+		"./node_modules/streamdown/dist/*.js",
+		"./node_modules/@streamdown/code/dist/*.js",
 	],
 	theme: {
 		extend: {

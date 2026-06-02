@@ -5,7 +5,6 @@ import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
 	useThread,
-	useAssistantRuntime,
 } from "@assistant-ui/react";
 import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import {
@@ -57,7 +56,6 @@ function AIChatJsonlInner({
 	onOpenSettings: () => void;
 }) {
 	const thread = useThread();
-	const runtime = useAssistantRuntime();
 
 	const isClient = useSyncExternalStore(
 		subscribeToClientSnapshot,
@@ -80,43 +78,38 @@ function AIChatJsonlInner({
 		});
 	}, []);
 
-	const handleExampleClick = (prompt: string) => {
-		if (!hasKey) return;
-		runtime.thread.append({
-			role: "user",
-			content: [{ type: "text", text: prompt }],
-		});
-	};
-
-	if (thread.messages.length === 0) {
-		return (
-			<EmptyState
-				isClient={isClient}
-				hasKey={hasKey}
-				onOpenSettings={onOpenSettings}
-				onExampleClick={handleExampleClick}
-			/>
-		);
-	}
+	const isEmpty = thread.messages.length === 0;
 
 	return (
 		<div className="flex flex-col h-full bg-white">
-			<div className="flex-1 overflow-hidden">
-				<ThreadPrimitive.Root className="h-full">
-					<ThreadPrimitive.Viewport className="h-full overflow-y-auto p-4">
-						<ThreadPrimitive.Messages>
-							{({ message }) => {
-								if (message.role === "user") return <ChatMessage />;
-								return <ChatMessage />;
-							}}
-						</ThreadPrimitive.Messages>
-					</ThreadPrimitive.Viewport>
-					<ThreadPrimitive.ScrollToBottom className="absolute bottom-4 right-4" />
-				</ThreadPrimitive.Root>
-			</div>
-			<div className="border-t border-slate-200 p-4">
-				<ChatComposer placeholder="Ask me to modify the form..." />
-			</div>
+			<ThreadPrimitive.Root className="flex-1 overflow-hidden relative">
+				{isEmpty ? (
+					<EmptyState
+						isClient={isClient}
+						hasKey={hasKey}
+						onOpenSettings={onOpenSettings}
+					/>
+				) : (
+					<>
+						<ThreadPrimitive.Viewport className="h-full overflow-y-auto p-4">
+							<ThreadPrimitive.Messages>
+								{({ message }) => {
+									if (message.role === "user") return <ChatMessage />;
+									return <ChatMessage />;
+								}}
+							</ThreadPrimitive.Messages>
+						</ThreadPrimitive.Viewport>
+						<ThreadPrimitive.ScrollToBottom className="absolute bottom-4 right-4" />
+					</>
+				)}
+			</ThreadPrimitive.Root>
+			{hasKey && (
+				<div className="border-t border-slate-200 p-4">
+					<ChatComposer
+						placeholder={isEmpty ? "Describe your form..." : "Ask me to modify the form..."}
+					/>
+				</div>
+			)}
 		</div>
 	);
 }

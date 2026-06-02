@@ -1,6 +1,6 @@
 "use client";
 
-import { ChatComposer } from "./ChatComposer";
+import { ThreadPrimitive } from "@assistant-ui/react";
 
 const examplePrompts = [
 	"Create a contact form with name, email, and message fields",
@@ -12,11 +12,9 @@ interface EmptyStateProps {
 	isClient: boolean;
 	hasKey: boolean;
 	onOpenSettings: () => void;
-	onExampleClick: (prompt: string) => void;
 }
 
-export function EmptyState({ isClient, hasKey, onOpenSettings, onExampleClick }: EmptyStateProps) {
-	// Show loading state during SSR/hydration
+export function EmptyState({ isClient, hasKey, onOpenSettings }: EmptyStateProps) {
 	if (!isClient) {
 		return (
 			<div className="flex flex-col h-full bg-white">
@@ -29,10 +27,8 @@ export function EmptyState({ isClient, hasKey, onOpenSettings, onExampleClick }:
 
 	return (
 		<div className="flex flex-col h-full bg-white">
-			{/* Empty state content */}
 			<div className="flex-1 flex flex-col items-center justify-center p-8">
 				{!hasKey ? (
-					// API key not configured
 					<div className="text-center max-w-md">
 						<div className="mb-4">
 							<svg
@@ -64,7 +60,6 @@ export function EmptyState({ isClient, hasKey, onOpenSettings, onExampleClick }:
 						</button>
 					</div>
 				) : (
-					// API key configured - show example prompts
 					<div className="text-center max-w-2xl">
 						<div className="mb-6">
 							<svg
@@ -89,31 +84,25 @@ export function EmptyState({ isClient, hasKey, onOpenSettings, onExampleClick }:
 							the YAML schema for you.
 						</p>
 
-						{/* Example prompts */}
 						<div className="space-y-3">
 							<p className="text-sm font-medium text-slate-700 mb-3">
 								Try these examples:
 							</p>
 							{examplePrompts.map((prompt, index) => (
-								<button
+								<ThreadPrimitive.Suggestion
 									key={index}
-									onClick={() => onExampleClick(prompt)}
-									className="w-full text-left p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors"
+									prompt={prompt}
+									method="replace"
+									autoSend
+									className="w-full text-left p-4 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer"
 								>
 									<p className="text-sm text-slate-700">{prompt}</p>
-								</button>
+								</ThreadPrimitive.Suggestion>
 							))}
 						</div>
 					</div>
 				)}
 			</div>
-
-			{/* Message input */}
-			{hasKey && (
-				<div className="border-t border-slate-200 p-4">
-					<ChatComposer placeholder="Describe your form..." />
-				</div>
-			)}
 		</div>
 	);
 }
