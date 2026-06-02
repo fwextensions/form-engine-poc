@@ -30,6 +30,7 @@ export default function SettingsDialog({
 	const [awsSecretAccessKey, setAwsSecretAccessKey] = useState("");
 	const [awsRegion, setAwsRegion] = useState("");
 	const [bedrockApiKey, setBedrockApiKey] = useState("");
+	const [googleApiKey, setGoogleApiKey] = useState("");
 
 	// Load settings when dialog opens
 	useEffect(() => {
@@ -47,6 +48,7 @@ export default function SettingsDialog({
 				setAwsSecretAccessKey(settings.awsSecretAccessKey || "");
 				setAwsRegion(settings.awsRegion || "");
 				setBedrockApiKey(settings.bedrockApiKey || "");
+				setGoogleApiKey(settings.googleApiKey || "");
 			});
 		}
 	}, [open]);
@@ -65,6 +67,7 @@ export default function SettingsDialog({
 				awsSecretAccessKey: awsSecretAccessKey.trim() || undefined,
 				awsRegion: awsRegion.trim() || undefined,
 				bedrockApiKey: bedrockApiKey.trim() || undefined,
+				googleApiKey: googleApiKey.trim() || undefined,
 			});
 			onOpenChange(false);
 		} catch (error) {
@@ -309,6 +312,29 @@ export default function SettingsDialog({
 								Leave empty to use the default model for this provider.
 							</p>
 						</div>
+
+						{/* Google API Key for PDF Extraction (when not using Google as primary) */}
+						{provider !== "google" && (
+							<div>
+								<label
+									htmlFor="googleApiKey"
+									className="block text-sm font-medium text-slate-700 mb-1"
+								>
+									Google API Key (PDF Extraction)
+								</label>
+								<input
+									id="googleApiKey"
+									type="password"
+									value={googleApiKey}
+									onChange={(e) => setGoogleApiKey(e.target.value)}
+									placeholder="Optional — for PDF field extraction via Gemini"
+									className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								/>
+								<p className="text-xs text-slate-500 mt-1">
+									Used by Gemini Flash to extract form fields from dropped PDFs.
+								</p>
+							</div>
+						)}
 					</div>
 
 					{/* Action Buttons */}

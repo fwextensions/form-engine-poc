@@ -23,6 +23,8 @@ export interface LLMSettings {
 	awsSecretAccessKey?: string;
 	awsRegion?: string;
 	bedrockApiKey?: string;
+	// Google API key for PDF extraction (used when Google isn't the primary provider)
+	googleApiKey?: string;
 }
 
 /**
@@ -108,6 +110,7 @@ export function getSettings(): LLMSettings {
 			awsSecretAccessKey: typeof parsed.awsSecretAccessKey === "string" ? parsed.awsSecretAccessKey : undefined,
 			awsRegion: typeof parsed.awsRegion === "string" ? parsed.awsRegion : undefined,
 			bedrockApiKey: typeof parsed.bedrockApiKey === "string" ? parsed.bedrockApiKey : undefined,
+			googleApiKey: typeof parsed.googleApiKey === "string" ? parsed.googleApiKey : undefined,
 		};
 	} catch (error) {
 		// Handle JSON parse errors or other exceptions
@@ -138,6 +141,7 @@ export function saveSettings(settings: LLMSettings): void {
 			awsSecretAccessKey: settings.awsSecretAccessKey,
 			awsRegion: settings.awsRegion,
 			bedrockApiKey: settings.bedrockApiKey,
+			googleApiKey: settings.googleApiKey,
 		};
 
 		window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(toStore));
@@ -148,6 +152,17 @@ export function saveSettings(settings: LLMSettings): void {
 			cause: error,
 		});
 	}
+}
+
+/**
+ * Gets a Google API key for PDF extraction.
+ * Uses the dedicated googleApiKey if set, otherwise falls back to apiKey when Google is the provider.
+ */
+export function getGoogleApiKeyForExtraction(): string | undefined {
+	const settings = getSettings();
+	if (settings.googleApiKey) return settings.googleApiKey;
+	if (settings.provider === "google" && settings.apiKey) return settings.apiKey;
+	return undefined;
 }
 
 // Cache the server credential status

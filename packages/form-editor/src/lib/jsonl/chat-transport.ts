@@ -10,6 +10,7 @@ import type { UIMessage } from "ai";
 import { getSettings, getModelForProvider, getServerCredentialStatus } from "@/lib/settings";
 import type { JsonlSchemaGenerator } from "./schema-generator";
 import type { SchemaComponent } from "./types";
+import type { PendingPdfContext } from "@/lib/pdf-extraction";
 
 /**
  * Creates the chat transport for JSONL patch mode.
@@ -20,6 +21,7 @@ import type { SchemaComponent } from "./types";
 export function createJsonlChatTransport(
 	generator: JsonlSchemaGenerator,
 	getCurrentSchema: () => SchemaComponent | null,
+	getPendingPdfContext?: () => PendingPdfContext | null,
 ): AssistantChatTransport<UIMessage> {
 	return new AssistantChatTransport({
 		api: "/api/llm",
@@ -56,35 +58,55 @@ export function createJsonlChatTransport(
 			return requestBody;
 		},
 		prepareSendMessagesRequest: ({ messages, body }) => {
+			// Consume pending PDF context before transforming messages
+			const pdfContext = getPendingPdfContext?.() ?? null;
+
 			const transformedMessages = messages.map((msg, index) => {
 				// Only transform the last user message
 				if (msg.role === "user" && index === messages.length - 1) {
 					const currentSchema = getCurrentSchema();
 					const hasSchema = currentSchema !== null;
 
-					const originalText =
+					let originalText =
 						msg.parts
 							?.filter((part: any) => part.type === "text")
 							.map((part: any) => part.text)
 							.join("") || "";
 
+					// Prepend PDF extraction context if available
+					if (pdfContext?.type === "extraction") {
+						const extractionJson = JSON.stringify(pdfContext.result, null, 2);
+						originalText =
+							`I have a PDF form ("${pdfContext.filename}") whose fields have been extracted. ` +
+							`Here is the extracted structure:\n\n\`\`\`json\n${extractionJson}\n\`\`\`\n\n` +
+							(originalText || "Please recreate this form based on the extracted fields.");
+					}
+
 					let fullPrompt: string;
 
 					if (hasSchema) {
-						// Edit mode: include current schema as JSON
 						const schemaJson = JSON.stringify(currentSchema, null, 2);
 						fullPrompt = generator.buildEditPrompt(
 							schemaJson,
 							originalText,
 						);
 					} else {
-						// Create mode: no existing schema
 						fullPrompt = generator.buildCreatePrompt(originalText);
 					}
 
 					// Preserve non-text parts (e.g. image attachments)
 					const nonTextParts =
 						msg.parts?.filter((part: any) => part.type !== "text") || [];
+
+					// If attaching PDF directly, add as file part
+					if (pdfContext?.type === "attachment") {
+						nonTextParts.push({
+							type: "file",
+							url: pdfContext.dataUrl,
+							mediaType: "application/pdf",
+							filename: pdfContext.filename,
+						} as any);
+					}
 
 					return {
 						...msg,
