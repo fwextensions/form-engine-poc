@@ -6,6 +6,8 @@ export type PatchWithResult = {
 	/** undefined for message ops (always succeed, no apply step) */
 	success?: boolean;
 	error?: string;
+	/** For remove ops: ID of a nearby field to highlight instead */
+	nearFieldId?: string;
 };
 
 export type ValidationResult = {

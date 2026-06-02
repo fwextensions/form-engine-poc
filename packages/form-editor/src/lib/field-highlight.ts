@@ -1,7 +1,8 @@
 import type { SchemaComponent } from "@/lib/jsonl/types";
-import type { PatchOp } from "@/lib/jsonl/types";
+import type { PatchWithResult } from "@/components/chat/ValidationContext";
 
-export function getFieldIdFromPatch(patch: PatchOp): string | null {
+export function getHighlightTarget(card: PatchWithResult): string | null {
+	const { patch, nearFieldId } = card;
 	switch (patch.op) {
 		case "add":
 			return patch.component.id ?? null;
@@ -9,6 +10,7 @@ export function getFieldIdFromPatch(patch: PatchOp): string | null {
 		case "move":
 			return patch.id;
 		case "remove":
+			return nearFieldId ?? null;
 		case "replace":
 		case "message":
 			return null;

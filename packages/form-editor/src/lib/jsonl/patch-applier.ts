@@ -20,6 +20,8 @@ export interface ApplyResult {
 	error?: string;
 	/** Collected message text from message ops */
 	message?: string;
+	/** For remove ops: the nearest sibling that can be highlighted instead */
+	removedNear?: { id: string; position: "before" | "after" };
 }
 
 /**
@@ -209,12 +211,28 @@ function applyRemove(schema: SchemaComponent, patch: RemoveOp): ApplyResult {
 		return { schema, success: false, error: "Cannot remove the root component" };
 	}
 
+	// Find the component's location before removing so we can record a neighbor
+	const found = findById(schema, patch.id);
+	let removedNear: { id: string; position: "before" | "after" } | undefined;
+
+	if (found?.parent?.children) {
+		const siblings = found.parent.children;
+		const idx = found.index;
+		if (idx > 0 && siblings[idx - 1].id) {
+			removedNear = { id: siblings[idx - 1].id!, position: "after" };
+		} else if (idx < siblings.length - 1 && siblings[idx + 1].id) {
+			removedNear = { id: siblings[idx + 1].id!, position: "before" };
+		} else if (found.parent.id) {
+			removedNear = { id: found.parent.id, position: "after" };
+		}
+	}
+
 	const removed = removeById(schema, patch.id);
 	if (!removed) {
 		return { schema, success: false, error: `Component not found: ${patch.id}` };
 	}
 
-	return { schema, success: true };
+	return { schema, success: true, removedNear };
 }
 
 function applyMove(schema: SchemaComponent, patch: MoveOp): ApplyResult {

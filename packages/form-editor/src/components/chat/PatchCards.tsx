@@ -3,7 +3,7 @@
 import type { PatchWithResult } from "./ValidationContext";
 import type { PatchOp } from "@/lib/jsonl/types";
 import { useFieldHighlight } from "./FieldHighlightContext";
-import { getFieldIdFromPatch } from "@/lib/field-highlight";
+import { getHighlightTarget } from "@/lib/field-highlight";
 
 type OpStyle = {
 	badge: string;
@@ -50,7 +50,9 @@ function opDetail(patch: PatchOp): string | null {
 	}
 }
 
-function PatchCard({ patch, success, error, onHighlight }: PatchWithResult & { onHighlight?: (fieldId: string) => void }) {
+function PatchCard({ card, onHighlight }: { card: PatchWithResult; onHighlight?: (fieldId: string) => void }) {
+	const { patch, success, error } = card;
+
 	if (patch.op === "message") {
 		return <p className="text-sm text-slate-700 py-1">{patch.text}</p>;
 	}
@@ -58,7 +60,7 @@ function PatchCard({ patch, success, error, onHighlight }: PatchWithResult & { o
 	const style = OP_STYLES[patch.op];
 	const title = opTitle(patch);
 	const detail = opDetail(patch);
-	const fieldId = getFieldIdFromPatch(patch);
+	const fieldId = getHighlightTarget(card);
 	const isClickable = !!fieldId && !!onHighlight;
 
 	const handleClick = () => {
@@ -100,7 +102,7 @@ export function PatchCards({ cards }: { cards: PatchWithResult[] }) {
 	return (
 		<div className="space-y-1.5">
 			{cards.map((card, i) => (
-				<PatchCard key={i} patch={card.patch} success={card.success} error={card.error} onHighlight={onHighlight ?? undefined} />
+				<PatchCard key={i} card={card} onHighlight={onHighlight ?? undefined} />
 			))}
 		</div>
 	);
