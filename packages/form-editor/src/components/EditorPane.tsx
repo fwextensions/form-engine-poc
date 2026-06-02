@@ -27,6 +27,8 @@ interface EditorPaneProps {
 		currentSchema: SchemaComponent | null;
 		onSchemaChange: (schema: SchemaComponent, patches: PatchOp[], userMessage: string) => void;
 	};
+	/** Callback to highlight a field in the form preview */
+	onFieldHighlight?: (fieldId: string) => void;
 	history?: {
 		canUndo: boolean;
 		canRedo: boolean;
@@ -60,6 +62,7 @@ export default function EditorPane({
 	initialMessages,
 	jsonlMode,
 	history,
+	onFieldHighlight,
 }: EditorPaneProps) {
 	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 	const localSchemaEchoesRef = useRef<Set<string>>(new Set());
@@ -168,6 +171,7 @@ export default function EditorPane({
 						currentSchema={jsonlMode.currentSchema}
 						onSchemaChange={jsonlMode.onSchemaChange}
 						onOpenSettings={onOpenSettings}
+						onFieldHighlight={onFieldHighlight}
 					/>
 				) : (
 					<AIChat

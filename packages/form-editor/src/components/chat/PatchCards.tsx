@@ -2,6 +2,8 @@
 
 import type { PatchWithResult } from "./ValidationContext";
 import type { PatchOp } from "@/lib/jsonl/types";
+import { useFieldHighlight } from "./FieldHighlightContext";
+import { getFieldIdFromPatch } from "@/lib/field-highlight";
 
 type OpStyle = {
 	badge: string;
@@ -48,7 +50,7 @@ function opDetail(patch: PatchOp): string | null {
 	}
 }
 
-function PatchCard({ patch, success, error }: PatchWithResult) {
+function PatchCard({ patch, success, error, onHighlight }: PatchWithResult & { onHighlight?: (fieldId: string) => void }) {
 	if (patch.op === "message") {
 		return <p className="text-sm text-slate-700 py-1">{patch.text}</p>;
 	}
@@ -56,9 +58,21 @@ function PatchCard({ patch, success, error }: PatchWithResult) {
 	const style = OP_STYLES[patch.op];
 	const title = opTitle(patch);
 	const detail = opDetail(patch);
+	const fieldId = getFieldIdFromPatch(patch);
+	const isClickable = !!fieldId && !!onHighlight;
+
+	const handleClick = () => {
+		if (fieldId && onHighlight) onHighlight(fieldId);
+	};
 
 	return (
-		<div className={`flex items-start gap-2 pl-3 pr-2 py-2 ${style.border} bg-white rounded-r-md`}>
+		<div
+			className={`flex items-start gap-2 pl-3 pr-2 py-2 ${style.border} bg-white rounded-r-md ${isClickable ? "cursor-pointer hover:bg-slate-50 transition-colors" : ""}`}
+			onClick={isClickable ? handleClick : undefined}
+			role={isClickable ? "button" : undefined}
+			tabIndex={isClickable ? 0 : undefined}
+			onKeyDown={isClickable ? (e) => { if (e.key === "Enter" || e.key === " ") handleClick(); } : undefined}
+		>
 			<span className={`font-mono text-xs font-semibold px-1.5 py-0.5 rounded flex-shrink-0 ${style.badge}`}>
 				{patch.op.toUpperCase()}
 			</span>
@@ -81,10 +95,12 @@ function PatchCard({ patch, success, error }: PatchWithResult) {
 }
 
 export function PatchCards({ cards }: { cards: PatchWithResult[] }) {
+	const onHighlight = useFieldHighlight();
+
 	return (
 		<div className="space-y-1.5">
 			{cards.map((card, i) => (
-				<PatchCard key={i} patch={card.patch} success={card.success} error={card.error} />
+				<PatchCard key={i} patch={card.patch} success={card.success} error={card.error} onHighlight={onHighlight ?? undefined} />
 			))}
 		</div>
 	);

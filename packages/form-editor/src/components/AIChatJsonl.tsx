@@ -29,6 +29,7 @@ import {
 	type ValidationResult,
 	type ValidationResults,
 } from "./chat/ValidationContext";
+import { FieldHighlightContext, type FieldHighlightFn } from "./chat/FieldHighlightContext";
 import { ChatMessage } from "./chat/ChatMessage";
 import { ChatComposer } from "./chat/ChatComposer";
 import { EmptyState } from "./chat/EmptyState";
@@ -43,6 +44,8 @@ interface AIChatJsonlProps {
 	onOpenSettings: () => void;
 	/** Pre-loaded messages from localStorage (loaded by parent before mount) */
 	initialMessages?: UIMessage[];
+	/** Callback to highlight a field in the form preview */
+	onFieldHighlight?: FieldHighlightFn;
 }
 
 /**
@@ -133,6 +136,7 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 		onSchemaChange,
 		onOpenSettings,
 		initialMessages,
+		onFieldHighlight,
 	} = props;
 	const [validationResults, setValidationResults] = useState<ValidationResults>(
 		new Map(),
@@ -329,7 +333,9 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
 			<ValidationResultsContext.Provider value={validationResults}>
-				<AIChatJsonlInner onOpenSettings={onOpenSettings} />
+				<FieldHighlightContext.Provider value={onFieldHighlight ?? null}>
+					<AIChatJsonlInner onOpenSettings={onOpenSettings} />
+				</FieldHighlightContext.Provider>
 			</ValidationResultsContext.Provider>
 		</AssistantRuntimeProvider>
 	);

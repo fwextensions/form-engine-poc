@@ -30,6 +30,7 @@ import {
 	type HistoryState,
 } from "@/lib/jsonl";
 import { loadChatMessages, deleteChatMessages, saveHistory, loadHistory, deleteHistory } from "@/lib/chat-storage";
+import { findPageIndexForField, highlightFieldElement } from "@/lib/field-highlight";
 import type { UIMessage } from "ai";
 
 /**
@@ -405,6 +406,27 @@ export default function FormEditorPage() {
 	const handlePrevPage = () => formRef.current?.goToPage(currentPage - 1);
 	const handleNextPage = () => formRef.current?.goToPage(currentPage + 1);
 
+	const handleFieldHighlight = useCallback(
+		(fieldId: string) => {
+			const pageIndex = findPageIndexForField(schemaJson, fieldId);
+
+			const doHighlight = () => {
+				requestAnimationFrame(() => {
+					highlightFieldElement(fieldId);
+				});
+			};
+
+			if (pageIndex !== null && pageIndex !== currentPage) {
+				formRef.current?.goToPage(pageIndex);
+				// Wait for page transition to render before scrolling
+				setTimeout(doHighlight, 100);
+			} else {
+				doHighlight();
+			}
+		},
+		[schemaJson, currentPage],
+	);
+
 	const formOutput = formConfig ? (
 		<FormEngine
 			ref={formRef}
@@ -483,6 +505,7 @@ export default function FormEditorPage() {
 							initialMessages={chatMessages}
 							jsonlMode={jsonlModeProps}
 							history={historyProps}
+							onFieldHighlight={handleFieldHighlight}
 						/>
 					</Panel>
 					<Separator className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />

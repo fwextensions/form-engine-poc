@@ -34,7 +34,7 @@ export const FormFieldContainer: React.FC<FormFieldContainerProps> = ({
 	messages,
 }) => {
 	return (
-		<Form.Field name={name} className={`mb-4 ${RequiredFieldStyles} ${className || ""}`} style={style}>
+		<Form.Field name={name} data-field-id={name} className={`mb-4 ${RequiredFieldStyles} ${className || ""}`} style={style}>
 			{label && (
 				<div className="flex items-baseline justify-between mb-1">
 					<Form.Label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700">
