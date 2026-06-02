@@ -129,7 +129,7 @@ function AIChatJsonlInner({
  * so the component remounts when the form changes, loading the
  * saved conversation for the new form.
  */
-export default function AIChatJsonl(props: AIChatJsonlProps) {
+function AIChatJsonl(props: AIChatJsonlProps) {
 	const {
 		formId,
 		currentSchema,
@@ -346,3 +346,5 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 		</AssistantRuntimeProvider>
 	);
 }
+
+export default React.memo(AIChatJsonl);

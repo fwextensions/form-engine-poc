@@ -404,6 +404,8 @@ export default function FormEditorPage() {
 		}
 	};
 
+	const handleOpenSettings = useCallback(() => setSettingsOpen(true), []);
+
 	const handlePrevPage = () => formRef.current?.goToPage(currentPage - 1);
 	const handleNextPage = () => formRef.current?.goToPage(currentPage + 1);
 
@@ -485,7 +487,7 @@ export default function FormEditorPage() {
 				pageTitle={pageTitle}
 				onPrevPage={handlePrevPage}
 				onNextPage={handleNextPage}
-				onOpenSettings={() => setSettingsOpen(true)}
+				onOpenSettings={handleOpenSettings}
 				onExportFillout={handleExportFillout}
 			/>
 			<div className="flex flex-row flex-grow min-h-0">
@@ -503,7 +505,7 @@ export default function FormEditorPage() {
 							onSchemaChange={setYamlInput}
 							activeTab={activeTab}
 							onTabChange={handleTabChange}
-							onOpenSettings={() => setSettingsOpen(true)}
+							onOpenSettings={handleOpenSettings}
 							formId={selectedForm}
 							initialMessages={chatMessages}
 							jsonlMode={jsonlModeProps}
