@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useSyncExternalStore } from "react";
+import React, { useState, useRef, useCallback, useSyncExternalStore } from "react";
 import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
@@ -18,6 +18,8 @@ import { ValidationResultsContext, type ValidationResults } from "./chat/Validat
 import { ChatMessage } from "./chat/ChatMessage";
 import { ChatComposer } from "./chat/ChatComposer";
 import { EmptyState } from "./chat/EmptyState";
+import { PdfDropZone, type PdfFile } from "./chat/PdfDropZone";
+import type { PdfExtractionResult, PendingPdfContext } from "@/lib/pdf-extraction";
 
 const subscribeToClientSnapshot = () => () => {};
 
@@ -37,12 +39,19 @@ interface AIChatProps {
  */
 function AIChatInner({
 	onOpenSettings,
+	pendingPdf,
+	onClearPendingPdf,
+	onPdfExtracted,
+	onPdfAttachDirectly,
 }: {
 	onOpenSettings: () => void;
+	pendingPdf: PendingPdfContext | null;
+	onClearPendingPdf: () => void;
+	onPdfExtracted: (result: PdfExtractionResult, filename: string) => void;
+	onPdfAttachDirectly: (pdf: PdfFile) => void;
 }) {
 	const thread = useThread();
 
-	// Defer API key check until after hydration to avoid SSR mismatch
 	const isClient = useSyncExternalStore(
 		subscribeToClientSnapshot,
 		() => true,
@@ -51,18 +60,15 @@ function AIChatInner({
 	const [hasKey, setHasKey] = useState(false);
 
 	React.useEffect(() => {
-		// Fetch server credential status on mount
 		fetchServerCredentialStatus().then((status) => {
 			if (status.bedrockConfigured) {
 				const settings = getSettings();
 				const currentlyHasKey = hasApiKey();
 
-				// If no client-side credentials exist for any provider, auto-select bedrock
 				if (!currentlyHasKey) {
 					saveSettings({ ...settings, provider: "bedrock" });
 				}
 			}
-			// Re-check hasApiKey after server status is cached
 			setHasKey(hasApiKey());
 		});
 	}, []);
@@ -70,7 +76,11 @@ function AIChatInner({
 	const isEmpty = thread.messages.length === 0;
 
 	return (
-		<div className="flex flex-col h-full bg-white">
+		<PdfDropZone
+			onExtracted={onPdfExtracted}
+			onAttachDirectly={onPdfAttachDirectly}
+			disabled={thread.isRunning}
+		>
 			<ThreadPrimitive.Root className="flex-1 overflow-hidden relative">
 				{isEmpty ? (
 					<EmptyState
@@ -93,12 +103,53 @@ function AIChatInner({
 				)}
 			</ThreadPrimitive.Root>
 			{hasKey && (
-				<div className="border-t border-slate-200 p-4">
-					<ChatComposer
-						placeholder={isEmpty ? "Describe your form..." : "Ask me to modify the form..."}
-					/>
+				<div className="border-t border-slate-200">
+					{pendingPdf && (
+						<PendingPdfBanner context={pendingPdf} onClear={onClearPendingPdf} />
+					)}
+					<div className="p-4">
+						<ChatComposer
+							placeholder={
+								pendingPdf
+									? "Add instructions for the form, or just hit Send..."
+									: isEmpty
+										? "Describe your form..."
+										: "Ask me to modify the form..."
+							}
+						/>
+					</div>
 				</div>
 			)}
+		</PdfDropZone>
+	);
+}
+
+function PendingPdfBanner({
+	context,
+	onClear,
+}: {
+	context: PendingPdfContext;
+	onClear: () => void;
+}) {
+	const label =
+		context.type === "extraction"
+			? `Extracted ${context.result.sections.reduce((n, s) => n + s.fields.length, 0)} fields from "${context.filename}"`
+			: `PDF "${context.filename}" will be attached`;
+
+	return (
+		<div className="mx-4 mt-3 flex items-center gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 text-sm text-blue-800">
+			<svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+			</svg>
+			<span className="flex-1 truncate">{label}</span>
+			<button
+				onClick={onClear}
+				className="text-blue-500 hover:text-blue-700 flex-shrink-0"
+			>
+				<svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+					<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+				</svg>
+			</button>
 		</div>
 	);
 }
@@ -120,10 +171,37 @@ export default function AIChat(props: AIChatProps) {
 	} = props;
 	const [validationResults, setValidationResults] = useState<ValidationResults>(new Map());
 
+	// Pending PDF context: stored in a ref for the transport to consume, mirrored to state for UI
+	const pendingPdfRef = useRef<PendingPdfContext | null>(null);
+	const [pendingPdfDisplay, setPendingPdfDisplay] = useState<PendingPdfContext | null>(null);
+
+	const setPendingPdf = useCallback((ctx: PendingPdfContext | null) => {
+		pendingPdfRef.current = ctx;
+		setPendingPdfDisplay(ctx);
+	}, []);
+
+	const handlePdfExtracted = useCallback((result: PdfExtractionResult, filename: string) => {
+		setPendingPdf({ type: "extraction", result, filename });
+	}, [setPendingPdf]);
+
+	const handlePdfAttachDirectly = useCallback((pdf: PdfFile) => {
+		setPendingPdf({ type: "attachment", dataUrl: pdf.dataUrl, filename: pdf.file.name });
+	}, [setPendingPdf]);
+
+	const consumePendingPdfRef = useRef(() => {
+		const ctx = pendingPdfRef.current;
+		if (ctx) {
+			pendingPdfRef.current = null;
+			queueMicrotask(() => setPendingPdfDisplay(null));
+		}
+		return ctx;
+	});
+
 	// Initialize schema generator
 	const generator = React.useMemo(() => new SchemaGenerator(), []);
 	const transport = React.useMemo(
-		() => createChatTransport(generator, () => currentSchema),
+		// eslint-disable-next-line react-hooks/refs -- closure is called at send time, not during render
+		() => createChatTransport(generator, () => currentSchema, () => consumePendingPdfRef.current()),
 		[generator, currentSchema],
 	);
 
@@ -193,7 +271,13 @@ export default function AIChat(props: AIChatProps) {
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
 			<ValidationResultsContext.Provider value={validationResults}>
-				<AIChatInner onOpenSettings={onOpenSettings} />
+				<AIChatInner
+					onOpenSettings={onOpenSettings}
+					pendingPdf={pendingPdfDisplay}
+					onClearPendingPdf={() => setPendingPdf(null)}
+					onPdfExtracted={handlePdfExtracted}
+					onPdfAttachDirectly={handlePdfAttachDirectly}
+				/>
 			</ValidationResultsContext.Provider>
 		</AssistantRuntimeProvider>
 	);

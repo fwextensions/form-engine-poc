@@ -189,10 +189,15 @@ export async function POST(request: NextRequest) {
 
 				if (hasFileParts && msg.role === 'user') {
 					// Build multi-modal content array for the AI SDK
-					const content: Array<{ type: 'text'; text: string } | { type: 'image'; image: string }> = [];
+					const content: Array<{ type: 'text'; text: string } | { type: 'image'; image: string } | { type: 'file'; data: string; mediaType: string }> = [];
 					for (const part of msg.parts) {
 						if (part.type === 'text') {
 							content.push({ type: 'text', text: part.text || '' });
+						} else if (part.type === 'file' && part.mediaType === 'application/pdf') {
+							// PDF file attachment
+							const url = part.url || '';
+							const base64Data = url.startsWith('data:') ? url.split(',')[1] : url;
+							content.push({ type: 'file', data: base64Data, mediaType: 'application/pdf' });
 						} else if (part.type === 'file' && part.mediaType?.startsWith('image/')) {
 							// File part with image media type (from vercelAttachmentAdapter)
 							content.push({ type: 'image', image: part.url || '' });

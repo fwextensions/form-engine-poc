@@ -2,6 +2,7 @@ import { AssistantChatTransport } from "@assistant-ui/react-ai-sdk";
 import type { UIMessage } from "ai";
 import { getSettings, getModelForProvider, getServerCredentialStatus } from "@/lib/settings";
 import type { SchemaGenerator } from "@/lib/schema-generator";
+import type { PendingPdfContext } from "@/lib/pdf-extraction";
 
 /**
  * Creates the chat transport for the AI assistant.
@@ -12,6 +13,7 @@ import type { SchemaGenerator } from "@/lib/schema-generator";
 export function createChatTransport(
 	generator: SchemaGenerator,
 	getCurrentSchema: () => string,
+	getPendingPdfContext?: () => PendingPdfContext | null,
 ): AssistantChatTransport<UIMessage> {
 	return new AssistantChatTransport({
 		api: "/api/llm",
@@ -52,29 +54,49 @@ export function createChatTransport(
 			return requestBody;
 		},
 		prepareSendMessagesRequest: ({ messages, body }) => {
-			// Transform the last user message to include current schema context if editing
+			const pdfContext = getPendingPdfContext?.() ?? null;
+
 			const transformedMessages = messages.map((msg, index) => {
-				// Only transform the last user message
 				if (msg.role === "user" && index === messages.length - 1) {
 					const currentSchema = getCurrentSchema();
 					const isEdit = currentSchema.trim().length > 0;
 
+					let originalText = msg.parts
+						?.filter((part: any) => part.type === "text")
+						.map((part: any) => part.text)
+						.join("") || "";
+
+					if (pdfContext?.type === "extraction") {
+						const extractionJson = JSON.stringify(pdfContext.result, null, 2);
+						originalText =
+							`I have a PDF form ("${pdfContext.filename}") whose fields have been extracted. ` +
+							`Here is the extracted structure:\n\n\`\`\`json\n${extractionJson}\n\`\`\`\n\n` +
+							(originalText || "Please recreate this form based on the extracted fields.");
+					}
+
+					const nonTextParts = msg.parts?.filter((part: any) => part.type !== "text") || [];
+
+					if (pdfContext?.type === "attachment") {
+						nonTextParts.push({
+							type: "file",
+							url: pdfContext.dataUrl,
+							mediaType: "application/pdf",
+							filename: pdfContext.filename,
+						} as any);
+					}
+
 					if (isEdit) {
-						// Get the original text from the message parts
-						const originalText = msg.parts
-							?.filter((part: any) => part.type === "text")
-							.map((part: any) => part.text)
-							.join("") || "";
-
-						// Build the full edit prompt
 						const fullPrompt = generator.buildEditPrompt(currentSchema, originalText);
-
-						// Preserve non-text parts (e.g. image attachments)
-						const nonTextParts = msg.parts?.filter((part: any) => part.type !== "text") || [];
-
 						return {
 							...msg,
 							parts: [{ type: "text" as const, text: fullPrompt }, ...nonTextParts],
+						};
+					}
+
+					if (pdfContext) {
+						return {
+							...msg,
+							parts: [{ type: "text" as const, text: originalText }, ...nonTextParts],
 						};
 					}
 				}
