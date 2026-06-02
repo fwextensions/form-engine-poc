@@ -4,6 +4,7 @@ import {
 	MessagePrimitive,
 	useMessage,
 } from "@assistant-ui/react";
+import { Streamdown } from "streamdown";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { extractTextAfterYaml } from "@/lib/yaml-extractor";
 import { looksLikeJsonl, extractJsonlDisplay } from "@/lib/jsonl-display";
@@ -143,9 +144,13 @@ export function ChatMessage() {
 						{isAssistant ? (
 							// Assistant messages: render with markdown
 							useStaticMarkdown ? (
-								// YAML or JSONL detected: render transformed plain text
+								// YAML or JSONL detected: render transformed text as markdown
 								displayContent ? (
-									<div className="flex-1 text-sm whitespace-pre-wrap">{displayContent}</div>
+									<div className="flex-1 text-sm">
+										<Streamdown mode={isStreaming ? "streaming" : "static"} isAnimating={isStreaming}>
+											{displayContent}
+										</Streamdown>
+									</div>
 								) : null
 							) : (
 								// Plain text: use MessagePrimitive.Parts with MarkdownText for native streaming support
