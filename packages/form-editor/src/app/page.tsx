@@ -31,6 +31,7 @@ import {
 } from "@/lib/jsonl";
 import { loadChatMessages, deleteChatMessages, saveHistory, loadHistory, deleteHistory } from "@/lib/chat-storage";
 import { findPageIndexForField, highlightFieldElement } from "@/lib/field-highlight";
+import type { HighlightEdge } from "@/components/chat/FieldHighlightContext";
 import type { UIMessage } from "ai";
 
 /**
@@ -407,18 +408,17 @@ export default function FormEditorPage() {
 	const handleNextPage = () => formRef.current?.goToPage(currentPage + 1);
 
 	const handleFieldHighlight = useCallback(
-		(fieldId: string) => {
+		(fieldId: string, edge?: HighlightEdge) => {
 			const pageIndex = findPageIndexForField(schemaJson, fieldId);
 
 			const doHighlight = () => {
 				requestAnimationFrame(() => {
-					highlightFieldElement(fieldId);
+					highlightFieldElement(fieldId, edge);
 				});
 			};
 
 			if (pageIndex !== null && pageIndex !== currentPage) {
 				formRef.current?.goToPage(pageIndex);
-				// Wait for page transition to render before scrolling
 				setTimeout(doHighlight, 100);
 			} else {
 				doHighlight();

@@ -227,7 +227,7 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 			const schemaPatches = allPatches.filter((p) => p.op !== "message");
 
 			// Apply schema patches and collect per-patch results
-			type ApplyResult = { success: boolean; error?: string; removedNear?: { id: string; position: string } };
+			type ApplyResult = { success: boolean; error?: string; removedNear?: { id: string; position: "before" | "after" } };
 			let applyResults: ApplyResult[] = [];
 			let schemaApplied = false;
 
@@ -267,6 +267,7 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 					success: result?.success ?? false,
 					error: result?.error,
 					nearFieldId: result?.removedNear?.id,
+					nearFieldPosition: result?.removedNear?.position,
 				};
 			});
 

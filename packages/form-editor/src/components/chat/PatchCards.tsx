@@ -2,7 +2,7 @@
 
 import type { PatchWithResult } from "./ValidationContext";
 import type { PatchOp } from "@/lib/jsonl/types";
-import { useFieldHighlight } from "./FieldHighlightContext";
+import { useFieldHighlight, type FieldHighlightFn } from "./FieldHighlightContext";
 import { getHighlightTarget } from "@/lib/field-highlight";
 
 type OpStyle = {
@@ -50,7 +50,7 @@ function opDetail(patch: PatchOp): string | null {
 	}
 }
 
-function PatchCard({ card, onHighlight }: { card: PatchWithResult; onHighlight?: (fieldId: string) => void }) {
+function PatchCard({ card, onHighlight }: { card: PatchWithResult; onHighlight?: FieldHighlightFn }) {
 	const { patch, success, error } = card;
 
 	if (patch.op === "message") {
@@ -60,11 +60,11 @@ function PatchCard({ card, onHighlight }: { card: PatchWithResult; onHighlight?:
 	const style = OP_STYLES[patch.op];
 	const title = opTitle(patch);
 	const detail = opDetail(patch);
-	const fieldId = getHighlightTarget(card);
-	const isClickable = !!fieldId && !!onHighlight;
+	const target = getHighlightTarget(card);
+	const isClickable = !!target && !!onHighlight;
 
 	const handleClick = () => {
-		if (fieldId && onHighlight) onHighlight(fieldId);
+		if (target && onHighlight) onHighlight(target.fieldId, target.edge);
 	};
 
 	return (

@@ -8,6 +8,8 @@ export type PatchWithResult = {
 	error?: string;
 	/** For remove ops: ID of a nearby field to highlight instead */
 	nearFieldId?: string;
+	/** For remove ops: whether the removed field was "before" or "after" the near field */
+	nearFieldPosition?: "before" | "after";
 };
 
 export type ValidationResult = {

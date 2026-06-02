@@ -1,6 +1,8 @@
 import { createContext, useContext } from "react";
 
-export type FieldHighlightFn = (fieldId: string) => void;
+export type HighlightEdge = "top" | "bottom";
+
+export type FieldHighlightFn = (fieldId: string, edge?: HighlightEdge) => void;
 
 export const FieldHighlightContext = createContext<FieldHighlightFn | null>(null);
 

@@ -1,16 +1,26 @@
 import type { SchemaComponent } from "@/lib/jsonl/types";
 import type { PatchWithResult } from "@/components/chat/ValidationContext";
+import type { HighlightEdge } from "@/components/chat/FieldHighlightContext";
 
-export function getHighlightTarget(card: PatchWithResult): string | null {
-	const { patch, nearFieldId } = card;
+export type HighlightTarget = {
+	fieldId: string;
+	edge?: HighlightEdge;
+} | null;
+
+export function getHighlightTarget(card: PatchWithResult): HighlightTarget {
+	const { patch, nearFieldId, nearFieldPosition } = card;
 	switch (patch.op) {
 		case "add":
-			return patch.component.id ?? null;
+			return patch.component.id ? { fieldId: patch.component.id } : null;
 		case "update":
 		case "move":
-			return patch.id;
+			return { fieldId: patch.id };
 		case "remove":
-			return nearFieldId ?? null;
+			if (!nearFieldId) return null;
+			return {
+				fieldId: nearFieldId,
+				edge: nearFieldPosition === "before" ? "top" : "bottom",
+			};
 		case "replace":
 		case "message":
 			return null;
@@ -43,7 +53,12 @@ export function findPageIndexForField(
 	return null;
 }
 
-export function highlightFieldElement(fieldId: string): void {
+const ALL_HIGHLIGHT_CLASSES = [
+	"field-highlight", "field-highlight-fade",
+	"field-highlight-edge-top", "field-highlight-edge-bottom", "field-highlight-edge-fade",
+];
+
+export function highlightFieldElement(fieldId: string, edge?: HighlightEdge): void {
 	const el =
 		document.querySelector(`[data-field-id="${fieldId}"]`) ??
 		document.getElementById(fieldId)?.closest("[data-field-id]") ??
@@ -53,16 +68,28 @@ export function highlightFieldElement(fieldId: string): void {
 
 	el.scrollIntoView({ behavior: "smooth", block: "center" });
 
-	el.classList.remove("field-highlight", "field-highlight-fade");
-	// force reflow so re-adding the class restarts the animation
+	el.classList.remove(...ALL_HIGHLIGHT_CLASSES);
 	void el.offsetWidth;
-	el.classList.add("field-highlight");
 
-	setTimeout(() => {
-		el.classList.add("field-highlight-fade");
-	}, 1600);
+	if (edge) {
+		el.classList.add(edge === "top" ? "field-highlight-edge-top" : "field-highlight-edge-bottom");
 
-	setTimeout(() => {
-		el.classList.remove("field-highlight", "field-highlight-fade");
-	}, 4000);
+		setTimeout(() => {
+			el.classList.add("field-highlight-edge-fade");
+		}, 1600);
+
+		setTimeout(() => {
+			el.classList.remove(...ALL_HIGHLIGHT_CLASSES);
+		}, 4000);
+	} else {
+		el.classList.add("field-highlight");
+
+		setTimeout(() => {
+			el.classList.add("field-highlight-fade");
+		}, 1600);
+
+		setTimeout(() => {
+			el.classList.remove(...ALL_HIGHLIGHT_CLASSES);
+		}, 4000);
+	}
 }
