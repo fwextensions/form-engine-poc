@@ -11,6 +11,7 @@ import { looksLikeJsonl, extractJsonlDisplay } from "@/lib/jsonl-display";
 import { useValidationResult } from "./ValidationContext";
 import { StreamingIndicator } from "./StreamingIndicator";
 import { ValidationFeedback } from "./ValidationFeedback";
+import { PatchCards } from "./PatchCards";
 
 export function ChatMessage() {
 	const message = useMessage();
@@ -86,6 +87,26 @@ export function ChatMessage() {
 
 	// Check if schema was successfully applied (for showing checkmark)
 	const schemaApplied = validation?.schemaApplied === true;
+
+	// Completed JSONL message: render patch cards instead of raw text
+	if (isAssistant && !isStreaming && validation?.patchCards) {
+		return (
+			<>
+				<MessagePrimitive.Root className="flex justify-start mb-4">
+					<div className="max-w-[90%] rounded-lg px-4 py-3 bg-slate-100 text-slate-900">
+						{schemaApplied && (
+							<p className="text-xs font-medium text-green-700 mb-2">Schema updated</p>
+						)}
+						<PatchCards cards={validation.patchCards} />
+					</div>
+				</MessagePrimitive.Root>
+				<ValidationFeedback
+					errors={validation?.validationErrors}
+					warnings={validation?.validationWarnings}
+				/>
+			</>
+		);
+	}
 
 	// For JSONL and YAML block content, use static markdown rendering
 	// (since we've transformed the content, we can't use native streaming parts)

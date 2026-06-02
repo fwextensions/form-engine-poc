@@ -166,99 +166,71 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 			const finalResults = compiler.flush();
 			const allResults = [...parseResults, ...finalResults];
 
-			// Extract successfully parsed patches
-			const patches: PatchOp[] = [];
-			const messages: string[] = [];
-			const errors: string[] = [];
+			const allPatches: PatchOp[] = [];
+			const parseErrors: string[] = [];
 
 			for (const result of allResults) {
 				if (result.patch) {
-					patches.push(result.patch);
-					if (result.patch.op === "message") {
-						messages.push(result.patch.text);
-					}
+					allPatches.push(result.patch);
 				} else if (result.error) {
-					errors.push(`${result.error}: ${result.rawLine}`);
+					parseErrors.push(`${result.error}: ${result.rawLine}`);
 				}
 			}
 
-			// Separate schema-modifying patches from messages
-			const schemaPatches = patches.filter((p) => p.op !== "message");
+			// Plain text message with no JSONL → nothing to do
+			if (allPatches.length === 0 && parseErrors.length === 0) return;
+
+			const schemaPatches = allPatches.filter((p) => p.op !== "message");
+
+			// Apply schema patches and collect per-patch results
+			type ApplyResult = { success: boolean; error?: string };
+			let applyResults: ApplyResult[] = [];
+			let schemaApplied = false;
 
 			if (schemaPatches.length > 0) {
 				if (currentSchema) {
-					const result = applyPatches(currentSchema, schemaPatches);
-
-					if (result.successCount > 0) {
-						setValidationResults((prev) => {
-							const newMap = new Map(prev);
-							newMap.set(message.id, {
-								schemaApplied: true,
-								validationErrors:
-									result.failureCount > 0
-										? result.results
-												.filter((r) => !r.success)
-												.map((r) => r.error || "Unknown error")
-										: undefined,
-							});
-							return newMap;
-						});
-
-						onSchemaChange(
-							result.schema,
-							patches,
-							lastUserMessageRef.current,
-						);
-					} else {
-						setValidationResults((prev) => {
-							const newMap = new Map(prev);
-							newMap.set(message.id, {
-								schemaApplied: false,
-								validationErrors: result.results
-									.filter((r) => !r.success)
-									.map((r) => r.error || "Unknown error"),
-							});
-							return newMap;
-						});
+					const batchResult = applyPatches(currentSchema, schemaPatches);
+					applyResults = batchResult.results;
+					if (batchResult.successCount > 0) {
+						schemaApplied = true;
+						onSchemaChange(batchResult.schema, allPatches, lastUserMessageRef.current);
 					}
 				} else {
 					const replaceOp = schemaPatches.find((p) => p.op === "replace");
-
 					if (replaceOp && replaceOp.op === "replace") {
-						setValidationResults((prev) => {
-							const newMap = new Map(prev);
-							newMap.set(message.id, { schemaApplied: true });
-							return newMap;
-						});
-
-						onSchemaChange(
-							replaceOp.schema,
-							patches,
-							lastUserMessageRef.current,
-						);
+						schemaApplied = true;
+						applyResults = schemaPatches.map((p) => ({
+							success: p.op === "replace",
+							error: p.op !== "replace" ? "No existing schema" : undefined,
+						}));
+						onSchemaChange(replaceOp.schema, allPatches, lastUserMessageRef.current);
 					} else {
-						setValidationResults((prev) => {
-							const newMap = new Map(prev);
-							newMap.set(message.id, {
-								schemaApplied: false,
-								validationErrors: [
-									"No existing schema and no replace operation found",
-								],
-							});
-							return newMap;
-						});
+						applyResults = schemaPatches.map(() => ({
+							success: false,
+							error: "No existing schema and no replace operation found",
+						}));
 					}
 				}
-			} else if (errors.length > 0) {
-				setValidationResults((prev) => {
-					const newMap = new Map(prev);
-					newMap.set(message.id, {
-						schemaApplied: false,
-						validationErrors: errors,
-					});
-					return newMap;
-				});
 			}
+
+			// Build patch cards: pair each patch (including message ops) with its apply result
+			let schemaPatchIdx = 0;
+			const patchCards = allPatches.map((patch) => {
+				if (patch.op === "message") return { patch, success: true as const };
+				const result = applyResults[schemaPatchIdx++];
+				return { patch, success: result?.success ?? false, error: result?.error };
+			});
+
+			setValidationResults((prev) => {
+				const newMap = new Map(prev);
+				newMap.set(message.id, {
+					schemaApplied,
+					// Only show parse errors in ValidationFeedback; apply errors show inline in cards
+					validationErrors: parseErrors.length > 0 ? parseErrors : undefined,
+					patchCards: patchCards.length > 0 ? patchCards : undefined,
+				});
+				return newMap;
+			});
 		},
 		[onSchemaChange, currentSchema],
 	);
