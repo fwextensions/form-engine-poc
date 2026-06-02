@@ -160,7 +160,7 @@ createComponent<FormConfig, FormProps>({
 		const renderedChildElements = renderChildren(children, context);
 
 		return {
-			id: id || "form-engine-root",
+			id: "form-engine-root",
 			config, // Pass the full config
 			className, // Pass className from config
 			style,     // Pass style from config
