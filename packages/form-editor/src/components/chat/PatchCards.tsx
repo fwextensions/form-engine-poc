@@ -1,5 +1,6 @@
 "use client";
 
+import { Streamdown } from "streamdown";
 import type { PatchWithResult } from "./ValidationContext";
 import type { PatchOp } from "@/lib/jsonl/types";
 import { useFieldHighlight, type FieldHighlightFn } from "./FieldHighlightContext";
@@ -54,7 +55,11 @@ function PatchCard({ card, onHighlight }: { card: PatchWithResult; onHighlight?:
 	const { patch, success, error } = card;
 
 	if (patch.op === "message") {
-		return <p className="text-sm text-slate-700 py-1">{patch.text}</p>;
+		return (
+			<div className="text-sm text-slate-700 py-1">
+				<Streamdown mode="static">{patch.text}</Streamdown>
+			</div>
+		);
 	}
 
 	const style = OP_STYLES[patch.op];
