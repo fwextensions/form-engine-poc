@@ -26,6 +26,7 @@ import { createJsonlChatTransport } from "@/lib/jsonl/chat-transport";
 import { saveChatMessages } from "@/lib/chat-storage";
 import {
 	ValidationResultsContext,
+	type ValidationResult,
 	type ValidationResults,
 } from "./chat/ValidationContext";
 import { ChatMessage } from "./chat/ChatMessage";
@@ -145,6 +146,45 @@ export default function AIChatJsonl(props: AIChatJsonlProps) {
 		() => createJsonlChatTransport(generator, () => currentSchema),
 		[generator, currentSchema],
 	);
+
+	// Restore patch cards for messages reloaded from localStorage.
+	// handleFinish only runs for new LLM responses, so historical JSONL
+	// messages need their cards reconstructed from stored text on mount.
+	React.useEffect(() => {
+		if (!initialMessages || initialMessages.length === 0) return;
+
+		const restoredResults = new Map<string, ValidationResult>();
+
+		for (const msg of initialMessages) {
+			if (msg.role !== "assistant") continue;
+
+			const text = (msg as any).parts
+				?.filter((p: any) => p.type === "text")
+				.map((p: any) => p.text)
+				.join("") ?? "";
+
+			if (!text) continue;
+
+			const compiler = createPatchStreamCompiler();
+			const { patches: parseResults } = compiler.push(text);
+			const finalResults = compiler.flush();
+
+			const patches: PatchOp[] = [...parseResults, ...finalResults]
+				.filter((r) => r.patch)
+				.map((r) => r.patch!);
+
+			if (patches.length > 0) {
+				// No success/error status for historical messages — apply already happened
+				restoredResults.set(msg.id, {
+					patchCards: patches.map((patch) => ({ patch })),
+				});
+			}
+		}
+
+		if (restoredResults.size > 0) {
+			setValidationResults(restoredResults);
+		}
+	}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
 	// Process JSONL response on completion
 	const handleFinish = useCallback(
