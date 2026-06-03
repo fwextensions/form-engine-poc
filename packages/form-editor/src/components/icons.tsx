@@ -23,6 +23,18 @@ export const ChevronRightIcon = () => (
 	</svg>
 );
 
+export const ChevronUpIcon = () => (
+	<svg {...svgProps}>
+		<path d="m18 15-6-6-6 6" />
+	</svg>
+);
+
+export const ChevronDownIcon = () => (
+	<svg {...svgProps}>
+		<path d="m6 9 6 6 6-6" />
+	</svg>
+);
+
 export const UndoIcon = () => (
 	<svg {...svgProps}>
 		<path d="M9 14 4 9l5-5" />

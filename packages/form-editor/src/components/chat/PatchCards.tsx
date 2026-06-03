@@ -6,6 +6,7 @@ import type { PatchWithResult } from "./ValidationContext";
 import type { PatchOp } from "@/lib/jsonl/types";
 import { useFieldHighlight, type FieldHighlightFn } from "./FieldHighlightContext";
 import { getHighlightTarget } from "@/lib/field-highlight";
+import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons";
 
 type OpStyle = {
 	badge: string;
@@ -119,13 +120,42 @@ function PatchCard({ card, onHighlight }: { card: PatchWithResult; onHighlight?:
 	);
 }
 
+const INITIAL_VISIBLE = 3;
+
 export function PatchCards({ cards }: { cards: PatchWithResult[] }) {
 	const onHighlight = useFieldHighlight();
+	const [showAll, setShowAll] = useState(false);
+
+	// Split message ops (summary text) from patch op cards
+	const opCards = cards.filter((c) => c.patch.op !== "message");
+	const messageCards = cards.filter((c) => c.patch.op === "message");
+
+	const visibleOpCards = showAll
+		? opCards
+		: opCards.length <= INITIAL_VISIBLE + 1
+				// only show the toggle if there are at least 2 more cards to show
+			? opCards
+			: opCards.slice(0, INITIAL_VISIBLE);
+	const hiddenCount = opCards.length - visibleOpCards.length;
 
 	return (
 		<div className="space-y-1.5">
-			{cards.map((card, i) => (
+			{visibleOpCards.map((card, i) => (
 				<PatchCard key={i} card={card} onHighlight={onHighlight ?? undefined} />
+			))}
+			{hiddenCount > 1 && (
+				<button
+					onClick={() => setShowAll((v) => !v)}
+					className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 py-1.5 px-2 rounded hover:bg-slate-200 transition-colors cursor-pointer"
+				>
+					{showAll ? <ChevronUpIcon /> : <ChevronDownIcon />}
+					{showAll
+						? "Show fewer"
+						: `Show ${hiddenCount} more`}
+				</button>
+			)}
+			{messageCards.map((card, i) => (
+				<PatchCard key={`msg-${i}`} card={card} onHighlight={onHighlight ?? undefined} />
 			))}
 		</div>
 	);
