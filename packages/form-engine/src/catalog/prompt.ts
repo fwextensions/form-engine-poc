@@ -21,31 +21,31 @@ export function generateCatalogPrompt(
 	options?: CatalogPromptOptions
 ): string {
 	const { includeExamples = false, preamble } = options || {};
-	
+
 	const sections: string[] = [];
-	
+
 	// 1. Preamble
 	sections.push(preamble || getDefaultPreamble());
-	
+
 	// 2. Components documentation
 	sections.push("## Available Components\n");
-	
+
 	const componentTypes = Object.keys(catalog.components).sort();
-	
+
 	for (const type of componentTypes) {
 		const entry = catalog.components[type];
 		sections.push(formatComponentDocumentation(type, entry, includeExamples));
 	}
-	
+
 	// 3. Schema structure rules
 	sections.push(getSchemaStructureRules());
-	
+
 	// 4. Conditional logic documentation
 	sections.push(getConditionalLogicDocumentation());
-	
+
 	// 5. Validation rules documentation
 	sections.push(getValidationRulesDocumentation());
-	
+
 	return sections.join("\n\n");
 }
 
@@ -58,22 +58,22 @@ export function formatPropsFromZodSchema(schema: z.ZodType<any>): string {
 	try {
 		// Convert Zod schema to JSON Schema for easier introspection
 		const jsonSchema = zodToJsonSchema(schema as any, { $refStrategy: "none" });
-		
+
 		if (!jsonSchema || typeof jsonSchema !== "object" || !("properties" in jsonSchema)) {
 			return "No properties defined.";
 		}
-		
+
 		const properties = jsonSchema.properties as Record<string, any>;
 		const required = (jsonSchema.required as string[]) || [];
-		
+
 		const propLines: string[] = [];
-		
+
 		for (const [propName, propSchema] of Object.entries(properties)) {
 			const isRequired = required.includes(propName);
 			const line = formatProperty(propName, propSchema, isRequired);
 			propLines.push(line);
 		}
-		
+
 		return propLines.length > 0 ? propLines.join("\n") : "No properties defined.";
 	} catch (error) {
 		return `Error extracting properties: ${error instanceof Error ? error.message : String(error)}`;
@@ -85,33 +85,33 @@ export function formatPropsFromZodSchema(schema: z.ZodType<any>): string {
  */
 function formatProperty(name: string, schema: any, isRequired: boolean): string {
 	const parts: string[] = [];
-	
+
 	// Property name
 	parts.push(`- **${name}**`);
-	
+
 	// Type
 	const typeInfo = getTypeInfo(schema);
 	parts.push(`(${typeInfo})`);
-	
+
 	// Required/Optional
 	parts.push(isRequired ? "[Required]" : "[Optional]");
-	
+
 	// Default value
 	if ("default" in schema) {
 		parts.push(`Default: \`${JSON.stringify(schema.default)}\``);
 	}
-	
+
 	// Constraints
 	const constraints = getConstraints(schema);
 	if (constraints.length > 0) {
 		parts.push(`Constraints: ${constraints.join(", ")}`);
 	}
-	
+
 	// Description
 	if (schema.description) {
 		parts.push(`- ${schema.description}`);
 	}
-	
+
 	return parts.join(" ");
 }
 
@@ -122,30 +122,30 @@ function getTypeInfo(schema: any): string {
 	if (schema.enum) {
 		return `enum: ${schema.enum.map((v: any) => `"${v}"`).join(" | ")}`;
 	}
-	
+
 	if (schema.const !== undefined) {
 		return `literal: "${schema.const}"`;
 	}
-	
+
 	if (schema.anyOf) {
 		const types = schema.anyOf.map((s: any) => getTypeInfo(s)).join(" | ");
 		return types;
 	}
-	
+
 	if (schema.oneOf) {
 		const types = schema.oneOf.map((s: any) => getTypeInfo(s)).join(" | ");
 		return types;
 	}
-	
+
 	if (schema.type === "array") {
 		const itemType = schema.items ? getTypeInfo(schema.items) : "any";
 		return `array<${itemType}>`;
 	}
-	
+
 	if (schema.type === "object") {
 		return "object";
 	}
-	
+
 	return schema.type || "any";
 }
 
@@ -154,35 +154,35 @@ function getTypeInfo(schema: any): string {
  */
 function getConstraints(schema: any): string[] {
 	const constraints: string[] = [];
-	
+
 	if (typeof schema.minLength === "number") {
 		constraints.push(`minLength: ${schema.minLength}`);
 	}
-	
+
 	if (typeof schema.maxLength === "number") {
 		constraints.push(`maxLength: ${schema.maxLength}`);
 	}
-	
+
 	if (typeof schema.minimum === "number") {
 		constraints.push(`min: ${schema.minimum}`);
 	}
-	
+
 	if (typeof schema.maximum === "number") {
 		constraints.push(`max: ${schema.maximum}`);
 	}
-	
+
 	if (typeof schema.minItems === "number") {
 		constraints.push(`minItems: ${schema.minItems}`);
 	}
-	
+
 	if (typeof schema.maxItems === "number") {
 		constraints.push(`maxItems: ${schema.maxItems}`);
 	}
-	
+
 	if (schema.pattern) {
 		constraints.push(`pattern: ${schema.pattern}`);
 	}
-	
+
 	return constraints;
 }
 
@@ -195,23 +195,23 @@ function formatComponentDocumentation(
 	includeExamples: boolean
 ): string {
 	const lines: string[] = [];
-	
+
 	lines.push(`### ${type}`);
-	
+
 	// Description
 	if (entry.description) {
 		lines.push(`\n${entry.description}`);
 	}
-	
+
 	// Children capability
 	if (entry.hasChildren) {
 		lines.push("\n**Can contain children:** Yes");
 	}
-	
+
 	// Properties
 	lines.push("\n**Properties:**\n");
 	lines.push(formatPropsFromZodSchema(entry.schema));
-	
+
 	// Example
 	if (includeExamples) {
 		const example = generateComponentExample(type, entry);
@@ -222,7 +222,7 @@ function formatComponentDocumentation(
 			lines.push("```");
 		}
 	}
-	
+
 	return lines.join("\n");
 }
 
@@ -232,20 +232,20 @@ function formatComponentDocumentation(
 function generateComponentExample(type: string, entry: CatalogEntry): string | null {
 	// Generate a basic example based on the component type
 	// This is a simplified version - could be enhanced with more sophisticated example generation
-	
+
 	const lines: string[] = [];
 	lines.push(`type: ${type}`);
-	
+
 	// Add id if it's likely a field component
 	if (type !== "form" && type !== "page" && type !== "html") {
 		lines.push(`id: example${type.charAt(0).toUpperCase() + type.slice(1)}`);
 	}
-	
+
 	// Add common properties based on type
 	if (["text", "email", "password", "tel", "number", "textarea", "select", "checkbox", "radio"].includes(type)) {
 		lines.push(`label: Example ${type.charAt(0).toUpperCase() + type.slice(1)}`);
 	}
-	
+
 	return lines.join("\n");
 }
 
@@ -356,7 +356,46 @@ children:
 ### Children
 
 - Components that support children use a \`children\` array property
-- Children are rendered in the order they appear in the array`;
+- Children are rendered in the order they appear in the array
+
+### Multi-Page Forms
+
+To render a form as multiple pages (steps), set \`display: multipage\` on the root \`form\` component and wrap fields in \`page\` children. The engine will show one page at a time with Next/Previous navigation buttons.
+
+\`\`\`yaml
+type: form
+id: myForm
+display: multipage
+children:
+  - type: page
+    id: page1
+    title: Personal Info
+    children:
+      - type: text
+        id: firstName
+        label: First Name*
+      - type: text
+        id: lastName
+        label: Last Name*
+
+  - type: page
+    id: page2
+    title: Contact Details
+    children:
+      - type: email
+        id: email
+        label: Email Address*
+      - type: tel
+        id: phone
+        label: Phone Number
+\`\`\`
+
+**Key rules for multi-page forms:**
+- \`display: multipage\` must be set on the \`form\` component (default is single-page)
+- The form must have at least two \`page\` children for multi-page mode to activate
+- Each \`page\` can have an optional \`title\` that renders as a section heading
+- Button labels can be customised on the \`form\`: \`nextButtonText\`, \`previousButtonText\`, \`submitButtonText\`
+- To keep the form single-page, omit \`display\` or set \`display: singlepage\``;
 }
 
 /**
