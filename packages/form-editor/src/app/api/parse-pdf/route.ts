@@ -3,7 +3,7 @@ import { streamText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { PDF_EXTRACTION_PROMPT } from "@/lib/pdf-extraction";
 
-const EXTRACTION_MODEL = "gemini-2.0-flash";
+const EXTRACTION_MODEL = "gemini-3.1-flash-lite";
 
 export async function POST(request: NextRequest) {
   try {
