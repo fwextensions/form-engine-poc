@@ -12,6 +12,7 @@ import {
 } from "form-engine";
 import { exportToFillout, type ExportDiagnostic } from "form-exporters";
 import EditorToolbar from "@/components/EditorToolbar";
+import PreviewToolbar from "@/components/PreviewToolbar";
 import EditorPane from "@/components/EditorPane";
 import FormSidebar from "@/components/FormSidebar";
 import SettingsDialog from "@/components/SettingsDialog";
@@ -481,15 +482,7 @@ export default function FormEditorPage() {
 
 	return (
 		<div className="flex flex-col h-screen w-screen">
-			<EditorToolbar
-				currentPage={currentPage}
-				totalPages={totalPages}
-				pageTitle={pageTitle}
-				onPrevPage={handlePrevPage}
-				onNextPage={handleNextPage}
-				onOpenSettings={handleOpenSettings}
-				onExportFillout={handleExportFillout}
-			/>
+			<EditorToolbar />
 			<div className="flex flex-row flex-grow min-h-0">
 				<FormSidebar
 					forms={forms}
@@ -497,6 +490,7 @@ export default function FormEditorPage() {
 					onSelectForm={handleSelectForm}
 					onNewForm={handleNewForm}
 					onDeleteForm={handleDeleteForm}
+					onOpenSettings={handleOpenSettings}
 				/>
 				<Group orientation="horizontal" className="flex-grow min-w-0">
 					<Panel id="editorPanel" defaultSize={"50%"} minSize={100}>
@@ -515,13 +509,23 @@ export default function FormEditorPage() {
 					</Panel>
 					<Separator className="w-2 bg-gray-200 hover:bg-gray-300 transition-colors" />
 					<Panel id="previewPanel" defaultSize={"50%"} minSize={100}>
-						<div className="p-6 h-full overflow-auto">
-							{error && <pre className="error-message">{error}</pre>}
-							{error && formOutput ? (
-								<div className="opacity-50">{formOutput}</div>
-							) : (
-								formOutput
-							)}
+						<div className="flex flex-col h-full">
+							<PreviewToolbar
+								currentPage={currentPage}
+								totalPages={totalPages}
+								pageTitle={pageTitle}
+								onPrevPage={handlePrevPage}
+								onNextPage={handleNextPage}
+								onExportFillout={handleExportFillout}
+							/>
+							<div className="p-6 flex-1 overflow-auto">
+								{error && <pre className="error-message">{error}</pre>}
+								{error && formOutput ? (
+									<div className="opacity-50">{formOutput}</div>
+								) : (
+									formOutput
+								)}
+							</div>
 						</div>
 					</Panel>
 				</Group>

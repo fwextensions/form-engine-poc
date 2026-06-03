@@ -1,7 +1,7 @@
 import React, { useRef, useEffect } from "react";
 import * as Toolbar from "@radix-ui/react-toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
-import { PlusIcon, TrashIcon } from "./icons";
+import { PlusIcon, TrashIcon, GearIcon } from "./icons";
 
 interface FormSidebarProps {
 	forms: string[];
@@ -9,6 +9,7 @@ interface FormSidebarProps {
 	onSelectForm: (name: string) => void;
 	onNewForm: () => void;
 	onDeleteForm: () => void;
+	onOpenSettings: () => void;
 }
 
 const FormSidebar = ({
@@ -17,6 +18,7 @@ const FormSidebar = ({
 	onSelectForm,
 	onNewForm,
 	onDeleteForm,
+	onOpenSettings,
 }: FormSidebarProps) => {
 	const listRef = useRef<HTMLUListElement>(null);
 	const selectedIndex = forms.indexOf(selectedForm);
@@ -90,6 +92,18 @@ const FormSidebar = ({
 					</li>
 				))}
 			</ul>
+
+			{/* Footer — settings */}
+			<div className="border-t border-slate-200 p-2">
+				<button
+					onClick={onOpenSettings}
+					className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-slate-600 rounded hover:bg-slate-200 transition-colors"
+					title="Settings"
+				>
+					<GearIcon />
+					Settings
+				</button>
+			</div>
 		</div>
 	);
 };
