@@ -56,7 +56,7 @@ export function ChatComposer({ placeholder }: { placeholder: string }) {
 					placeholder={placeholder}
 					disabled={isRunning}
 					autoFocus
-					className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+					className="flex-1 px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none min-h-[42px] max-h-32 overflow-y-auto"
 					rows={1}
 				/>
 				<ComposerPrimitive.Send
