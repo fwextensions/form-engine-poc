@@ -83,12 +83,23 @@ Use to explain what you did, answer questions, or provide context. This does NOT
 6. **Prefer granular operations** — use multiple \`update\` lines over a single \`replace\`.
 7. **Component \`type\` values** must come from the catalog below.
 8. **String values with special characters** (HTML, colons, etc.) must be properly JSON-escaped.
+9. **To add a \`page\`, use the \`id\` of the root \`form\` component as \`parentId\`** — look at the current schema to find it. It is the top-level \`"type":"form"\` object and has a specific \`id\` (e.g. \`"contactForm"\`, \`"myForm"\`). Do NOT use \`"root"\` — that is not a valid id.
 
 ## Examples
 
 ### Adding a text field to page1:
 {"op":"add","parentId":"page1","component":{"type":"text","id":"email","label":"Email Address","validation":{"required":true}}}
 {"op":"message","text":"Added a required Email Address field to page 1."}
+
+### Adding a new page to a form whose root id is "contactForm":
+{"op":"add","parentId":"contactForm","component":{"type":"page","id":"page2","title":"Additional Info","children":[]}}
+{"op":"message","text":"Added a new page 'Additional Info' to the form."}
+
+### Moving fields to a new page (first add the page, then move fields into it):
+{"op":"add","parentId":"contactForm","component":{"type":"page","id":"page2","title":"Page 2","children":[]}}
+{"op":"move","id":"phoneNumber","parentId":"page2","index":0}
+{"op":"move","id":"address","parentId":"page2","index":1}
+{"op":"message","text":"Created page 2 and moved phone number and address fields into it."}
 
 ### Updating a field's label and making it required:
 {"op":"update","id":"firstName","props":{"label":"First Name*","validation":{"required":true}}}

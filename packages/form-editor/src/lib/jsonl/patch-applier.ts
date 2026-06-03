@@ -150,8 +150,21 @@ export function applyPatches(schema: SchemaComponent, patches: PatchOp[]): Batch
 	return { schema: current, results, messages, successCount, failureCount };
 }
 
+function resolveParent(
+	schema: SchemaComponent,
+	parentId: string,
+): ReturnType<typeof findById> {
+	const found = findById(schema, parentId);
+	if (found) return found;
+	// "root" is a common model mistake — treat it as the schema root
+	if (parentId === "root") {
+		return { component: schema, parent: null, index: -1 };
+	}
+	return null;
+}
+
 function applyAdd(schema: SchemaComponent, patch: AddOp): ApplyResult {
-	const parent = findById(schema, patch.parentId);
+	const parent = resolveParent(schema, patch.parentId);
 	if (!parent) {
 		return { schema, success: false, error: `Parent not found: ${patch.parentId}` };
 	}
@@ -243,7 +256,7 @@ function applyMove(schema: SchemaComponent, patch: MoveOp): ApplyResult {
 	}
 
 	// Find the new parent
-	const parent = findById(schema, patch.parentId);
+	const parent = resolveParent(schema, patch.parentId);
 	if (!parent) {
 		// Oops, put it back (best effort — we already mutated the clone)
 		return { schema, success: false, error: `New parent not found: ${patch.parentId}` };
