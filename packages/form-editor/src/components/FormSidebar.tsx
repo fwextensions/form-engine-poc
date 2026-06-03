@@ -45,7 +45,7 @@ const FormSidebar = ({
 	return (
 		<div className="flex flex-col h-full w-48 shrink-0 bg-slate-100 border-r border-slate-200">
 			{/* Header — height matches the tab bar in EditorPane (py-3 + text-sm) */}
-			<div className="flex items-center justify-between px-3 py-[7px] border-b border-slate-200 bg-slate-50">
+			<div className="flex items-center justify-between min-h-12 px-3 border-b border-slate-200 bg-slate-50">
 				<span className="text-sm font-semibold text-slate-600 tracking-wide">Forms</span>
 				<Toolbar.Root className="flex items-center gap-0" aria-label="Form actions">
 					<ToolbarIconButton

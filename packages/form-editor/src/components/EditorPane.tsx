@@ -97,7 +97,7 @@ export default function EditorPane({
 			className="flex flex-col h-full"
 		>
 			{/* Tab List */}
-			<div className="flex items-center justify-between border-b border-slate-200 bg-slate-50">
+			<div className="flex items-center justify-between min-h-12 border-b border-slate-200 bg-slate-50">
 				<Tabs.List className="flex">
 					<Tabs.Trigger
 						value="yaml"
