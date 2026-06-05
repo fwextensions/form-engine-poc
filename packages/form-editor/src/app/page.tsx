@@ -349,7 +349,7 @@ export default function FormEditorPage() {
 			const emptySchema = "";
 
 			saveFormContent(name, emptySchema);
-			setForms([...forms, name]);
+			setForms([...forms, name].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" })));
 			setSelectedForm(name);
 			setYamlInput(emptySchema);
 			setChatMessages([]);

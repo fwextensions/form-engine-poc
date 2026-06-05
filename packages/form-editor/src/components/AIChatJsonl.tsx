@@ -105,7 +105,7 @@ function AIChatJsonlInner({
 					/>
 				) : (
 					<>
-						<ThreadPrimitive.Viewport className="h-full overflow-y-auto p-4">
+						<ThreadPrimitive.Viewport className="h-full overflow-y-auto px-8 py-4">
 							<ThreadPrimitive.Messages>
 								{({ message }) => {
 									if (message.role === "user") return <ChatMessage />;

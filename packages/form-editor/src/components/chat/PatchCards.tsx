@@ -11,14 +11,15 @@ import { ChevronUpIcon, ChevronDownIcon } from "@/components/icons";
 type OpStyle = {
 	badge: string;
 	border: string;
+	leftColor: string;
 };
 
 const OP_STYLES: Record<string, OpStyle> = {
-	add:     { badge: "bg-success-100 text-success-700",     border: "border-l-3 border-success-500" },
-	update:  { badge: "bg-primary-100 text-primary-700",     border: "border-l-3 border-primary-400" },
-	remove:  { badge: "bg-danger-100 text-danger-700",       border: "border-l-3 border-danger-500" },
-	move:    { badge: "bg-secondary-100 text-secondary-700", border: "border-l-3 border-secondary-500" },
-	replace: { badge: "bg-accent-100 text-accent-700",       border: "border-l-3 border-accent-500" },
+	add:     { badge: "bg-success-100 text-success-700",     border: "border-l-3", leftColor: "var(--color-success-500)" },
+	update:  { badge: "bg-primary-100 text-primary-700",     border: "border-l-3", leftColor: "var(--color-primary-400)" },
+	remove:  { badge: "bg-danger-100 text-danger-700",       border: "border-l-3", leftColor: "var(--color-danger-500)" },
+	move:    { badge: "bg-secondary-100 text-secondary-700", border: "border-l-3", leftColor: "var(--color-secondary-500)" },
+	replace: { badge: "bg-accent-100 text-accent-700",       border: "border-l-3", leftColor: "var(--color-accent-500)" },
 };
 
 function opTitle(patch: PatchOp): string {
@@ -76,7 +77,7 @@ function PatchCard({ card, onHighlight }: { card: PatchWithResult; onHighlight?:
 	};
 
 	return (
-		<div className={`${style.border} bg-[#fcfcfc] border border-ink-100 rounded-md shadow-sm overflow-hidden`}>
+		<div className={`${style.border} bg-[#fcfcfc] border-t border-r border-b border-ink-100 rounded-md shadow-sm overflow-hidden`} style={{ borderLeftColor: style.leftColor }}>
 			<div
 				className={`flex items-start gap-2 pl-3 pr-2 py-2 ${isClickable ? "cursor-pointer hover:bg-ink-50/50 transition-colors" : ""}`}
 				onClick={isClickable ? handleClick : undefined}

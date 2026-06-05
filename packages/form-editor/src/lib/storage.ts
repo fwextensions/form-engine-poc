@@ -27,7 +27,7 @@ export function getSavedForms(): string[]
 		}
 	}
 
-	return savedForms;
+	return savedForms.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 }
 
 export function getFormContent(name: string)
