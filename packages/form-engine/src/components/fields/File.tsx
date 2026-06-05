@@ -32,7 +32,7 @@ export const FileComponent: React.FC<FileProps> = ({ containerProps, inputProps 
 				<input
 					{...inputProps}
 					type="file"
-					className={`mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${inputProps.className || ""}`}
+					className={`mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 ${inputProps.className || ""}`}
 				/>
 			</Control>
 		</FormFieldContainer>

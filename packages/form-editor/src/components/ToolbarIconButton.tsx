@@ -11,11 +11,11 @@ interface ToolbarIconButtonProps {
 }
 
 const baseClasses =
-	"inline-flex h-8 w-8 items-center justify-center rounded text-slate-600 transition-colors enabled:hover:bg-slate-200 enabled:active:bg-slate-300 disabled:opacity-30";
+	"inline-flex h-8 w-8 items-center justify-center rounded text-ink-500 transition-colors enabled:hover:bg-ink-100 enabled:active:bg-ink-200 disabled:opacity-30";
 
 const variantClasses = {
-	blue: "enabled:hover:text-blue-600 enabled:active:text-blue-700",
-	red: "enabled:hover:text-red-600 enabled:active:text-red-700",
+	blue: "enabled:hover:text-primary-600 enabled:active:text-primary-700",
+	red: "enabled:hover:text-danger-500 enabled:active:text-danger-700",
 };
 
 export default function ToolbarIconButton({

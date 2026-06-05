@@ -48,18 +48,16 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({ containerProps, radioGro
 		<FormFieldContainer {...containerProps}>
 			<RadioGroupPrimitive.Root
 				{...radioGroupRootProps}
-				className={`mt-1 ${orientationClass} ${radioGroupRootProps.className || ""}`}
+				className={`mt-1.5 ${orientationClass} ${radioGroupRootProps.className || ""}`}
 				aria-required={radioGroupRootProps.required}
-				// Radix RadioGroup uses the 'name' prop on items for grouping, but Form.Field uses 'name' for data path.
-				// The 'name' on RadioGroupPrimitive.Root is for form submission if not using Radix Form.
 			>
 				{options.map((option) => (
-					<div key={option.value} className="flex items-center">
+					<div key={option.value} className="flex items-center gap-2">
 						<RadioGroupPrimitive.Item
 							value={option.value}
-							id={`${radioGroupRootProps.name}-${option.value}`} // Unique ID for each radio item
+							id={`${radioGroupRootProps.name}-${option.value}`}
 							disabled={option.disabled}
-							className="h-4 w-4 rounded-full border border-gray-300 text-indigo-600 focus:ring-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed data-[state=checked]:bg-indigo-600"
+							className="h-4 w-4 rounded-full border border-ink-200 text-primary-600 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600"
 						>
 							<RadioGroupPrimitive.Indicator className="flex items-center justify-center">
 								<div className="h-1.5 w-1.5 rounded-full bg-white"></div>
@@ -67,7 +65,7 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({ containerProps, radioGro
 						</RadioGroupPrimitive.Item>
 						<label
 							htmlFor={`${radioGroupRootProps.name}-${option.value}`}
-							className="ml-2 block text-sm text-gray-700"
+							className="block text-sm text-ink-700"
 						>
 							{option.label}
 						</label>

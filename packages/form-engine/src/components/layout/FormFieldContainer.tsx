@@ -2,13 +2,9 @@
 import React from "react";
 import * as Form from "@radix-ui/react-form";
 
-// some gnarly Tailwind arbitrary variant selectors to add a red asterisk to
-// required fields inside FormFieldContainer, but only for the first label, so
-// that it doesn't also match labels for things like radio buttons
-const RequiredFieldStyles = `
-[&:has(input[required],select[required],textarea[required])>*:first-child>label]:after:content-['_*']
-[&:has(input[required],select[required],textarea[required])>*:first-child>label]:after:text-red-600
-`;
+// Required asterisk is handled by the .field-required-marker CSS class in globals.css
+// (Tailwind v4 scanner can't reliably detect classes inside JS string variables)
+const RequiredFieldStyles = "field-required-marker";
 
 // Props for FormFieldContainer
 export interface FormFieldContainerProps {
@@ -34,27 +30,27 @@ export const FormFieldContainer: React.FC<FormFieldContainerProps> = ({
 	messages,
 }) => {
 	return (
-		<Form.Field name={name} data-field-id={name} className={`mb-4 ${RequiredFieldStyles} ${className || ""}`} style={style}>
+		<Form.Field name={name} data-field-id={name} className={`mb-5 ${RequiredFieldStyles} ${className || ""}`} style={style}>
 			{label && (
-				<div className="flex items-baseline justify-between mb-1">
-					<Form.Label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700">
+				<div className="flex items-baseline justify-between mb-1.5">
+					<Form.Label htmlFor={htmlFor} className="block text-sm font-medium text-ink-700">
 						{label}
 					</Form.Label>
 				</div>
 			)}
 			{description && (
-				<p id={htmlFor ? `${htmlFor}-description` : undefined} className="text-xs text-gray-500 mt-1 mb-1">
+				<p id={htmlFor ? `${htmlFor}-description` : undefined} className="text-xs text-ink-500 mt-1 mb-1.5">
 					{description}
 				</p>
 			)}
 			{children}
 			{messages && messages.map((msg, index) => (
-				<Form.Message key={index} className="text-xs text-red-500 mt-1">
+				<Form.Message key={index} className="text-xs text-danger-500 mt-1">
 					{typeof msg === "string" ? msg : msg.message}
 				</Form.Message>
 			))}
 			{/* Default message for when a required field is empty. The input needs the 'required' attribute. */}
-			<Form.Message match="valueMissing" className="text-xs text-red-500 mt-1">
+			<Form.Message match="valueMissing" className="text-xs text-danger-500 mt-1">
 				Please fill out this field.
 			</Form.Message>
 			{/* Add other common Form.Message matches if needed, e.g., typeMismatch for email/url inputs */}

@@ -25,7 +25,7 @@ export const PageComponent: React.FC<PageProps> = ({ title, children, className,
 	return (
 		<div
 			{...rest} // Passes through other HTML attributes like id
-			className={`page-container p-4 border border-gray-200 rounded-md shadow-sm my-4 ${className || ''}`}
+			className={`page-container p-4 bg-white border border-gray-200 rounded-md shadow-sm my-4 ${className || ''}`}
 			style={style}
 		>
 			{title && <h2 className="text-xl font-semibold mb-3 border-b pb-2 text-gray-700">{title}</h2>}

@@ -54,7 +54,7 @@ export const Select: React.FC<SelectProps> = ({
             <SelectPrimitive.Root {...selectRootProps}>
                 <SelectPrimitive.Trigger
                     id={selectRootProps.id} // Ensure id is on the trigger for label association
-                    className="mt-1 inline-flex items-center justify-between rounded-md px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:border-indigo-500 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
+                    className="mt-1.5 inline-flex items-center justify-between rounded px-3 py-2 text-sm text-gray-900 bg-white border border-ink-100 shadow-sm hover:bg-gray-50 focus:outline-none focus:border-primary-500 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
                     aria-required={selectRootProps.required}
                     disabled={selectRootProps.disabled}
                 >
@@ -83,7 +83,7 @@ export const Select: React.FC<SelectProps> = ({
                                 <SelectPrimitive.Item
                                     key={option.value}
                                     value={option.value}
-                                    className="relative flex items-center px-8 py-2 rounded-sm text-sm text-gray-900 select-none hover:bg-indigo-500 hover:text-white focus:bg-indigo-500 focus:text-white"
+                                    className="relative flex items-center px-8 py-2 rounded-sm text-sm text-gray-900 select-none hover:bg-primary-500 hover:text-white focus:bg-primary-500 focus:text-white"
                                 >
                                     <SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
                                     <SelectPrimitive.ItemIndicator className="absolute left-2 inline-flex items-center">

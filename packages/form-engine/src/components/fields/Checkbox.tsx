@@ -28,10 +28,10 @@ export const Checkbox: React.FC<CheckboxProps> = ({ containerProps, checkboxRoot
 	return (
 		<FormFieldContainer {...containerProps} htmlFor={id}>
 			<>
-			<div className="flex items-center mt-1">
+			<div className="flex items-center gap-2 mt-1.5">
 				<CheckboxPrimitive.Root
 					{...checkboxRootProps}
-					className={`flex h-5 w-5 items-center justify-center rounded border border-gray-300 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 data-[state=checked]:bg-indigo-600 data-[state=checked]:text-white disabled:bg-gray-100 disabled:cursor-not-allowed ${checkboxRootProps.className || ""}`}
+					className={`flex h-5 w-5 items-center justify-center rounded border border-ink-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600 data-[state=checked]:text-white disabled:bg-gray-100 disabled:cursor-not-allowed ${checkboxRootProps.className || ""}`}
 					aria-required={checkboxRootProps.required}
 				>
 					<CheckboxPrimitive.Indicator>
@@ -39,7 +39,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({ containerProps, checkboxRoot
 					</CheckboxPrimitive.Indicator>
 				</CheckboxPrimitive.Root>
 				{label && (
-					<Label htmlFor={id} className="ml-2 text-sm text-gray-700">
+					<Label htmlFor={id} className="block text-sm text-ink-700">
 						{label}
 					</Label>
 				)}

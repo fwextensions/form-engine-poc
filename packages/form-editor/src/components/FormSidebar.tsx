@@ -43,10 +43,10 @@ const FormSidebar = ({
 	}, [selectedIndex]);
 
 	return (
-		<div className="flex flex-col h-full w-48 shrink-0 bg-slate-100 border-r border-slate-200">
+		<div className="flex flex-col h-full w-48 shrink-0 bg-ink-50 border-r border-ink-100">
 			{/* Header — height matches the tab bar in EditorPane (py-3 + text-sm) */}
-			<div className="flex items-center justify-between min-h-12 px-3 border-b border-slate-200 bg-slate-50">
-				<span className="text-sm font-semibold text-slate-600 tracking-wide">Forms</span>
+			<div className="flex items-center justify-between min-h-12 px-3 border-b border-ink-100 bg-ink-50">
+				<span className="font-slab text-[15px] font-semibold text-ink-800">Forms</span>
 				<Toolbar.Root className="flex items-center gap-0" aria-label="Form actions">
 					<ToolbarIconButton
 						onClick={onNewForm}
@@ -70,7 +70,7 @@ const FormSidebar = ({
 				ref={listRef}
 				tabIndex={0}
 				onKeyDown={handleKeyDown}
-				className="flex-1 overflow-y-auto py-1 outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400"
+				className="flex-1 overflow-y-auto py-1 outline-none focus:ring-2 focus:ring-inset focus:ring-primary-500"
 				role="listbox"
 				aria-label="Forms"
 			>
@@ -82,10 +82,10 @@ const FormSidebar = ({
 						onClick={() => onSelectForm(formName)}
 						title={formName}
 						className={[
-							"px-3 py-1.5 text-sm cursor-pointer truncate select-none",
+							"mx-2 px-2.5 py-1.5 text-sm rounded-md cursor-pointer truncate select-none",
 							formName === selectedForm
-								? "bg-blue-500 text-white"
-								: "text-slate-700 hover:bg-slate-200",
+								? "bg-primary-600 text-white font-semibold"
+								: "text-ink-700 hover:bg-ink-100",
 						].join(" ")}
 					>
 						{formName}
@@ -94,10 +94,10 @@ const FormSidebar = ({
 			</ul>
 
 			{/* Footer — settings */}
-			<div className="border-t border-slate-200 p-2">
+			<div className="border-t border-ink-100 p-2">
 				<button
 					onClick={onOpenSettings}
-					className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-slate-600 rounded hover:bg-slate-200 transition-colors"
+					className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-ink-600 rounded hover:bg-ink-100 transition-colors"
 					title="Settings"
 				>
 					<GearIcon />

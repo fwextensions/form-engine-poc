@@ -1,5 +1,26 @@
 import type { Metadata } from "next";
+import { Roboto_Flex, Roboto_Slab, Roboto_Mono } from "next/font/google";
 import "./globals.css";
+
+const robotoFlex = Roboto_Flex({
+	subsets: ["latin"],
+	variable: "--loaded-font-sans",
+	display: "swap",
+});
+
+const robotoSlab = Roboto_Slab({
+	subsets: ["latin"],
+	weight: ["400", "500", "600", "700"],
+	variable: "--loaded-font-slab",
+	display: "swap",
+});
+
+const robotoMono = Roboto_Mono({
+	subsets: ["latin"],
+	weight: ["400", "500"],
+	variable: "--loaded-font-mono",
+	display: "swap",
+});
 
 export const metadata: Metadata = {
 	title: "Form Editor",
@@ -12,7 +33,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" className="h-full">
+		<html lang="en" className={`h-full ${robotoFlex.variable} ${robotoSlab.variable} ${robotoMono.variable}`}>
 		<head>
 			<link rel="icon"
 				type="image/png"

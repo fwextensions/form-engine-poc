@@ -21,7 +21,7 @@ const PreviewToolbar = ({
 	onExportFillout,
 }: PreviewToolbarProps) => {
 	return (
-		<Toolbar.Root className="bg-slate-50 border-b border-slate-200 min-h-12 px-2 flex items-center gap-0 shrink-0" aria-label="Preview toolbar">
+		<Toolbar.Root className="bg-ink-10 border-b border-ink-100 min-h-12 px-2 flex items-center gap-0 shrink-0" aria-label="Preview toolbar">
 			<ToolbarIconButton
 				onClick={onPrevPage}
 				disabled={currentPage === 0 || totalPages <= 1}
@@ -36,8 +36,8 @@ const PreviewToolbar = ({
 			>
 				<ChevronRightIcon />
 			</ToolbarIconButton>
-			<span className="mx-1 text-sm text-slate-600 font-semibold flex-1 truncate">
-				{pageTitle} ({currentPage + 1} / {totalPages})
+			<span className="mx-1 font-slab text-[15px] text-ink-800 font-semibold flex-1 truncate">
+				{pageTitle} <span className="ml-1 text-ink-600 font-normal">({currentPage + 1} / {totalPages})</span>
 			</span>
 			{onExportFillout && (
 				<Toolbar.Button

@@ -97,19 +97,19 @@ export default function EditorPane({
 			className="flex flex-col h-full"
 		>
 			{/* Tab List */}
-			<div className="flex items-center justify-between min-h-12 border-b border-slate-200 bg-slate-50">
+			<div className="flex items-center justify-between min-h-12 border-b border-ink-100 bg-ink-10">
 				<Tabs.List className="flex">
 					<Tabs.Trigger
 						value="yaml"
-						className="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
+						className="px-6 py-3 text-sm font-bold text-ink-500 hover:text-ink-800 hover:bg-ink-50 transition-colors data-[state=active]:text-primary-600 data-[state=active]:border-b-2 data-[state=active]:border-primary-600 data-[state=active]:bg-[#fcfcfc]"
 					>
-						YAML Editor
+						YAML editor
 					</Tabs.Trigger>
 					<Tabs.Trigger
 						value="ai"
-						className="px-6 py-3 text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors data-[state=active]:text-blue-600 data-[state=active]:border-b-2 data-[state=active]:border-blue-600 data-[state=active]:bg-white"
+						className="px-6 py-3 text-sm font-bold text-ink-500 hover:text-ink-800 hover:bg-ink-50 transition-colors data-[state=active]:text-primary-600 data-[state=active]:border-b-2 data-[state=active]:border-primary-600 data-[state=active]:bg-[#fcfcfc]"
 					>
-						AI Assistant
+						AI assistant
 					</Tabs.Trigger>
 				</Tabs.List>
 				{history && (
