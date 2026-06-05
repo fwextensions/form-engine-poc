@@ -13,14 +13,22 @@ import { serializeForUI, deserializeFromUI } from "../../utils/valueSerializatio
 
 // 1. Define Configuration Schema
 const optionSchema = z.object({
-    label: z.string(),
-    value: z.any(), // allow non-string option values in schema
+    label: z.string().describe("Display text shown in the dropdown"),
+    value: z.any().describe("The value submitted when this option is selected. Can be string, number, or boolean."),
 });
 type UISerialOption = { label: string; value: string };
 
+// Options can be either full {label, value} objects or plain strings (where the string is used as both label and value)
+const optionInputSchema = z.union([
+    optionSchema,
+    z.string().describe("Shorthand: a plain string is used as both the label and value"),
+]);
+
 export const SelectConfigSchema = baseFieldConfigSchema.extend({
     type: z.literal("select"),
-    options: z.array(optionSchema),
+    options: z.array(optionInputSchema).describe(
+        "List of dropdown options. Each option is either a {label, value} object or a plain string. Example: [{label: 'California', value: 'CA'}, {label: 'Nevada', value: 'NV'}] or ['Option A', 'Option B']"
+    ),
     placeholder: z.string().optional(),
     defaultValue: z.any().optional(),
 });
@@ -99,12 +107,29 @@ createComponent<SelectConfig, SelectProps>({
     type: "select",
     schema: SelectConfigSchema,
     component: Select,
-    description: "A dropdown select field for choosing from predefined options",
+    description: `A dropdown select field for choosing from predefined options.
+
+Options format — prefer the full object form:
+  options:
+    - label: "California"
+      value: CA
+    - label: "Nevada"
+      value: NV
+
+Plain strings are also accepted and will use the string as both label and value:
+  options:
+    - California
+    - Nevada`,
     transformConfig: commonFieldTransform,
     transformProps: (config, context) => {
         const { id, label, description, options, placeholder, defaultValue, validation, disabled } = config;
 
-        const uiOptions: UISerialOption[] = options.map((o) => ({ label: o.label, value: serializeForUI(o.value) }));
+        // Normalize string shorthand to full {label, value} objects
+        const normalizedOptions = options.map((o) =>
+            typeof o === "string" ? { label: o, value: o } : o
+        );
+
+        const uiOptions: UISerialOption[] = normalizedOptions.map((o) => ({ label: o.label, value: serializeForUI(o.value) }));
         const rawValue = context.formData[id] ?? defaultValue ?? undefined;
         const value = rawValue !== undefined ? serializeForUI(rawValue) : undefined;
 

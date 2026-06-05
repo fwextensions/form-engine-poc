@@ -12,16 +12,24 @@ import { serializeForUI, deserializeFromUI } from "../../utils/valueSerializatio
 
 // 1. Define Configuration Schema
 const radioOptionSchema = z.object({
-	label: z.string(),
-	value: z.any(), // allow non-string option values in schema
-	disabled: z.boolean().optional(),
+	label: z.string().describe("Display text shown next to the radio button"),
+	value: z.any().describe("The value submitted when this option is selected. Can be string, number, or boolean."),
+	disabled: z.boolean().optional().describe("If true, this option is shown but cannot be selected"),
 });
 export type RadioOption = z.infer<typeof radioOptionSchema>;
 type UIRadioOption = { label: string; value: string; disabled?: boolean };
 
+// Options can be either full {label, value} objects or plain strings (where the string is used as both label and value)
+const radioOptionInputSchema = z.union([
+	radioOptionSchema,
+	z.string().describe("Shorthand: a plain string is used as both the label and value"),
+]);
+
 export const RadioGroupConfigSchema = baseFieldConfigSchema.extend({
 	type: z.literal("radiogroup"),
-	options: z.array(radioOptionSchema),
+	options: z.array(radioOptionInputSchema).describe(
+		"List of radio options. Each option is either a {label, value} object (the preferred approach) or a plain string (used as both label and value). Example: [{label: 'Yes', value: true}, {label: 'No', value: false}]"
+	),
 	defaultValue: z.any().optional(),
 	orientation: z.enum(["horizontal", "vertical"]).optional().default("vertical"),
 });
@@ -75,12 +83,29 @@ createComponent<RadioGroupConfig, RadioGroupProps>({
 	type: "radiogroup",
 	schema: RadioGroupConfigSchema,
 	component: RadioGroup,
-	description: "A group of radio buttons for selecting one option from a list",
+	description: `A group of radio buttons for selecting one option from a list.
+
+Options format — prefer the full object form:
+  options:
+    - label: "Public (VS 117)"
+      value: PUBLIC
+    - label: "Non-Clergy (VS 115)"
+      value: NON_CLERGY
+
+Plain strings are also accepted and will use the string as both label and value:
+  options:
+    - PUBLIC (VS 117)
+    - NON-CLERGY (VS 115)`,
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, options, defaultValue, validation, orientation, disabled } = config;
 
-		const uiOptions: UIRadioOption[] = options.map((o) => ({ label: o.label, value: serializeForUI(o.value), disabled: o.disabled }));
+		// Normalize string shorthand to full {label, value} objects
+		const normalizedOptions = options.map((o) =>
+			typeof o === "string" ? { label: o, value: o } : o
+		);
+
+		const uiOptions: UIRadioOption[] = normalizedOptions.map((o) => ({ label: o.label, value: serializeForUI(o.value), disabled: o.disabled }));
 		const rawValue = context.formData[id] ?? defaultValue ?? undefined;
 		const value = rawValue !== undefined ? serializeForUI(rawValue) : undefined;
 
