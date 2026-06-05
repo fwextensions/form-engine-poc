@@ -63,7 +63,7 @@ export function EmptyState({ isClient, hasKey, onOpenSettings }: EmptyStateProps
 					<div className="text-center max-w-2xl">
 						<div className="mb-6">
 							<svg
-								className="w-16 h-16 mx-auto text-blue-500"
+								className="w-16 h-16 mx-auto text-primary-600"
 								fill="none"
 								stroke="currentColor"
 								viewBox="0 0 24 24"
@@ -76,8 +76,8 @@ export function EmptyState({ isClient, hasKey, onOpenSettings }: EmptyStateProps
 								/>
 							</svg>
 						</div>
-						<h3 className="text-xl font-semibold text-slate-800 mb-2">
-							Start a Conversation
+						<h3 className="text-xl font-slab font-semibold text-slate-800 mb-2">
+							Create a form
 						</h3>
 						<p className="text-slate-600 mb-6">
 							Describe the form you want to create, and I&apos;ll generate
