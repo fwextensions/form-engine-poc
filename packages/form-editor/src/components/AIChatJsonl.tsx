@@ -29,6 +29,7 @@ import {
 	type ValidationResults,
 } from "./chat/ValidationContext";
 import { FieldHighlightContext, type FieldHighlightFn } from "./chat/FieldHighlightContext";
+import { PdfExtractionContext, type PdfExtractionMap } from "./chat/PdfExtractionContext";
 import { ChatMessage } from "./chat/ChatMessage";
 import { ChatComposer } from "./chat/ChatComposer";
 import { EmptyState } from "./chat/EmptyState";
@@ -189,6 +190,7 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 	const [validationResults, setValidationResults] = useState<ValidationResults>(
 		new Map(),
 	);
+	const [pdfExtractionMap, setPdfExtractionMap] = useState<PdfExtractionMap>(new Map());
 
 	const lastUserMessageRef = useRef<string>("");
 
@@ -209,10 +211,17 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 		setPendingPdf({ type: "attachment", dataUrl: pdf.dataUrl, filename: pdf.file.name });
 	}, [setPendingPdf]);
 
+	// Holds the extraction that was consumed by the transport, waiting to be
+	// associated with its user message ID once we know it.
+	const pendingExtractionAssocRef = useRef<{ result: PdfExtractionResult; filename: string } | null>(null);
+
 	const consumePendingPdfRef = useRef(() => {
 		const ctx = pendingPdfRef.current;
 		if (ctx) {
 			pendingPdfRef.current = null;
+			if (ctx.type === "extraction") {
+				pendingExtractionAssocRef.current = { result: ctx.result, filename: ctx.filename };
+			}
 			queueMicrotask(() => setPendingPdfDisplay(null));
 		}
 		return ctx;
@@ -269,6 +278,25 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 	const handleFinish = useCallback(
 		({ message }: { message: any }) => {
 			if (message.role !== "assistant") return;
+
+			// Associate pending PDF extraction with the user message that triggered this response
+			const extraction = pendingExtractionAssocRef.current;
+			if (extraction) {
+				pendingExtractionAssocRef.current = null;
+				const messages = runtimeRef.current.thread.getState().messages;
+				// Find the user message immediately before this assistant message
+				const assistantIdx = messages.findIndex((m: any) => m.id === message.id);
+				const userMsg = assistantIdx > 0
+					? messages.slice(0, assistantIdx).reverse().find((m: any) => m.role === "user")
+					: messages.slice().reverse().find((m: any) => m.role === "user");
+				if (userMsg) {
+					setPdfExtractionMap((prev) => {
+						const next = new Map(prev);
+						next.set(userMsg.id, extraction);
+						return next;
+					});
+				}
+			}
 
 			const messageContent =
 				message.parts
@@ -370,6 +398,11 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 		},
 	});
 
+	// Keep a stable ref to runtime so handleFinish can access thread state
+	// without runtime being in its dependency array (which would be circular)
+	const runtimeRef = useRef(runtime);
+	runtimeRef.current = runtime;
+
 	// Capture user messages for history descriptions + persist to localStorage
 	React.useEffect(() => {
 		const unsubscribe = runtime.thread.subscribe(() => {
@@ -414,15 +447,17 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
 			<ValidationResultsContext.Provider value={validationResults}>
-				<FieldHighlightContext.Provider value={onFieldHighlight ?? null}>
-					<AIChatJsonlInner
-						onOpenSettings={onOpenSettings}
-						pendingPdf={pendingPdfDisplay}
-						onClearPendingPdf={() => setPendingPdf(null)}
-						onPdfExtracted={handlePdfExtracted}
-						onPdfAttachDirectly={handlePdfAttachDirectly}
-					/>
-				</FieldHighlightContext.Provider>
+				<PdfExtractionContext.Provider value={pdfExtractionMap}>
+					<FieldHighlightContext.Provider value={onFieldHighlight ?? null}>
+						<AIChatJsonlInner
+							onOpenSettings={onOpenSettings}
+							pendingPdf={pendingPdfDisplay}
+							onClearPendingPdf={() => setPendingPdf(null)}
+							onPdfExtracted={handlePdfExtracted}
+							onPdfAttachDirectly={handlePdfAttachDirectly}
+						/>
+					</FieldHighlightContext.Provider>
+				</PdfExtractionContext.Provider>
 			</ValidationResultsContext.Provider>
 		</AssistantRuntimeProvider>
 	);

@@ -9,13 +9,16 @@ import { MarkdownText } from "@/components/assistant-ui/markdown-text";
 import { extractTextAfterYaml } from "@/lib/yaml-extractor";
 import { looksLikeJsonl, extractJsonlDisplay } from "@/lib/jsonl-display";
 import { useValidationResult } from "./ValidationContext";
+import { usePdfExtraction } from "./PdfExtractionContext";
 import { StreamingIndicator } from "./StreamingIndicator";
 import { ValidationFeedback } from "./ValidationFeedback";
 import { PatchCards } from "./PatchCards";
+import { PdfExtractionCard } from "./PdfExtractionCard";
 
 export function ChatMessage() {
 	const message = useMessage();
 	const validation = useValidationResult(message.id);
+	const pdfExtraction = usePdfExtraction(message.id);
 
 	// Extract text content from message parts
 	const messageContent = message.content
@@ -177,6 +180,12 @@ export function ChatMessage() {
 					</div>
 					{showStreamingIndicator && (
 						<StreamingIndicator label={streamingLabel} hasContent={!!displayContent} />
+					)}
+					{pdfExtraction && (
+						<PdfExtractionCard
+							result={pdfExtraction.result}
+							filename={pdfExtraction.filename}
+						/>
 					)}
 				</div>
 			</MessagePrimitive.Root>

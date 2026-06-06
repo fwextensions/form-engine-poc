@@ -15,6 +15,7 @@ import type { UIMessage } from "ai";
 import { createChatTransport } from "@/lib/chat-transport";
 import { saveChatMessages } from "@/lib/chat-storage";
 import { ValidationResultsContext, type ValidationResults } from "./chat/ValidationContext";
+import { PdfExtractionContext, type PdfExtractionMap } from "./chat/PdfExtractionContext";
 import { ChatMessage } from "./chat/ChatMessage";
 import { ChatComposer } from "./chat/ChatComposer";
 import { EmptyState } from "./chat/EmptyState";
@@ -170,6 +171,7 @@ export default function AIChat(props: AIChatProps) {
 		initialMessages,
 	} = props;
 	const [validationResults, setValidationResults] = useState<ValidationResults>(new Map());
+	const [pdfExtractionMap, setPdfExtractionMap] = useState<PdfExtractionMap>(new Map());
 
 	// Pending PDF context: stored in a ref for the transport to consume, mirrored to state for UI
 	const pendingPdfRef = useRef<PendingPdfContext | null>(null);
@@ -192,10 +194,15 @@ export default function AIChat(props: AIChatProps) {
 		const ctx = pendingPdfRef.current;
 		if (ctx) {
 			pendingPdfRef.current = null;
+			if (ctx.type === "extraction") {
+				pendingExtractionAssocRef.current = { result: ctx.result, filename: ctx.filename };
+			}
 			queueMicrotask(() => setPendingPdfDisplay(null));
 		}
 		return ctx;
 	});
+
+	const pendingExtractionAssocRef = useRef<{ result: PdfExtractionResult; filename: string } | null>(null);
 
 	// Initialize schema generator
 	const generator = React.useMemo(() => new SchemaGenerator(), []);
@@ -212,6 +219,24 @@ export default function AIChat(props: AIChatProps) {
 		transport,
 		onFinish: ({ message }) => {
 			if (message.role === "assistant") {
+				// Associate pending PDF extraction with the user message that triggered this response
+				const extraction = pendingExtractionAssocRef.current;
+				if (extraction) {
+					pendingExtractionAssocRef.current = null;
+					const messages = runtimeRef.current.thread.getState().messages;
+					const assistantIdx = messages.findIndex((m: any) => m.id === message.id);
+					const userMsg = assistantIdx > 0
+						? messages.slice(0, assistantIdx).reverse().find((m: any) => m.role === "user")
+						: messages.slice().reverse().find((m: any) => m.role === "user");
+					if (userMsg) {
+						setPdfExtractionMap((prev) => {
+							const next = new Map(prev);
+							next.set(userMsg.id, extraction);
+							return next;
+						});
+					}
+				}
+
 				const messageContent = message.parts
 					?.filter((part): part is { type: "text"; text: string } => part.type === "text")
 					.map((part) => part.text)
@@ -245,10 +270,14 @@ export default function AIChat(props: AIChatProps) {
 		},
 	});
 
+	const runtimeRef = useRef(runtime);
+	runtimeRef.current = runtime;
+
 	// Persist messages to localStorage whenever they change
 	React.useEffect(() => {
 		const unsubscribe = runtime.thread.subscribe(() => {
 			const messages = runtime.thread.getState().messages;
+
 			if (messages.length > 0) {
 				saveChatMessages(
 					formId,
@@ -271,13 +300,15 @@ export default function AIChat(props: AIChatProps) {
 	return (
 		<AssistantRuntimeProvider runtime={runtime}>
 			<ValidationResultsContext.Provider value={validationResults}>
-				<AIChatInner
-					onOpenSettings={onOpenSettings}
-					pendingPdf={pendingPdfDisplay}
-					onClearPendingPdf={() => setPendingPdf(null)}
-					onPdfExtracted={handlePdfExtracted}
-					onPdfAttachDirectly={handlePdfAttachDirectly}
-				/>
+				<PdfExtractionContext.Provider value={pdfExtractionMap}>
+					<AIChatInner
+						onOpenSettings={onOpenSettings}
+						pendingPdf={pendingPdfDisplay}
+						onClearPendingPdf={() => setPendingPdf(null)}
+						onPdfExtracted={handlePdfExtracted}
+						onPdfAttachDirectly={handlePdfAttachDirectly}
+					/>
+				</PdfExtractionContext.Provider>
 			</ValidationResultsContext.Provider>
 		</AssistantRuntimeProvider>
 	);
