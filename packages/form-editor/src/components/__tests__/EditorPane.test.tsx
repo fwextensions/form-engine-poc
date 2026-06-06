@@ -15,23 +15,21 @@ vi.mock("@monaco-editor/react", () => ({
 	),
 }));
 
-// Mock AIChat component
-vi.mock("../AIChat", () => ({
-	default: ({ currentSchema, onSchemaGenerated, onOpenSettings }: any) => (
+// Mock AIChatJsonl component
+vi.mock("../AIChatJsonl", () => ({
+	default: ({ onOpenSettings }: any) => (
 		<div data-testid="ai-chat">
-			<div data-testid="current-schema">{currentSchema}</div>
-			<button
-				data-testid="generate-schema"
-				onClick={() => onSchemaGenerated("generated: schema")}
-			>
-				Generate
-			</button>
 			<button data-testid="open-settings" onClick={onOpenSettings}>
 				Settings
 			</button>
 		</div>
 	),
 }));
+
+const defaultJsonlMode = {
+	currentSchema: null,
+	onSchemaChange: vi.fn(),
+};
 
 describe("EditorPane", () => {
 	const mockOnSchemaChange = vi.fn();
@@ -50,11 +48,14 @@ describe("EditorPane", () => {
 				activeTab="yaml"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
-		expect(screen.getByText("YAML Editor")).toBeInTheDocument();
-		expect(screen.getByText("AI Assistant")).toBeInTheDocument();
+		expect(screen.getByText("YAML editor")).toBeInTheDocument();
+		expect(screen.getByText("AI assistant")).toBeInTheDocument();
 		expect(screen.getByTestId("monaco-editor")).toBeInTheDocument();
 	});
 
@@ -66,6 +67,9 @@ describe("EditorPane", () => {
 				activeTab="ai"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
@@ -82,10 +86,13 @@ describe("EditorPane", () => {
 				activeTab="yaml"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
-		const aiTab = screen.getByText("AI Assistant");
+		const aiTab = screen.getByText("AI assistant");
 		await user.click(aiTab);
 
 		expect(mockOnTabChange).toHaveBeenCalledWith("ai");
@@ -101,10 +108,13 @@ describe("EditorPane", () => {
 				activeTab="ai"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
-		const yamlTab = screen.getByText("YAML Editor");
+		const yamlTab = screen.getByText("YAML editor");
 		await user.click(yamlTab);
 
 		expect(mockOnTabChange).toHaveBeenCalledWith("yaml");
@@ -120,6 +130,9 @@ describe("EditorPane", () => {
 				activeTab="yaml"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
@@ -137,6 +150,9 @@ describe("EditorPane", () => {
 				activeTab="yaml"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
@@ -147,24 +163,7 @@ describe("EditorPane", () => {
 		expect(mockOnSchemaChange).toHaveBeenCalled();
 	});
 
-	it("passes schema to AIChat component", () => {
-		const testSchema = "id: myForm\ntype: form";
-
-		render(
-			<EditorPane
-				schema={testSchema}
-				onSchemaChange={mockOnSchemaChange}
-				activeTab="ai"
-				onTabChange={mockOnTabChange}
-				onOpenSettings={mockOnOpenSettings}
-			/>
-		);
-
-		const currentSchemaElement = screen.getByTestId("current-schema");
-		expect(currentSchemaElement.textContent).toBe(testSchema);
-	});
-
-	it("calls onSchemaChange when AIChat generates schema", async () => {
+	it("passes onOpenSettings to AIChatJsonl component", async () => {
 		const user = userEvent.setup();
 
 		render(
@@ -174,25 +173,9 @@ describe("EditorPane", () => {
 				activeTab="ai"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
-			/>
-		);
-
-		const generateButton = screen.getByTestId("generate-schema");
-		await user.click(generateButton);
-
-		expect(mockOnSchemaChange).toHaveBeenCalledWith("generated: schema");
-	});
-
-	it("passes onOpenSettings to AIChat component", async () => {
-		const user = userEvent.setup();
-
-		render(
-			<EditorPane
-				schema="id: test"
-				onSchemaChange={mockOnSchemaChange}
-				activeTab="ai"
-				onTabChange={mockOnTabChange}
-				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
@@ -202,7 +185,7 @@ describe("EditorPane", () => {
 		expect(mockOnOpenSettings).toHaveBeenCalled();
 	});
 
-	it("preserves schema state when switching tabs", () => {
+	it("preserves schema in YAML editor when switching tabs", () => {
 		const testSchema = "id: myForm\ntype: form";
 
 		const { rerender } = render(
@@ -212,10 +195,12 @@ describe("EditorPane", () => {
 				activeTab="yaml"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
-		// Verify schema in YAML tab
 		expect(screen.getByTestId("monaco-editor")).toHaveValue(testSchema);
 
 		// Switch to AI tab
@@ -226,12 +211,13 @@ describe("EditorPane", () => {
 				activeTab="ai"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
-		// Verify schema is passed to AI tab
-		const currentSchemaElement = screen.getByTestId("current-schema");
-		expect(currentSchemaElement.textContent).toBe(testSchema);
+		expect(screen.getByTestId("ai-chat")).toBeInTheDocument();
 
 		// Switch back to YAML tab
 		rerender(
@@ -241,10 +227,12 @@ describe("EditorPane", () => {
 				activeTab="yaml"
 				onTabChange={mockOnTabChange}
 				onOpenSettings={mockOnOpenSettings}
+				formId="test-form"
+				initialMessages={[]}
+				jsonlMode={defaultJsonlMode}
 			/>
 		);
 
-		// Verify schema is still preserved
 		expect(screen.getByTestId("monaco-editor")).toHaveValue(testSchema);
 	});
 });

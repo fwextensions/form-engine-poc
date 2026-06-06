@@ -81,7 +81,7 @@ export function EmptyState({ isClient, hasKey, onOpenSettings }: EmptyStateProps
 						</h3>
 						<p className="text-slate-600 mb-6">
 							Describe the form you want to create, and I&apos;ll generate
-							the YAML schema for you.
+							the YAML schema for you. Or drop a PDF file to extract the form questions.
 						</p>
 
 						<div className="space-y-3">

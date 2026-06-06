@@ -6,7 +6,6 @@ import * as Toolbar from "@radix-ui/react-toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
 import { UndoIcon, RedoIcon } from "./icons";
 import Editor from "@monaco-editor/react";
-import AIChat from "./AIChat";
 import AIChatJsonl from "./AIChatJsonl";
 import type { SchemaComponent, PatchOp } from "@/lib/jsonl";
 import type { UIMessage } from "ai";
@@ -22,8 +21,8 @@ interface EditorPaneProps {
 	formId: string;
 	/** Pre-loaded messages for the current form */
 	initialMessages: UIMessage[];
-	/** JSONL mode props — when provided, uses patch-based AI editing */
-	jsonlMode?: {
+	/** JSONL mode props for patch-based AI editing */
+	jsonlMode: {
 		currentSchema: SchemaComponent | null;
 		onSchemaChange: (schema: SchemaComponent, patches: PatchOp[], userMessage: string) => void;
 	};
@@ -44,10 +43,7 @@ interface EditorPaneProps {
  *
  * Uses Radix UI Tabs to switch between:
  * - YAML Editor: Monaco editor for manual schema editing
- * - AI Assistant: Chat interface for LLM-assisted schema generation
- *
- * When `jsonlMode` props are provided, uses the JSONL patch-based AI chat
- * instead of the YAML-based one.
+ * - AI Assistant: JSONL patch-based chat for LLM-assisted schema editing
  *
  * The chat component is keyed by `formId` so it remounts when the user
  * switches forms, loading the saved conversation for each form.
@@ -163,26 +159,15 @@ export default function EditorPane({
 				className="flex-1 overflow-hidden data-[state=inactive]:hidden"
 				forceMount
 			>
-				{jsonlMode ? (
-					<AIChatJsonl
-						key={formId}
-						formId={formId}
-						initialMessages={initialMessages}
-						currentSchema={jsonlMode.currentSchema}
-						onSchemaChange={jsonlMode.onSchemaChange}
-						onOpenSettings={onOpenSettings}
-						onFieldHighlight={onFieldHighlight}
-					/>
-				) : (
-					<AIChat
-						key={formId}
-						formId={formId}
-						initialMessages={initialMessages}
-						currentSchema={schema}
-						onSchemaGenerated={onSchemaChange}
-						onOpenSettings={onOpenSettings}
-					/>
-				)}
+				<AIChatJsonl
+					key={formId}
+					formId={formId}
+					initialMessages={initialMessages}
+					currentSchema={jsonlMode.currentSchema}
+					onSchemaChange={jsonlMode.onSchemaChange}
+					onOpenSettings={onOpenSettings}
+					onFieldHighlight={onFieldHighlight}
+				/>
 			</Tabs.Content>
 		</Tabs.Root>
 	);

@@ -17,7 +17,7 @@ const EditorToolbar = () => {
 				</span>
 			</a>
 			<div className="w-[2px] h-[22px] bg-ink-200 shrink-0 inline-block" aria-hidden="true" />
-			<div className="mt-[6px]  font-sans font-medium text-md text-ink-800 whitespace-nowrap">
+			<div className="mt-[6px]  font-sans font-lg font-semibold text-md text-ink-800 whitespace-nowrap">
 				Form Builder
 			</div>
 		</header>
