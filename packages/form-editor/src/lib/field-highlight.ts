@@ -58,6 +58,52 @@ const ALL_HIGHLIGHT_CLASSES = [
 	"field-highlight-edge-top", "field-highlight-edge-bottom", "field-highlight-edge-fade",
 ];
 
+/**
+ * Find the nearest ancestor that is actually scrollable (has overflow auto/scroll
+ * and whose scrollHeight exceeds its clientHeight). Stops at <body> so we never
+ * accidentally scroll the page itself.
+ */
+function findScrollParent(el: HTMLElement): HTMLElement | null {
+	let node: HTMLElement | null = el.parentElement;
+	while (node && node !== document.body) {
+		const { overflowY } = window.getComputedStyle(node);
+		if (
+			(overflowY === "auto" || overflowY === "scroll") &&
+			node.scrollHeight > node.clientHeight
+		) {
+			return node;
+		}
+		node = node.parentElement;
+	}
+	return null;
+}
+
+/**
+ * Scroll `el` into view within its nearest scrollable ancestor only —
+ * never the page itself — centered vertically with smooth animation.
+ */
+function scrollIntoScrollParent(el: HTMLElement): void {
+	const container = findScrollParent(el);
+	if (!container) {
+		// No scrollable ancestor found — safe to call native scrollIntoView
+		// with block:nearest so we don't jump the page viewport.
+		el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+		return;
+	}
+
+	const containerRect = container.getBoundingClientRect();
+	const elRect = el.getBoundingClientRect();
+
+	// Target: center the element vertically within the container
+	const targetScrollTop =
+		container.scrollTop +
+		(elRect.top - containerRect.top) -
+		containerRect.height / 2 +
+		elRect.height / 2;
+
+	container.scrollTo({ top: targetScrollTop, behavior: "smooth" });
+}
+
 export function highlightFieldElement(fieldId: string, edge?: HighlightEdge): void {
 	const el =
 		document.querySelector(`[data-field-id="${fieldId}"]`) ??
@@ -66,7 +112,7 @@ export function highlightFieldElement(fieldId: string, edge?: HighlightEdge): vo
 
 	if (!el || !(el instanceof HTMLElement)) return;
 
-	el.scrollIntoView({ behavior: "smooth", block: "center" });
+	scrollIntoScrollParent(el);
 
 	el.classList.remove(...ALL_HIGHLIGHT_CLASSES);
 	void el.offsetWidth;

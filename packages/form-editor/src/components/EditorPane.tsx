@@ -101,13 +101,13 @@ export default function EditorPane({
 				<Tabs.List className="flex">
 					<Tabs.Trigger
 						value="yaml"
-						className="px-6 py-3 text-sm font-slab font-bold text-ink-500 hover:text-ink-800 hover:bg-ink-50 transition-colors data-[state=active]:text-primary-600 data-[state=active]:border-b-2 data-[state=active]:border-primary-600 data-[state=active]:bg-[#fcfcfc]"
+						className="px-6 py-3 text-sm font-slab font-bold text-ink-500 border-b-2 border-b-transparent hover:text-ink-800 hover:bg-ink-50 transition-colors data-[state=active]:text-primary-600 data-[state=active]:border-primary-600 data-[state=active]:bg-[#fcfcfc]"
 					>
 						YAML editor
 					</Tabs.Trigger>
 					<Tabs.Trigger
 						value="ai"
-						className="px-6 py-3 text-sm font-slab font-bold text-ink-500 hover:text-ink-800 hover:bg-ink-50 transition-colors data-[state=active]:text-primary-600 data-[state=active]:border-b-2 data-[state=active]:border-primary-600 data-[state=active]:bg-[#fcfcfc]"
+						className="px-6 py-3 text-sm font-slab font-bold text-ink-500 border-b-2 border-b-transparent hover:text-ink-800 hover:bg-ink-50 transition-colors data-[state=active]:text-primary-600 data-[state=active]:border-primary-600 data-[state=active]:bg-[#fcfcfc]"
 					>
 						AI assistant
 					</Tabs.Trigger>

@@ -138,13 +138,14 @@ export function PatchCards({ cards }: { cards: PatchWithResult[] }) {
 			? opCards
 			: opCards.slice(0, INITIAL_VISIBLE);
 	const hiddenCount = opCards.length - visibleOpCards.length;
+	const hasOverflow = opCards.length > INITIAL_VISIBLE + 1;
 
 	return (
 		<div className="space-y-1.5">
 			{visibleOpCards.map((card, i) => (
 				<PatchCard key={i} card={card} onHighlight={onHighlight ?? undefined} />
 			))}
-			{hiddenCount > 1 && (
+			{hasOverflow && (
 				<button
 					onClick={() => setShowAll((v) => !v)}
 					className="flex items-center gap-1 text-xs text-ink-500 hover:text-ink-700 py-1.5 px-2 rounded hover:bg-ink-100 transition-colors cursor-pointer"
