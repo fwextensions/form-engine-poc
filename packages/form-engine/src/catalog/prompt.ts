@@ -311,7 +311,69 @@ content: Note: this will break
 - Every field needs a unique \`id\` property
 - Use \`validation.required: true\` for required fields
 - Use \`rules\` for conditional logic (showing/hiding fields, changing properties)
-- The root component should typically be a \`form\` containing \`page\` components for multi-step forms`;
+- The root component should typically be a \`form\` containing \`page\` components for multi-step forms
+
+## Adapting Paper Forms to Digital
+
+When generating a form from content extracted from a PDF or other paper-based source, translate the form for an online context rather than transcribing it literally.
+
+### Language translation
+
+Replace paper-form instructions with digital equivalents:
+
+| Paper phrasing | Digital equivalent |
+|---|---|
+| "Circle your answer" | "Select your answer" |
+| "Check all that apply" | "Select all that apply" |
+| "Print your name" / "Print clearly" | Remove — not relevant online |
+| "Write N/A if not applicable" | Use a section-applicability checkbox (see below) |
+| "See reverse side" / "See page 2" | Reference the relevant form step or section by name |
+| "Attach supporting documents" | Use a file upload field |
+| "Return this form to…" | Replace with submit confirmation text or omit |
+| "Office use only" sections | Omit entirely — not appropriate for a public-facing form |
+
+Never carry forward phrasing that assumes a physical medium. Review all \`description\`, \`label\`, and \`html\` content for paper-centric language and rewrite it.
+
+### N/A sections — section-applicability checkbox pattern
+
+When a paper form has a section where respondents are instructed to write "N/A" throughout if the section doesn't apply to them, replace it with a checkbox that gates the entire section:
+
+1. Add a \`checkbox\` field before the section asking whether it applies (e.g. "Does this section apply to you?").
+2. Default all fields in the section to \`hidden: true\` (or \`disabled: true\` if you want them visible but inactive).
+3. Use \`rules\` on each field in the section to show/enable it only when the checkbox is checked.
+
+\`\`\`yaml
+- type: checkbox
+  id: hasPreviousAddress
+  label: I have a previous address to report
+
+- type: text
+  id: previousStreet
+  label: Street address
+  hidden: true
+  rules:
+    - when:
+        field: hasPreviousAddress
+        is: true
+      then:
+        - set:
+            hidden: false
+            required: true
+
+- type: text
+  id: previousCity
+  label: City
+  hidden: true
+  rules:
+    - when:
+        field: hasPreviousAddress
+        is: true
+      then:
+        - set:
+            hidden: false
+\`\`\`
+
+Apply this pattern consistently — one applicability checkbox per logical section, not one per field.`;
 }
 
 /**

@@ -164,13 +164,13 @@ export function dropdownTemplate(
 export function multipleChoiceTemplate(
   label: string,
   choices: FilloutSelectOption[],
-  opts: WidgetBaseOpts = {}
+  opts: WidgetBaseOpts & { theme?: "bubble" | "standard" | "default"; layout?: "wrap" | "column" | "single_column" } = {}
 ) {
   return {
     label: ps(label),
     ...widgetBase(opts),
-    theme: "bubble",
-    layout: "wrap",
+    theme: opts.theme ?? "standard",
+    layout: opts.layout ?? "single_column",
     options: makeOptions(choices),
     defaultValue: ps(opts.defaultValue ?? "", ["string", "null"]),
     optionsToShow: [] as never[],
@@ -287,14 +287,14 @@ export function paragraphTemplate(html: string) {
   };
 }
 
-export function buttonTemplate(label = "Next") {
+export function buttonTemplate(label = "", opts: { showBackButton?: boolean } = {}) {
   return {
     text: ps(label),
     inHeader: false,
     alignment: "left",
     alwaysHide: false,
     showOrHide: "show_when" as const,
-    showBackButton: true,
+    showBackButton: opts.showBackButton ?? true,
     showSkipButton: false,
     backgroundColor: "",
     skipValidations: false,
@@ -326,20 +326,355 @@ export interface FilloutThemeOptions {
   questionsColor?: string;
   answersColor?: string;
   questionsBackgroundColor?: string;
+  backgroundImageUrl?: string;
   formWidth?: number;
   formSizing?: "small" | "medium" | "large";
-  formPosition?: "center_with_banner" | "center" | "left";
+  formPosition?: "center_with_banner" | "center" | "left" | "default";
 }
 
-const DEFAULT_THEME: Required<FilloutThemeOptions> = {
-  primaryColor: "rgba(74, 194, 212, 1)",
-  backgroundColor: "#f3f4f6",
-  questionsColor: "#374151",
-  answersColor: "#4b5563",
-  questionsBackgroundColor: "#fff",
-  formWidth: 79,
-  formSizing: "small",
-  formPosition: "center_with_banner",
+// ─── SF.gov default theme ─────────────────────────────────────────────────────
+
+/**
+ * The fixed SF.gov Fillout theme ("Z. Sandbox (Don't delete)").
+ * Using the stable publicIdentifier avoids creating throwaway theme records
+ * in the Fillout workspace on every export.
+ */
+export const SFGOV_THEME_ID = "44374be2-4f57-4d7b-9ace-b5cf686a0a34";
+
+const SFGOV_CUSTOM_CSS = `/* 
+SF.gov Fillout theme
+*/
+
+/************************************ 
+Alerts/Banners 
+************************************/
+/* alert container */
+.fillout-field-alert .border-blue-400 {
+  border: 1px solid #0046c2;
+  border-radius: 0px;
+  background-color: #e5f1ff;
+  padding: 28px;
+}
+
+/* alert inner container */
+.fillout-field-alert .flex.items-center .flex-col {
+  flex-direction: row;
+}
+
+/* alert icon */
+.fillout-field-alert .text-blue-400 {
+  color: #0046c2;
+}
+
+/* alert icon placement */
+.fillout-field-alert .flex.items-center {
+  align-items: flex-start;
+}
+
+/* alert title */
+.fillout-field-alert .ql-editor strong {
+/*  color: #0046c2; */
+/*  background-color: #e5f1ff; */
+}
+
+/* alert text */
+.fillout-field-alert .ql-editor p {
+  color: #0b0c0c;
+  background-color: inherit;
+}
+
+/************************************
+Buttons
+************************************/
+
+.fillout-field-button div {
+  text-align: center;
+  font-family: "Roboto Flex", sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+/* next/primary button */
+.fillout-field-button button {
+  height: 40px;
+  padding: 15px 16px;
+  border-radius: 4px;
+  border: 1px solid #1b519e;
+  background-color: #1b519e;
+  box-shadow: none;
+  color: #fcfcfc;
+  
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+}
+
+.fillout-field-button button:hover {
+  border-color: #001d4e;
+  background-color: #001d4e;
+}
+
+.fillout-field-button button:focus {
+  outline: 3px solid #2a60af;
+  box-shadow: none;
+}
+
+/* back/secondary button */
+.fillout-back-button button {
+  border-radius: 4px;
+  border: 1px solid #dfebfd;
+  background-color: #dfebfd;
+  color: #000925;
+}
+.fillout-back-button button:hover {
+  border: 1px solid #afccf7;
+  background-color: #afccf7;
+}
+
+/* button spacing */
+.fillout-field-button > .justify-start {
+  justify-content: space-between;
+}
+
+/************************************
+Checkboxes
+************************************/
+.fillout-field-checkbox button,
+.fillout-field-checkbox button > svg,
+.fillout-field-checkboxes button,
+.fillout-field-checkboxes button > svg {
+  height: 40px;
+  width: 40px;
+}
+
+.fillout-field-checkbox button[aria-checked="true"],
+.fillout-field-checkboxes button[aria-checked="true"] {
+  background-color: #386ebf;
+}
+
+.fillout-field-checkboxes fieldset {
+  gap: 16px;
+}
+
+/************************************
+Dropdown/select
+************************************/
+.react-select__indicator {
+  color: #0b0c0c;
+}
+
+/************************************
+Error messages
+************************************/
+.fillout-error-validation-message {
+  color: #ac0000;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+/************************************
+Navigation/progress bar
+************************************/
+nav .group .step-name {
+  color: #0b0c0c !important;
+}
+
+/************************************
+Multiple choice
+************************************/
+.fillout-field-multiple-choice [role="radio"] {
+  margin: 16px 16px 16px 12px;
+}
+.fillout-field-multiple-choice span.bg-white {
+  height: 40px !important;
+  width: 40px !important;
+}
+
+.fillout-field-multiple-choice span.transition-transform {
+  height: 22px !important;
+  width: 22px !important;
+  color: #386ebf !important;
+}
+
+/************************************
+Spacing
+************************************/
+#question-alignment-container.h-full {
+  height: fit-content;
+}
+
+#question-alignment-container & > :not(:last-child) {
+  --tw-space-y-reverse: 0;
+  margin-block-start: calc(
+    calc(var(--spacing) * 40) * var(--tw-space-y-reverse)
+  );
+  margin-block-end: calc(
+    calc(var(--spacing) * 40) * calc(1 - var(--tw-space-y-reverse))
+  );
+}
+
+/************************************
+Switch
+************************************/
+.fillout-field-switch .ant-switch:focus {
+  outline: 3px solid #2a60af;
+  outline-offset: 4px;
+  transition: none;
+}
+
+/************************************
+Text
+************************************/
+
+.fillout-field-text h1 {
+  font-family: "Roboto Slab", sans-serif;
+  font-style: normal;
+  color: #0b0c0c;
+  padding-bottom: 20px;
+  font-weight: 600;
+  font-size: 46px;
+  line-height: 56px;
+}
+
+.fillout-field-text h2 {
+  font-family: "Roboto Slab", sans-serif;
+  font-style: normal;
+  color: #0b0c0c;
+  font-weight: 500;
+  font-size: 40px;
+  line-height: 52px;
+}
+
+.fillout-field-text h3 {
+  font-family: "Roboto Slab", sans-serif;
+  font-style: normal;
+  color: #0b0c0c;
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 44px;
+}
+
+.fillout-field-text h4 {
+  font-family: "Roboto Slab", sans-serif;
+  font-style: normal;
+  color: #0b0c0c;
+  font-weight: 500;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.fillout-field-text h5 {
+  font-family: "Roboto Slab", sans-serif;
+  font-style: normal;
+  color: #0b0c0c;
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 28px;
+}
+
+div,
+span,
+p {
+  font-family: "Open Sans", sans-serif;
+  font-style: normal;
+}
+
+.fillout-field-paragraph h1 {
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 44px;
+}
+
+.fillout-field-paragraph h2 {
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 32px;
+}
+
+.fillout-field-paragraph h3 {
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 28px;
+}
+
+.fillout-field-paragraph h4 {
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 24px;
+/*  text-transform: uppercase; */
+}
+
+.fillout-field-paragraph h5 {
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.fillout-field-paragraph p {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.fillout-field-label p {
+  color: #0b0c0c;
+  font-size: 20px;
+  line-height: 28px;
+}
+
+.fillout-field-container input[type],
+.fillout-field-container input[placeholder],
+.fillout-field-container label[type],
+.fillout-field-container span[placeholder],
+.fillout-field-container textarea[placeholder],
+.fillout-field-multiple-choice [role="radio"] div,
+.fillout-field-checkboxes label div,
+.react-select__value-container .react-select__single-value {
+  color: #0b0c0c !important;
+}
+
+.fillout-caption,
+input::placeholder {
+  color: #535454;
+}
+
+a {
+  color: #2a60af;
+}
+
+.fillout-required-asterisk,
+p::after {
+  color: #ac0000;
+}
+`;
+
+const SFGOV_THEME_VALUES = {
+  bold: false,
+  font: {
+    type: "google_font",
+    googleFont: { name: "Roboto Slab" },
+  },
+  customCSS: SFGOV_CUSTOM_CSS,
+  formSizing: "medium" as const,
+  answersColor: "rgba(89, 89, 92, 1)",
+  formPosition: "default" as const,
+  primaryColor: "rgba(27, 81, 158, 1)",
+  navBarSettings: {
+    type: "image_url",
+    imageUrl:
+      "https://images.fillout.com/orgid-356179/flowpublicid-96oVd4FyLUus/widgetid-undefined/bJJZHLsrVEePfdpBGnE7w7/DeviceDesktop-ColorBlack(2).png?a=krg6oCqPLZXu1DSkfXkTp3",
+    showLogo: true,
+  },
+  questionsColor: "rgba(11, 12, 12, 1)",
+  backgroundColor: "rgba(252, 252, 252, 1)",
+  containerBorder: false,
+  imageBrightness: 1,
+  backButtonPosition: "near_next_button",
+  verticalFieldPadding: 3.75,
+  questionsBackgroundColor: "rgba(252, 252, 252, 1)",
 };
 
 /**
@@ -347,14 +682,21 @@ const DEFAULT_THEME: Required<FilloutThemeOptions> = {
  */
 export function assembleFilloutForm(
   pages: FilloutPage[],
-  options: { theme?: FilloutThemeOptions } = {}
+  options: {
+    theme?: FilloutThemeOptions;
+    thankYouTitle?: string;
+    thankYouBody?: string;
+    confetti?: boolean;
+    themePublicId?: string;
+    omitThemeObject?: boolean;
+  } = {}
 ): Record<string, unknown> {
   if (pages.length === 0) {
     throw new Error("Form must have at least one page");
   }
 
   const endingId = genId();
-  const themeId = genId();
+  const themePublicId = options.themePublicId ?? SFGOV_THEME_ID;
   const steps: Record<string, unknown> = {};
 
   for (let i = 0; i < pages.length; i++) {
@@ -372,7 +714,8 @@ export function assembleFilloutForm(
     const hasButton = page.widgets.some((w) => w.type === "Button");
     if (!hasButton) {
       const btnId = genId();
-      const btnTemplate = buttonTemplate(isFinal ? "Submit" : "Next");
+      const btnLabel = i === 0 ? "Get started" : "";
+      const btnTemplate = buttonTemplate(btnLabel, { showBackButton: i > 0 });
       btnTemplate.nextStep = {
         isFinal,
         branches: [],
@@ -387,12 +730,13 @@ export function assembleFilloutForm(
       };
     }
 
-    // Patch Button nextStep pointers
+    // Patch Button nextStep pointers (preserve existing branches)
     for (const widget of Object.values(widgetsRecord) as any[]) {
       if (widget.type === "Button") {
+        const existingBranches = widget.template?.nextStep?.branches ?? [];
         widget.template.nextStep = {
           isFinal,
-          branches: [],
+          branches: existingBranches,
           defaultNextStep: isFinal ? "" : nextId,
         };
       }
@@ -430,56 +774,51 @@ export function assembleFilloutForm(
             alwaysHide: false,
             showOrHide: "show_when",
             hideBranding: false,
-            richTitleText: ps("Thank you"),
+            richTitleText: ps(options.thankYouTitle ?? "Thank you"),
             showQuizScore: true,
-            richSubtitleText: ps("<p>Your form has been submitted.</p>"),
+            richSubtitleText: ps(
+              options.thankYouBody ?? "<p>Made with Fillout</p>"
+            ),
             showOrHideCondition: emptyCondition,
             showSchedulingDetails: true,
           },
         },
       },
-      confetti: true,
+      confetti: options.confetti ?? true,
     },
   };
 
-  // Theme
-  const t = { ...DEFAULT_THEME, ...(options.theme ?? {}) };
+  // Theme — use the SF.gov theme by default; callers can override via options.theme
   const themeValues: Record<string, unknown> = {
-    formWidth: t.formWidth,
-    formSizing: t.formSizing,
-    answersColor: t.answersColor,
-    formPosition: t.formPosition,
-    primaryColor: t.primaryColor,
-    questionsColor: t.questionsColor,
-    backgroundColor: t.backgroundColor,
-    imageBrightness: 1,
-    questionsBackgroundColor: t.questionsBackgroundColor,
+    ...SFGOV_THEME_VALUES,
+    ...(options.theme ?? {}),
+  };
+
+  const themeObject = {
+    publicIdentifier: themePublicId,
+    name: "Z. Sandbox (Don't delete)",
+    values: themeValues,
   };
 
   return {
     ___FILLOUT_EXPORT_VERSION___: 2,
+    type: "form",
     template: {
       steps,
+      firstStep: pages[0].id,
+      themePublicId,
       quizzes: {
         answers: {},
         enabled: false,
         settings: { disableShowingCorrectAnswers: false },
       },
       settings: { progressBar: { shouldHide: false } },
-      firstStep: pages[0].id,
       urlParams: [],
       calculations: {},
       integrations: {},
-      themePublicId: themeId,
-      featuredThemeId: "plain",
     },
+    ...(options.omitThemeObject ? {} : { theme: themeObject }),
     settings: {},
-    theme: {
-      publicIdentifier: themeId,
-      name: "Generated theme",
-      values: themeValues,
-    },
     workflows: [],
-    type: "form",
   };
 }

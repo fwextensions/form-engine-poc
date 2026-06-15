@@ -89,7 +89,6 @@ function isRequired(node: SchemaNode): boolean {
 
 /** Build common Fillout widget opts from a form-engine field node. */
 function baseOpts(node: SchemaNode): WidgetBaseOpts {
-  const { label } = extractLabel(node);
   return {
     required: isRequired(node),
     caption: node.description,
@@ -304,14 +303,18 @@ function processPage(
 // ─── Public API ───────────────────────────────────────────────────────────────
 
 export interface FilloutExportOptions {
-  /** Theme customization for the exported form. */
-  theme?: {
-    primaryColor?: string;
-    backgroundColor?: string;
-    questionsColor?: string;
-    answersColor?: string;
-    questionsBackgroundColor?: string;
-  };
+  /** Partial theme overrides applied on top of the SF.gov default theme. */
+  theme?: import("./fillout-primitives").FilloutThemeOptions;
+  /** Custom title for the thank-you page. */
+  thankYouTitle?: string;
+  /** Custom body HTML for the thank-you page. */
+  thankYouBody?: string;
+  /** Whether to show confetti on the thank-you page. */
+  confetti?: boolean;
+  /** Pre-existing Fillout theme public ID to reference. */
+  themePublicId?: string;
+  /** If true, omit the theme object from the export (use when referencing an existing theme). */
+  omitThemeObject?: boolean;
 }
 
 /**
@@ -393,7 +396,14 @@ export function exportToFillout(
     });
   }
 
-  const output = assembleFilloutForm(pages, { theme: options.theme });
+  const output = assembleFilloutForm(pages, {
+    theme: options.theme,
+    thankYouTitle: options.thankYouTitle,
+    thankYouBody: options.thankYouBody,
+    confetti: options.confetti,
+    themePublicId: options.themePublicId,
+    omitThemeObject: options.omitThemeObject,
+  });
 
   return { output, diagnostics };
 }
