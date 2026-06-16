@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
 import * as Tabs from "@radix-ui/react-tabs";
 import * as Toolbar from "@radix-ui/react-toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
@@ -10,6 +10,13 @@ import AIChatJsonl from "./AIChatJsonl";
 import type { SchemaComponent, PatchOp } from "@/lib/jsonl";
 import type { UIMessage } from "ai";
 import type { editor } from "monaco-editor";
+
+export interface EditorPaneHandle {
+	/** Reveal a specific line in the Monaco editor and highlight it. */
+	revealLine: (line: number) => void;
+	/** Reveal and select a range of lines in the Monaco editor. */
+	revealRange: (startLine: number, endLine: number) => void;
+}
 
 interface EditorPaneProps {
 	schema: string;
@@ -48,7 +55,7 @@ interface EditorPaneProps {
  * The chat component is keyed by `formId` so it remounts when the user
  * switches forms, loading the saved conversation for each form.
  */
-export default function EditorPane({
+const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function EditorPane({
 	schema,
 	onSchemaChange,
 	activeTab,
@@ -59,7 +66,7 @@ export default function EditorPane({
 	jsonlMode,
 	history,
 	onFieldHighlight,
-}: EditorPaneProps) {
+}, ref) {
 	const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
 	const localSchemaEchoesRef = useRef<Set<string>>(new Set());
 	const previousFormIdRef = useRef(formId);
@@ -85,6 +92,29 @@ export default function EditorPane({
 			editor.setSelection(selection);
 		}
 	}, [schema, formId]);
+
+	// Expose imperative methods for programmatic editor control (e.g., click-to-source)
+	useImperativeHandle(ref, () => ({
+		revealLine(line: number) {
+			const editor = editorRef.current;
+			if (!editor) return;
+			editor.revealLineInCenter(line);
+			editor.setPosition({ lineNumber: line, column: 1 });
+			editor.focus();
+		},
+		revealRange(startLine: number, endLine: number) {
+			const editor = editorRef.current;
+			if (!editor) return;
+			editor.revealLineInCenter(startLine);
+			editor.setSelection({
+				startLineNumber: startLine,
+				startColumn: 1,
+				endLineNumber: endLine,
+				endColumn: 1000,
+			});
+			editor.focus();
+		},
+	}), []);
 
 	return (
 		<Tabs.Root
@@ -171,4 +201,6 @@ export default function EditorPane({
 			</Tabs.Content>
 		</Tabs.Root>
 	);
-}
+});
+
+export default EditorPane;

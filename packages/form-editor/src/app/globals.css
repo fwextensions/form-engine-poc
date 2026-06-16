@@ -151,4 +151,23 @@
 		white-space: pre-wrap; /* Keep formatting of error messages */
 		font-family: monospace;
 	}
+
+	/* Click-to-source: hover effect on fields in the preview panel (only when Ctrl is held) */
+	.preview-click-to-source.ctrl-held [data-field-id] {
+		cursor: pointer;
+		border-radius: 4px;
+		transition: outline-color 0.15s ease, background-color 0.15s ease;
+		outline: 2px solid transparent;
+		outline-offset: 2px;
+	}
+
+	.preview-click-to-source.ctrl-held [data-field-id]:hover {
+		outline-color: var(--color-primary-200);
+		background-color: rgba(27, 81, 158, 0.04);
+	}
+
+	.preview-click-to-source.ctrl-held [data-field-id]:active {
+		outline-color: var(--color-primary-400);
+		background-color: rgba(27, 81, 158, 0.08);
+	}
 }

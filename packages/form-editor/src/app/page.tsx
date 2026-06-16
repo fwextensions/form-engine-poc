@@ -32,7 +32,9 @@ import {
 } from "@/lib/jsonl";
 import { loadChatMessages, deleteChatMessages, saveHistory, loadHistory, deleteHistory } from "@/lib/chat-storage";
 import { findPageIndexForField, highlightFieldElement } from "@/lib/field-highlight";
+import { findFieldLineInYaml, findFieldBlockRange } from "@/lib/yaml-source-map";
 import type { HighlightEdge } from "@/components/chat/FieldHighlightContext";
+import type { EditorPaneHandle } from "@/components/EditorPane";
 import type { UIMessage } from "ai";
 
 /**
@@ -86,7 +88,30 @@ export default function FormEditorPage() {
 	const [historyState, setHistoryState] = useState<HistoryState | null>(null);
 
 	const formRef = useRef<FormEngineHandle>(null);
+	const editorPaneRef = useRef<EditorPaneHandle>(null);
 	const historyRef = useRef<ReturnType<typeof createHistoryManager> | null>(null);
+
+	// Track Ctrl key state for click-to-source feature
+	const [ctrlHeld, setCtrlHeld] = useState(false);
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if (e.key === "Control") setCtrlHeld(true);
+		};
+		const handleKeyUp = (e: KeyboardEvent) => {
+			if (e.key === "Control") setCtrlHeld(false);
+		};
+		const handleBlur = () => setCtrlHeld(false);
+
+		window.addEventListener("keydown", handleKeyDown);
+		window.addEventListener("keyup", handleKeyUp);
+		window.addEventListener("blur", handleBlur);
+		return () => {
+			window.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("keyup", handleKeyUp);
+			window.removeEventListener("blur", handleBlur);
+		};
+	}, []);
 
 	// Flag to prevent YAML→JSON→YAML feedback loops
 	const suppressYamlSyncRef = useRef(false);
@@ -433,6 +458,34 @@ export default function FormEditorPage() {
 		[schemaJson],
 	);
 
+	/**
+	 * Handle clicking a field in the preview to scroll the YAML editor to its source.
+	 */
+	const handlePreviewFieldClick = useCallback(
+		(fieldId: string) => {
+			const line = findFieldLineInYaml(yamlInput, fieldId);
+			if (line === null) return;
+
+			// Switch to YAML tab if not already there
+			if (activeTab !== "yaml") {
+				setActiveTab("yaml");
+			}
+
+			// Find the full block range for a nicer selection
+			const range = findFieldBlockRange(yamlInput, line);
+
+			// Give tab switch a tick to render, then reveal
+			requestAnimationFrame(() => {
+				if (range) {
+					editorPaneRef.current?.revealRange(range.startLine, range.endLine);
+				} else {
+					editorPaneRef.current?.revealLine(line);
+				}
+			});
+		},
+		[yamlInput, activeTab],
+	);
+
 	const formOutput = formConfig ? (
 		<FormEngine
 			ref={formRef}
@@ -495,6 +548,7 @@ export default function FormEditorPage() {
 				<Group orientation="horizontal" className="flex-grow min-w-0">
 					<Panel id="editorPanel" defaultSize={"50%"} minSize={100}>
 						<EditorPane
+							ref={editorPaneRef}
 							schema={yamlInput}
 							onSchemaChange={setYamlInput}
 							activeTab={activeTab}
@@ -518,7 +572,20 @@ export default function FormEditorPage() {
 								onNextPage={handleNextPage}
 								onExportFillout={handleExportFillout}
 							/>
-							<div className="p-6 flex-1 overflow-auto">
+							<div
+								className={`p-6 flex-1 overflow-auto preview-click-to-source${ctrlHeld ? " ctrl-held" : ""}`}
+								onClickCapture={(e) => {
+									if (!e.ctrlKey) return;
+									const target = (e.target as HTMLElement).closest("[data-field-id]");
+									if (!target) return;
+									const fieldId = target.getAttribute("data-field-id");
+									if (fieldId) {
+										e.preventDefault();
+										e.stopPropagation();
+										handlePreviewFieldClick(fieldId);
+									}
+								}}
+							>
 								{error && <pre className="error-message">{error}</pre>}
 								{error && formOutput ? (
 									<div className="opacity-50">{formOutput}</div>
