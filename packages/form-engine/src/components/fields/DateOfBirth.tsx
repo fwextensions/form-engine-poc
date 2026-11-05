@@ -2,7 +2,7 @@
 // Date of birth as month / day / year inputs. The stored value is an ISO
 // date string (YYYY-MM-DD), the same as the `date` field, so rules and
 // exporters treat both alike.
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import { z } from "zod";
 import { defineField } from "../../core/defineField";
 import { SubField } from "./composite";
@@ -76,7 +76,6 @@ function DateOfBirthInput({
 }) {
 	const [parts, setParts] = useState<DateParts>(() => partsFromIso(value));
 	const [lastValue, setLastValue] = useState(value);
-	const yearRef = useRef<HTMLInputElement>(null);
 
 	// Adopt an outside change (undo, rules, initial data) without clobbering
 	// in-progress typing: while the parts do not form a date the stored value
@@ -87,12 +86,14 @@ function DateOfBirthInput({
 		if (value !== composed && (value !== "" || composed !== "")) setParts(partsFromIso(value));
 	}
 
-	// Radix Form clears a control's custom validity on every change, so re-apply
-	// the current problem after every render rather than only when it changes.
+	// Shown under the year input as the user types; `validate` repeats the check
+	// from the live inputs when the form is submitted.
 	const problem = dateOfBirthProblem(isoFromParts(parts), parts, { minAge, maxAge });
-	useEffect(() => {
-		yearRef.current?.setCustomValidity(problem ?? "");
-	});
+	const validateFromInputs = () => {
+		const read = (part: keyof DateParts) => (document.getElementById(`${id}-${part}`) as HTMLInputElement | null)?.value ?? "";
+		const live: DateParts = { month: read("month"), day: read("day"), year: read("year") };
+		return dateOfBirthProblem(isoFromParts(live), live, { minAge, maxAge });
+	};
 
 	const update = (part: keyof DateParts, text: string) => {
 		const next = { ...parts, [part]: text.replace(/\D/g, "") };
@@ -104,7 +105,7 @@ function DateOfBirthInput({
 		<div role="group" aria-labelledby={`${id}-label`} aria-describedby={describedBy} className="mt-1.5 grid grid-cols-3 gap-3 max-w-xs">
 			<SubField fieldId={id} part="month" label="Month" inputMode="numeric" placeholder="MM" maxLength={2} autoComplete="bday-month" required={required} disabled={disabled} value={parts.month} onChange={(e) => update("month", e.target.value)} />
 			<SubField fieldId={id} part="day" label="Day" inputMode="numeric" placeholder="DD" maxLength={2} autoComplete="bday-day" required={required} disabled={disabled} value={parts.day} onChange={(e) => update("day", e.target.value)} />
-			<SubField fieldId={id} part="year" label="Year" inputMode="numeric" placeholder="YYYY" maxLength={4} autoComplete="bday-year" required={required} disabled={disabled} value={parts.year} onChange={(e) => update("year", e.target.value)} inputRef={yearRef} customError={problem} />
+			<SubField fieldId={id} part="year" label="Year" inputMode="numeric" placeholder="YYYY" maxLength={4} autoComplete="bday-year" required={required} disabled={disabled} value={parts.year} onChange={(e) => update("year", e.target.value)} error={problem} validate={validateFromInputs} />
 		</div>
 	);
 }

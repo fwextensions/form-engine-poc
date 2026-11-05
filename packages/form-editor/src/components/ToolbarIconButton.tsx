@@ -1,5 +1,5 @@
 import React from "react";
-import * as Toolbar from "@radix-ui/react-toolbar";
+import { Toolbar } from "@base-ui-components/react/toolbar";
 
 interface ToolbarIconButtonProps {
 	onClick: () => void;
@@ -31,6 +31,7 @@ export default function ToolbarIconButton({
 		<Toolbar.Button
 			onClick={onClick}
 			disabled={disabled}
+			focusableWhenDisabled={false}
 			className={`${baseClasses} ${variantClasses[variant]}`}
 			title={title}
 			aria-label={ariaLabel ?? title}

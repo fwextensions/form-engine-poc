@@ -1,7 +1,7 @@
 // packages/form-engine/src/components/fields/Textarea.tsx
 import React from "react";
 import { z } from "zod";
-import { Control } from "@radix-ui/react-form";
+import { Field } from "@base-ui-components/react/field";
 import { defineField } from "../../core/defineField";
 import { textValidationSchema } from "../../core/baseSchemas";
 import { inputClassName } from "./styles";
@@ -18,18 +18,16 @@ export const TextareaConfigSchema = defineField({
 	},
 	value: { empty: "" },
 	control: ({ config, value, setValue, inputProps }) => (
-		<Control asChild>
-			<textarea
-				{...inputProps}
-				placeholder={config.placeholder}
-				rows={config.rows}
-				minLength={config.validation?.minLength}
-				maxLength={config.validation?.maxLength}
-				value={value}
-				onChange={(e) => setValue(e.target.value)}
-				className={inputClassName}
-			/>
-		</Control>
+		<Field.Control
+			{...inputProps}
+			render={<textarea rows={config.rows} />}
+			placeholder={config.placeholder}
+			minLength={config.validation?.minLength}
+			maxLength={config.validation?.maxLength}
+			value={value}
+			onChange={(e) => setValue(e.target.value)}
+			className={inputClassName}
+		/>
 	),
 }).schema;
 export type TextareaConfig = z.infer<typeof TextareaConfigSchema>;

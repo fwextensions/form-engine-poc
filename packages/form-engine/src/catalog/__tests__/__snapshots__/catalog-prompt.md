@@ -236,9 +236,11 @@ A date picker input field (values are ISO dates, YYYY-MM-DD)
 
 ```yaml
 type: date
-id: dateOfBirth
-label: Date of birth*
+id: moveInDate
+label: Preferred move-in date*
 ```
+
+For birth dates use `dateOfBirth`, which has month/day/year inputs and age limits.
 
 ### dateOfBirth
 

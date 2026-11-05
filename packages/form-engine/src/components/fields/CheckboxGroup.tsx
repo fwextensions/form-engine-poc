@@ -2,11 +2,12 @@
 // "Select all that apply": a set of checkboxes that collects an array of values.
 import React from "react";
 import { z } from "zod";
-import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
-import { CheckIcon } from "@radix-ui/react-icons";
+import { Checkbox as CheckboxPrimitive } from "@base-ui-components/react/checkbox";
+import { CheckboxGroup as CheckboxGroupPrimitive } from "@base-ui-components/react/checkbox-group";
 import { defineField } from "../../core/defineField";
 import { serializeForUI } from "../../utils/valueSerialization";
 import { radioOptionsSchema } from "./options";
+import { CheckIcon } from "./icons";
 import { checkboxClassName, optionLabelClassName } from "./styles";
 
 /** Toggles `optionValue` in `selected`, keeping the options' declared order. */
@@ -16,6 +17,12 @@ export function toggleSelection(selected: readonly unknown[], optionValue: unkno
 	const next = has ? selected.filter((v) => serializeForUI(v) !== key) : [...selected, optionValue];
 	const rank = new Map(order.map((v, i) => [serializeForUI(v), i]));
 	return [...next].sort((a, b) => (rank.get(serializeForUI(a)) ?? 0) - (rank.get(serializeForUI(b)) ?? 0));
+}
+
+/** Maps the group's serialized keys back to the raw option values, in option order. */
+export function valuesFromKeys(keys: readonly string[], order: readonly unknown[]): unknown[] {
+	const wanted = new Set(keys);
+	return order.filter((v) => wanted.has(serializeForUI(v)));
 }
 
 export const CheckboxGroupConfigSchema = defineField<
@@ -46,54 +53,37 @@ export const CheckboxGroupConfigSchema = defineField<
 		orientation: z.enum(["horizontal", "vertical"]).optional().default("vertical"),
 	},
 	value: { empty: [] },
+	// Base UI tracks the group's value on the field; `required` becomes a validate rule.
+	validate: (value, { required }) => (required && (!Array.isArray(value) || value.length === 0) ? "Select at least one option." : null),
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
 		const selected = Array.isArray(value) ? value : [];
-		const selectedKeys = new Set(selected.map(serializeForUI));
 		const order = config.options.map((o) => o.value);
 		const orientationClass = config.orientation === "horizontal" ? "flex flex-wrap gap-x-6 gap-y-2" : "space-y-2";
 
 		return (
-			<div
-				role="group"
+			<CheckboxGroupPrimitive
 				aria-labelledby={`${inputProps.id}-label`}
 				aria-describedby={inputProps["aria-describedby"]}
 				aria-required={required}
+				value={selected.map(serializeForUI)}
+				onValueChange={(keys) => setValue(valuesFromKeys(keys, order))}
+				disabled={disabled}
 				className={`mt-1.5 ${orientationClass}`}
 			>
-				{/* Participates in native constraint validation so `required` shows the standard message. */}
-				<input
-					type="checkbox"
-					name={inputProps.name}
-					required={required}
-					checked={selected.length > 0}
-					onChange={() => {}}
-					tabIndex={-1}
-					aria-hidden="true"
-					className="sr-only"
-				/>
 				{config.options.map((option) => {
 					const key = serializeForUI(option.value);
-					const itemId = `${inputProps.id}-${key}`;
 					return (
-						<div key={key} className="flex items-center gap-2">
-							<CheckboxPrimitive.Root
-								id={itemId}
-								checked={selectedKeys.has(key)}
-								disabled={disabled || option.disabled}
-								onCheckedChange={() => setValue(toggleSelection(selected, option.value, order))}
-								className={checkboxClassName}
-							>
+						<label key={key} className={`flex items-center gap-2 ${optionLabelClassName}`}>
+							<CheckboxPrimitive.Root name={inputProps.name} value={key} disabled={option.disabled} className={checkboxClassName}>
 								<CheckboxPrimitive.Indicator>
 									<CheckIcon className="h-4 w-4" />
 								</CheckboxPrimitive.Indicator>
 							</CheckboxPrimitive.Root>
-							<label htmlFor={itemId} className={optionLabelClassName}>
-								{option.label}
-							</label>
-						</div>
+							{option.label}
+						</label>
 					);
 				})}
-			</div>
+			</CheckboxGroupPrimitive>
 		);
 	},
 }).schema;

@@ -1,5 +1,5 @@
 import React from "react";
-import * as Toolbar from "@radix-ui/react-toolbar";
+import { Toolbar } from "@base-ui-components/react/toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
 import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 

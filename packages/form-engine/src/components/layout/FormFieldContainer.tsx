@@ -1,25 +1,15 @@
 // packages/form-engine/src/components/layout/FormFieldContainer.tsx
 import React from "react";
-import * as Form from "@radix-ui/react-form";
+import { Field } from "@base-ui-components/react/field";
 
 // Required asterisk is handled by the .field-required-marker CSS class in globals.css
 // (Tailwind v4 scanner can't reliably detect classes inside JS string variables)
 const RequiredFieldStyles = "field-required-marker";
 
-// Props for FormFieldContainer
-export interface FormFieldContainerProps {
-	name: string;
-	label?: string;
-	description?: string;
-	htmlFor?: string; // Corresponds to the input's id
-	children: React.ReactNode; // The actual input control (e.g., <input />, <select />)
-	className?: string;
-	style?: React.CSSProperties;
-	// For displaying validation messages.
-	messages?: Array<{ type: string; message: string } | string>;
-}
+/** Messages for native constraint-validation states. Fields may override any of them. */
+export type ConstraintMessages = Partial<Record<keyof ValidityState, string>>;
 
-const constraintMessages: Record<string, string> = {
+export const defaultConstraintMessages: ConstraintMessages = {
 	valueMissing: "Please fill out this field.",
 	typeMismatch: "Please enter a valid value.",
 	patternMismatch: "Please match the requested format.",
@@ -31,6 +21,31 @@ const constraintMessages: Record<string, string> = {
 	badInput: "Please enter a valid value.",
 };
 
+// Props for FormFieldContainer
+export interface FormFieldContainerProps {
+	name: string;
+	label?: string;
+	description?: string;
+	htmlFor?: string; // Corresponds to the input's id
+	children: React.ReactNode; // The actual input control (e.g., <input />, <select />)
+	className?: string;
+	style?: React.CSSProperties;
+	/** Overrides for the default constraint messages. */
+	messages?: ConstraintMessages;
+	/**
+	 * Custom validation for the field's value (Base UI `Field.Root` `validate`):
+	 * return a message to show, or null when valid.
+	 */
+	validate?: (value: unknown) => string | string[] | null;
+	/** When to run `validate` and native checks. Defaults to the form's mode (on submit). */
+	validationMode?: "onSubmit" | "onBlur" | "onChange";
+}
+
+/**
+ * Standard wrapper for a field: label, description, the control, and the
+ * validation messages. Built on Base UI `Field`, which tracks the control's
+ * native validity (and `validate`) and shows the matching `Field.Error`.
+ */
 export const FormFieldContainer: React.FC<FormFieldContainerProps> = ({
 	name,
 	label,
@@ -40,36 +55,40 @@ export const FormFieldContainer: React.FC<FormFieldContainerProps> = ({
 	className,
 	style,
 	messages,
+	validate,
+	validationMode,
 }) => {
+	const constraintMessages = { ...defaultConstraintMessages, ...messages };
 	return (
-		<Form.Field name={name} data-field-id={name} className={`mb-5 ${RequiredFieldStyles} ${className || ""}`} style={style}>
+		<Field.Root
+			name={name}
+			validate={validate}
+			validationMode={validationMode}
+			data-field-id={name}
+			className={`mb-5 ${RequiredFieldStyles} ${className || ""}`}
+			style={style}
+		>
 			{label && (
 				<div className="flex items-baseline justify-between mb-1.5">
-					<Form.Label id={htmlFor ? `${htmlFor}-label` : undefined} htmlFor={htmlFor} className="block text-sm font-medium text-ink-700">
+					<Field.Label id={htmlFor ? `${htmlFor}-label` : undefined} htmlFor={htmlFor} className="block text-sm font-medium text-ink-700">
 						{label}
-					</Form.Label>
+					</Field.Label>
 				</div>
 			)}
 			{description && (
-				<p id={htmlFor ? `${htmlFor}-description` : undefined} className="text-xs text-ink-500 mt-1 mb-1.5">
+				<Field.Description id={htmlFor ? `${htmlFor}-description` : undefined} className="text-xs text-ink-500 mt-1 mb-1.5">
 					{description}
-				</p>
+				</Field.Description>
 			)}
 			{children}
-			{messages && messages.map((msg, index) => (
-				<Form.Message key={index} className="text-xs text-danger-500 mt-1">
-					{typeof msg === "string" ? msg : msg.message}
-				</Form.Message>
-			))}
-			{/* Messages for native constraint validation. Each control sets the matching attribute from its `validation` config. */}
+			{/* Message from `validate`, when it returns one */}
+			{validate && <Field.Error className="text-xs text-danger-500 mt-1" />}
+			{/* One message per native constraint state; each shows only when the control's validity matches */}
 			{Object.entries(constraintMessages).map(([match, message]) => (
-				<Form.Message key={match} match={match as Form.FormMessageProps["match"]} className="text-xs text-danger-500 mt-1">
+				<Field.Error key={match} match={match as keyof ValidityState} className="text-xs text-danger-500 mt-1">
 					{message}
-				</Form.Message>
+				</Field.Error>
 			))}
-		</Form.Field>
+		</Field.Root>
 	);
 };
-
-// No createComponent call here, as this is a presentational/layout component
-// not directly driven by a schema 'type'. It's used *by* other components.

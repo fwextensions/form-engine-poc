@@ -1,6 +1,6 @@
 # Form Engine - Schema-Driven Dynamic Forms
 
-A proof-of-concept monorepo demonstrating schema-driven form rendering using React and [Radix UI](https://www.radix-ui.com/primitives).  Parse YAML form definitions and dynamically render interactive, multi-step web forms with conditional logic, validation, and extensible component architecture.
+A proof-of-concept monorepo demonstrating schema-driven form rendering using React and [Base UI](https://base-ui.com).  Parse YAML form definitions and dynamically render interactive, multi-step web forms with conditional logic, validation, and extensible component architecture.
 
 
 ## 🚀 Quick Start
@@ -21,7 +21,7 @@ npm run dev
 - **Language**: TypeScript for type safety
 - **Schema**: YAML with `js-yaml` parsing
 - **Validation**: Zod schemas
-- **UI Components**: Radix UI primitives
+- **UI Components**: Base UI (`@base-ui-components/react`)
 - **Styling**: Tailwind CSS
 - **Build**: npm workspaces
 
@@ -51,7 +51,7 @@ See [DeepWiki](https://deepwiki.com/fwextensions/form-engine-poc/1-overview) for
 
 
 ### Component Library
-Standard form components with Radix UI primitives:
+Standard form components built on Base UI:
 - **Field Components**: Text, Email, Select, Checkbox, Radio, Date, Textarea
 - **Layout Components**: Form, Page, HTML content blocks
 

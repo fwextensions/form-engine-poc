@@ -1,9 +1,9 @@
 // packages/form-engine/src/components/fields/composite.tsx
 // Building block for fields made of several inputs (name, date of birth).
-// Each part is its own Radix Form field so native constraint messages
-// attach to the part that failed.
+// Each part is its own Base UI field so native constraint messages and
+// custom validation attach to the part that failed.
 import React from "react";
-import * as Form from "@radix-ui/react-form";
+import { Field } from "@base-ui-components/react/field";
 import { inputClassName } from "./styles";
 
 export interface SubFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "name" | "id"> {
@@ -11,39 +11,41 @@ export interface SubFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputE
 	fieldId: string;
 	part: string;
 	label: string;
+	/** Custom validation run by the form on submit: return a message, or null when valid. */
+	validate?: () => string | null;
+	/** A problem computed by the parent; shown immediately and marks the part invalid. */
+	error?: string | null;
 	inputRef?: React.Ref<HTMLInputElement>;
-	/** Message shown while the input's `customError` validity flag is set (via `setCustomValidity`). */
-	customError?: string | null;
 }
 
-export function SubField({ fieldId, part, label, inputRef, customError, className, ...inputProps }: SubFieldProps) {
+export function SubField({ fieldId, part, label, validate, error, inputRef, className, ...inputProps }: SubFieldProps) {
 	const id = `${fieldId}-${part}`;
 	const name = `${fieldId}.${part}`;
 	return (
-		<Form.Field name={name} className="min-w-0">
-			<Form.Label htmlFor={id} className="block text-xs font-medium text-ink-600 mb-1">
+		<Field.Root name={name} validate={validate} invalid={error ? true : undefined} className="min-w-0">
+			<Field.Label htmlFor={id} className="block text-xs font-medium text-ink-600 mb-1">
 				{label}
-			</Form.Label>
-			<Form.Control asChild>
-				<input ref={inputRef} id={id} name={name} {...inputProps} className={`${inputClassName} mt-0 ${className ?? ""}`} />
-			</Form.Control>
-			<Form.Message match="valueMissing" className="text-xs text-danger-500 mt-1">
-				Required.
-			</Form.Message>
-			<Form.Message match="patternMismatch" className="text-xs text-danger-500 mt-1">
-				Please match the requested format.
-			</Form.Message>
-			<Form.Message match="rangeUnderflow" className="text-xs text-danger-500 mt-1">
-				Too small.
-			</Form.Message>
-			<Form.Message match="rangeOverflow" className="text-xs text-danger-500 mt-1">
-				Too large.
-			</Form.Message>
-			{customError && (
-				<Form.Message match={() => true} className="text-xs text-danger-500 mt-1">
-					{customError}
-				</Form.Message>
+			</Field.Label>
+			<Field.Control ref={inputRef} id={id} {...inputProps} className={`${inputClassName} mt-0 ${className ?? ""}`} />
+			{error ? (
+				<Field.Error match className="text-xs text-danger-500 mt-1">
+					{error}
+				</Field.Error>
+			) : (
+				validate && <Field.Error className="text-xs text-danger-500 mt-1" />
 			)}
-		</Form.Field>
+			<Field.Error match="valueMissing" className="text-xs text-danger-500 mt-1">
+				Required.
+			</Field.Error>
+			<Field.Error match="patternMismatch" className="text-xs text-danger-500 mt-1">
+				Please match the requested format.
+			</Field.Error>
+			<Field.Error match="rangeUnderflow" className="text-xs text-danger-500 mt-1">
+				Too small.
+			</Field.Error>
+			<Field.Error match="rangeOverflow" className="text-xs text-danger-500 mt-1">
+				Too large.
+			</Field.Error>
+		</Field.Root>
 	);
 }

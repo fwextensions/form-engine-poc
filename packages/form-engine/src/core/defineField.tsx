@@ -9,7 +9,7 @@ import { baseFieldConfigSchema, commonFieldTransform, type BaseFieldConfig } fro
 import { createComponent, type ComponentDefinition } from "./componentFactory";
 import type { FormEngineContext } from "../engine/FormEngineContext";
 import type { ValueSpec } from "../catalog/catalog";
-import { FormFieldContainer, type FormFieldContainerProps } from "../components/layout/FormFieldContainer";
+import { FormFieldContainer, type ConstraintMessages, type FormFieldContainerProps } from "../components/layout/FormFieldContainer";
 
 /** Attributes shared by every native control rendered for a field. */
 export interface FieldInputProps {
@@ -53,6 +53,13 @@ export interface DefineFieldArgs<Shape extends z.ZodRawShape, Value> {
 	 * label sits beside the box).
 	 */
 	labelPlacement?: "above" | "control";
+	/** Overrides for the container's native constraint messages (e.g. a field-specific `valueMissing`). */
+	messages?: ConstraintMessages;
+	/**
+	 * Custom validation of the field's value, run by the form on submit (and on
+	 * change afterwards). Return a message to show, or null when valid.
+	 */
+	validate?: (value: unknown, config: { required: boolean }) => string | string[] | null;
 }
 
 export type FieldConfig<Shape extends z.ZodRawShape> = BaseFieldConfig & { type: string } & z.infer<z.ZodObject<Shape>>;
@@ -132,6 +139,8 @@ export function defineField<Shape extends z.ZodRawShape, Value>(
 					label: labelPlacement === "above" ? label : undefined,
 					description,
 					htmlFor: id,
+					messages: def.messages,
+					validate: def.validate ? (v) => def.validate!(v, { required }) : undefined,
 				},
 				control,
 			};

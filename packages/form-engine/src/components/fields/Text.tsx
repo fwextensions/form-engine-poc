@@ -2,8 +2,8 @@
 // The single-line input family: text, email, password, tel, number.
 import React from "react";
 import { z } from "zod";
-import { Control } from "@radix-ui/react-form";
-import { defineField } from "../../core/defineField";
+import { Field } from "@base-ui-components/react/field";
+import { defineField, type FieldInputProps } from "../../core/defineField";
 import { numberValidationSchema, textValidationSchema } from "../../core/baseSchemas";
 import { inputClassName } from "./styles";
 
@@ -34,24 +34,25 @@ function StringInput({
 	setValue,
 	inputProps,
 	placeholder,
+	validation,
 }: {
 	inputType: InputType;
 	value: string;
 	setValue: (v: string) => void;
-	inputProps: React.InputHTMLAttributes<HTMLInputElement>;
+	inputProps: FieldInputProps;
 	placeholder?: string;
+	validation?: TextValidation;
 }) {
 	return (
-		<Control asChild>
-			<input
-				{...inputProps}
-				type={inputType}
-				placeholder={placeholder}
-				value={value}
-				onChange={(e) => setValue(e.target.value)}
-				className={inputClassName}
-			/>
-		</Control>
+		<Field.Control
+			{...inputProps}
+			{...constraintAttrs(validation)}
+			type={inputType}
+			placeholder={placeholder}
+			value={value}
+			onChange={(e) => setValue(e.target.value)}
+			className={inputClassName}
+		/>
 	);
 }
 
@@ -67,7 +68,7 @@ export const TextConfigSchema = defineField({
 	},
 	value: { empty: "" },
 	control: ({ config, value, setValue, inputProps }) => (
-		<StringInput inputType={config.inputType ?? "text"} value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
+		<StringInput inputType={config.inputType ?? "text"} value={value} setValue={setValue} inputProps={inputProps} placeholder={config.placeholder} validation={config.validation} />
 	),
 }).schema;
 export type TextConfig = z.infer<typeof TextConfigSchema>;
@@ -84,8 +85,9 @@ export const EmailConfigSchema = defineField({
 		}).optional(),
 	},
 	value: { empty: "" },
+	messages: { typeMismatch: "Please enter a valid email address." },
 	control: ({ config, value, setValue, inputProps }) => (
-		<StringInput inputType="email" value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
+		<StringInput inputType="email" value={value} setValue={setValue} inputProps={inputProps} placeholder={config.placeholder} validation={config.validation} />
 	),
 }).schema;
 export type EmailConfig = z.infer<typeof EmailConfigSchema>;
@@ -98,7 +100,7 @@ export const PasswordConfigSchema = defineField({
 	schema: textLikeShape,
 	value: { empty: "" },
 	control: ({ config, value, setValue, inputProps }) => (
-		<StringInput inputType="password" value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
+		<StringInput inputType="password" value={value} setValue={setValue} inputProps={inputProps} placeholder={config.placeholder} validation={config.validation} />
 	),
 }).schema;
 export type PasswordConfig = z.infer<typeof PasswordConfigSchema>;
@@ -111,7 +113,7 @@ export const TelConfigSchema = defineField({
 	schema: textLikeShape,
 	value: { empty: "" },
 	control: ({ config, value, setValue, inputProps }) => (
-		<StringInput inputType="tel" value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
+		<StringInput inputType="tel" value={value} setValue={setValue} inputProps={inputProps} placeholder={config.placeholder} validation={config.validation} />
 	),
 }).schema;
 export type TelConfig = z.infer<typeof TelConfigSchema>;
@@ -142,22 +144,20 @@ export const NumberConfigSchema = defineField<
 	notes: "`min`/`max`/`step` on the field and `validation.min`/`validation.max` both constrain the value; the field-level props win when both are set.",
 	value: { empty: undefined },
 	control: ({ config, value, setValue, inputProps }) => (
-		<Control asChild>
-			<input
-				{...inputProps}
-				type="number"
-				placeholder={config.placeholder}
-				min={config.min ?? config.validation?.min}
-				max={config.max ?? config.validation?.max}
-				step={config.step}
-				value={value ?? ""}
-				onChange={(e) => {
-					const numValue = e.target.valueAsNumber;
-					setValue(Number.isNaN(numValue) ? undefined : numValue);
-				}}
-				className={inputClassName}
-			/>
-		</Control>
+		<Field.Control
+			{...inputProps}
+			type="number"
+			placeholder={config.placeholder}
+			min={config.min ?? config.validation?.min}
+			max={config.max ?? config.validation?.max}
+			step={config.step}
+			value={value ?? ""}
+			onChange={(e) => {
+				const numValue = e.target.valueAsNumber;
+				setValue(Number.isNaN(numValue) ? undefined : numValue);
+			}}
+			className={inputClassName}
+		/>
 	),
 }).schema;
 export type NumberConfig = z.infer<typeof NumberConfigSchema>;

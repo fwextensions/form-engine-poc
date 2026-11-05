@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
-import * as Tabs from "@radix-ui/react-tabs";
-import * as Toolbar from "@radix-ui/react-toolbar";
+import { Tabs } from "@base-ui-components/react/tabs";
+import { Toolbar } from "@base-ui-components/react/toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
 import { UndoIcon, RedoIcon } from "./icons";
 import YamlEditor from "./YamlEditor";
@@ -125,18 +125,18 @@ const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function Editor
 			{/* Tab List */}
 			<div className="flex items-center justify-between min-h-12 border-b border-ink-100 bg-ink-10">
 				<Tabs.List className="flex">
-					<Tabs.Trigger
+					<Tabs.Tab
 						value="yaml"
-						className="px-6 py-3 text-sm font-slab font-bold text-ink-500 border-b-2 border-b-transparent hover:text-ink-800 hover:bg-ink-50 transition-colors data-[state=active]:text-primary-600 data-[state=active]:border-primary-600 data-[state=active]:bg-[#fcfcfc]"
+						className="px-6 py-3 text-sm font-slab font-bold text-ink-500 border-b-2 border-b-transparent hover:text-ink-800 hover:bg-ink-50 transition-colors data-[active]:text-primary-600 data-[active]:border-primary-600 data-[active]:bg-[#fcfcfc]"
 					>
 						YAML editor
-					</Tabs.Trigger>
-					<Tabs.Trigger
+					</Tabs.Tab>
+					<Tabs.Tab
 						value="ai"
-						className="px-6 py-3 text-sm font-slab font-bold text-ink-500 border-b-2 border-b-transparent hover:text-ink-800 hover:bg-ink-50 transition-colors data-[state=active]:text-primary-600 data-[state=active]:border-primary-600 data-[state=active]:bg-[#fcfcfc]"
+						className="px-6 py-3 text-sm font-slab font-bold text-ink-500 border-b-2 border-b-transparent hover:text-ink-800 hover:bg-ink-50 transition-colors data-[active]:text-primary-600 data-[active]:border-primary-600 data-[active]:bg-[#fcfcfc]"
 					>
 						AI assistant
-					</Tabs.Trigger>
+					</Tabs.Tab>
 				</Tabs.List>
 				{history && (
 					<Toolbar.Root className="flex items-center gap-0 px-2" aria-label="Editor history actions">
@@ -161,7 +161,7 @@ const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function Editor
 			</div>
 
 			{/* YAML Editor Tab Content */}
-			<Tabs.Content value="yaml" className="flex-1 overflow-hidden">
+			<Tabs.Panel value="yaml" className="flex-1 overflow-hidden">
 				<YamlEditor
 					defaultValue={schema}
 					onMount={(editor) => {
@@ -173,13 +173,13 @@ const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function Editor
 						onSchemaChange(nextSchema);
 					}}
 				/>
-			</Tabs.Content>
+			</Tabs.Panel>
 
 			{/* AI Assistant Tab Content - keep mounted to preserve conversation state */}
-			<Tabs.Content
+			<Tabs.Panel
 				value="ai"
-				className="flex-1 overflow-hidden data-[state=inactive]:hidden"
-				forceMount
+				className="flex-1 overflow-hidden data-[hidden]:hidden"
+				keepMounted
 			>
 				<AIChatJsonl
 					key={formId}
@@ -190,7 +190,7 @@ const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function Editor
 					onOpenSettings={onOpenSettings}
 					onFieldHighlight={onFieldHighlight}
 				/>
-			</Tabs.Content>
+			</Tabs.Panel>
 		</Tabs.Root>
 	);
 });

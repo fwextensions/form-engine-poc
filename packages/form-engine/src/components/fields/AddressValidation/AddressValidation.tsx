@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Control } from "@radix-ui/react-form";
+import { Field } from "@base-ui-components/react/field";
 import { FormEngineContext } from "../../../engine/FormEngineContext";
 import { FormFieldContainer, FormFieldContainerProps } from "../../layout/FormFieldContainer";
 import { AddressValidationFieldConfig, addressValidationFieldConfigSchema, transformConfig } from "./schema";
@@ -8,13 +8,11 @@ import { createComponent } from "../../../core/componentFactory";
 
 // --- Helper Components ---
 const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>((props, ref) => (
-	<Control asChild>
-		<input
-			ref={ref}
-			{...props}
-			className="mt-1.5 block w-full px-3 py-2 border border-ink-100 rounded shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-		/>
-	</Control>
+	<Field.Control
+		ref={ref}
+		{...props}
+		className="mt-1.5 block w-full px-3 py-2 border border-ink-100 rounded shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+	/>
 ));
 Input.displayName = "Input";
 
