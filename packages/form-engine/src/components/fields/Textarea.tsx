@@ -41,9 +41,12 @@ export const Textarea: React.FC<TextareaProps> = ({ containerProps, textareaProp
 // 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<TextareaConfig, TextareaProps>({
 	type: "textarea",
+	kind: "field",
 	schema: TextareaConfigSchema,
 	component: Textarea,
 	description: "A multi-line text input field",
+	example: { id: "comments", label: "Additional comments", rows: 4 },
+	value: { empty: "" },
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, rows, disabled } = config;

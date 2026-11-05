@@ -79,21 +79,20 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({ containerProps, radioGro
 // 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<RadioGroupConfig, RadioGroupProps>({
 	type: "radiogroup",
+	kind: "field",
 	schema: RadioGroupConfigSchema,
 	component: RadioGroup,
-	description: `A group of radio buttons for selecting one option from a list.
-
-Options format — prefer the full object form:
-  options:
-    - label: "Public (VS 117)"
-      value: PUBLIC
-    - label: "Non-Clergy (VS 115)"
-      value: NON_CLERGY
-
-Plain strings are also accepted and will use the string as both label and value:
-  options:
-    - PUBLIC (VS 117)
-    - NON-CLERGY (VS 115)`,
+	description: "A group of radio buttons for selecting one option from a short list",
+	example: {
+		id: "contactMethod",
+		label: "Preferred contact method*",
+		options: [
+			{ label: "Email", value: "email" },
+			{ label: "Phone", value: "phone" },
+		],
+	},
+	notes: "Prefer the `{label, value}` object form for options. Plain strings are also accepted and use the string as both label and value. Use `radiogroup` for up to about six options and `select` for longer lists.",
+	value: { empty: undefined, serialize: serializeForUI, deserialize: deserializeFromUI },
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, options, defaultValue, validation, orientation, disabled } = config;

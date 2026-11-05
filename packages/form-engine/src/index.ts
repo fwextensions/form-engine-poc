@@ -12,7 +12,14 @@ export type {
 export { useFormMeta } from "./engine/useFormMeta";
 export type { FormConfig } from "./components/layout/Form";
 export type { PageConfig } from "./components/layout/Page";
-export { createComponent, getComponentDefinition, getAllComponentDefinitions } from "./core/componentFactory";
+export {
+	createComponent,
+	getComponentDefinition,
+	getAllComponentDefinitions,
+	getComponentTypesByKind,
+	type ComponentDefinition,
+	type CreateComponentArgs,
+} from "./core/componentFactory";
 export { parseRootFormSchema } from "./core/schemaParser";
 
 // Catalog exports - for schema validation, JSON Schema generation, and AI integration
@@ -21,8 +28,16 @@ export {
 	createCatalog,
 	getCatalogEntry,
 	getCatalogTypes,
+	getCatalogTypesByKind,
+	getEntryKind,
+	entryAllowsChildren,
+	resolveAllowedChildren,
 	type Catalog,
 	type CatalogEntry,
+	type ComponentKind,
+	type ComponentMeta,
+	type ChildrenSpec,
+	type ValueSpec,
 	// Auto-registered catalog - built automatically when components are imported
 	getRegisteredCatalog,
 	getRegisteredCatalogEntry,
@@ -33,6 +48,7 @@ export {
 	type CatalogToJsonSchemaOptions,
 	// LLM Prompt Generation utilities
 	generateCatalogPrompt,
+	generateComponentExample,
 	formatPropsFromZodSchema,
 	type CatalogPromptOptions,
 } from "./catalog";

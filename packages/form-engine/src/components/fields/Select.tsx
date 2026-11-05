@@ -105,21 +105,21 @@ export const Select: React.FC<SelectProps> = ({
 // 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<SelectConfig, SelectProps>({
     type: "select",
+    kind: "field",
     schema: SelectConfigSchema,
     component: Select,
-    description: `A dropdown select field for choosing from predefined options.
-
-Options format — prefer the full object form:
-  options:
-    - label: "California"
-      value: CA
-    - label: "Nevada"
-      value: NV
-
-Plain strings are also accepted and will use the string as both label and value:
-  options:
-    - California
-    - Nevada`,
+    description: "A dropdown select field for choosing one of several predefined options",
+    example: {
+        id: "state",
+        label: "State*",
+        placeholder: "Select a state",
+        options: [
+            { label: "California", value: "CA" },
+            { label: "Nevada", value: "NV" },
+        ],
+    },
+    notes: "Prefer the `{label, value}` object form for options. Plain strings are also accepted and use the string as both label and value.",
+    value: { empty: undefined, serialize: serializeForUI, deserialize: deserializeFromUI },
     transformConfig: commonFieldTransform,
     transformProps: (config, context) => {
         const { id, label, description, options, placeholder, defaultValue, validation, disabled } = config;

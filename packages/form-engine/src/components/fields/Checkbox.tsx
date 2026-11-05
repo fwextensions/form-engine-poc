@@ -68,9 +68,12 @@ export const Checkbox: React.FC<CheckboxProps> = ({ containerProps, checkboxRoot
 // 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<CheckboxConfig, CheckboxProps>({
 	type: "checkbox",
+	kind: "field",
 	schema: CheckboxConfigSchema,
 	component: Checkbox,
 	description: "A checkbox input for boolean values",
+	example: { id: "agreeToTerms", label: "I agree to the terms*" },
+	value: { empty: false },
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, defaultValue, validation } = config;

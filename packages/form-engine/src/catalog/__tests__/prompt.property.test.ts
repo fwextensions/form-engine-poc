@@ -9,7 +9,7 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod";
 import * as fc from "fast-check";
 import { formatPropsFromZodSchema, generateCatalogPrompt } from "../prompt";
-import type { Catalog } from "../catalog";
+import type { Catalog, CatalogEntry } from "../catalog";
 
 // Configure fast-check
 fc.configureGlobal({
@@ -383,7 +383,11 @@ describe("formatPropsFromZodSchema - Property-Based Tests", () => {
 			})),
 			description: fc.option(fc.string({ minLength: 1, maxLength: 100 }), { nil: undefined }),
 			hasChildren: fc.option(fc.boolean(), { nil: undefined }),
-		});
+		}).map(({ schema, description, hasChildren }): CatalogEntry => ({
+			schema,
+			meta: { description },
+			children: hasChildren ? { allow: "any" } : undefined,
+		}));
 
 		it("should include type name for every component in catalog", () => {
 			fc.assert(
@@ -412,7 +416,7 @@ describe("formatPropsFromZodSchema - Property-Based Tests", () => {
 							components: {
 								[type]: {
 									schema: z.object({ type: z.string(), id: z.string() }),
-									description,
+									meta: { description },
 								},
 							},
 						};
@@ -434,7 +438,7 @@ describe("formatPropsFromZodSchema - Property-Based Tests", () => {
 							components: {
 								[type]: {
 									schema: z.object({ type: z.string(), id: z.string() }),
-									hasChildren,
+									children: hasChildren ? { allow: "any" } : undefined,
 								},
 							},
 						};
@@ -462,7 +466,7 @@ describe("formatPropsFromZodSchema - Property-Based Tests", () => {
 						for (let i = 0; i < numComponents; i++) {
 							components[`component${i}`] = {
 								schema: z.object({ type: z.string(), id: z.string() }),
-								description: `Component ${i} description`,
+								meta: { description: `Component ${i} description` },
 							};
 						}
 						const catalog: Catalog = { components };
@@ -574,8 +578,11 @@ describe("formatPropsFromZodSchema - Property-Based Tests", () => {
 		 * the generated prompt SHALL contain a YAML example for each component type in the catalog.
 		 */
 
+		// Avoid words YAML 1.1 treats as booleans/null, which js-yaml must quote
+		const yamlReserved = new Set(["y", "n", "yes", "no", "on", "off", "true", "false", "null"]);
 		const componentTypeArb = fc.string({ minLength: 1, maxLength: 20 })
-			.filter(s => /^[a-z][a-z0-9]*$/.test(s));
+			.filter(s => /^[a-z][a-z0-9]*$/.test(s))
+			.filter(s => !yamlReserved.has(s));
 
 		const catalogEntryArb = fc.record({
 			schema: fc.constant(z.object({
@@ -583,7 +590,7 @@ describe("formatPropsFromZodSchema - Property-Based Tests", () => {
 				id: z.string(),
 			})),
 			description: fc.option(fc.string({ minLength: 1, maxLength: 50 }), { nil: undefined }),
-		});
+		}).map(({ schema, description }): CatalogEntry => ({ schema, meta: { description } }));
 
 		it("should include YAML examples when includeExamples is true", () => {
 			fc.assert(
@@ -718,8 +725,8 @@ describe("formatPropsFromZodSchema - Property-Based Tests", () => {
 							components: {
 								[type]: {
 									schema: z.object({ type: z.string(), id: z.string() }),
-									description,
-									hasChildren,
+									meta: { description },
+									children: hasChildren ? { allow: "any" } : undefined,
 								},
 							},
 						};

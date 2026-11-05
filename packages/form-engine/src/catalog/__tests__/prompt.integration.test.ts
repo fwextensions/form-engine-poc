@@ -16,7 +16,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						id: z.string(),
 						label: z.string().optional(),
 					}),
-					description: "A text input field",
+					meta: { description: "A text input field" },
 				},
 			},
 		};
@@ -34,7 +34,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						type: z.literal("text"),
 						id: z.string(),
 					}),
-					description: "A text input field for single-line text",
+					meta: { description: "A text input field for single-line text" },
 				},
 			},
 		};
@@ -52,8 +52,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						type: z.literal("form"),
 						id: z.string(),
 					}),
-					description: "The root form container",
-					hasChildren: true,
+					meta: { description: "The root form container" },					children: { allow: "any" },
 				},
 			},
 		};
@@ -63,7 +62,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 		expect(result).toContain("**Can contain children:** Yes");
 	});
 
-	it("should not show children indicator when hasChildren is false or undefined", () => {
+	it("should not show children indicator when children is undefined", () => {
 		const catalog: Catalog = {
 			components: {
 				text: {
@@ -71,8 +70,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						type: z.literal("text"),
 						id: z.string(),
 					}),
-					description: "A text input field",
-					hasChildren: false,
+					meta: { description: "A text input field" },
 				},
 			},
 		};
@@ -93,7 +91,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						placeholder: z.string().optional(),
 						defaultValue: z.string().default(""),
 					}),
-					description: "A text input field",
+					meta: { description: "A text input field" },
 				},
 			},
 		};
@@ -123,7 +121,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						id: z.string(),
 						label: z.string().optional(),
 					}),
-					description: "A text input field",
+					meta: { description: "A text input field" },
 				},
 			},
 		};
@@ -144,7 +142,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						type: z.literal("text"),
 						id: z.string(),
 					}),
-					description: "A text input field",
+					meta: { description: "A text input field" },
 				},
 			},
 		};
@@ -168,7 +166,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						id: z.string(),
 						label: z.string().optional(),
 					}),
-					description: "A text input field",
+					meta: { description: "A text input field" },
 				},
 				checkbox: {
 					schema: z.object({
@@ -177,15 +175,14 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						label: z.string().optional(),
 						defaultChecked: z.boolean().default(false),
 					}),
-					description: "A checkbox input",
+					meta: { description: "A checkbox input" },
 				},
 				form: {
 					schema: z.object({
 						type: z.literal("form"),
 						id: z.string(),
 					}),
-					description: "The root form container",
-					hasChildren: true,
+					meta: { description: "The root form container" },					children: { allow: "any" },
 				},
 			},
 		};
@@ -216,7 +213,7 @@ describe("generateCatalogPrompt - Component Documentation", () => {
 						type: z.literal("text"),
 						id: z.string(),
 					}),
-					description: "A text input field",
+					meta: { description: "A text input field" },
 				},
 			},
 		};

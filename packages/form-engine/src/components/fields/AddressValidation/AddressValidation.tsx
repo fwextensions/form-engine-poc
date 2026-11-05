@@ -155,9 +155,12 @@ const transformProps = (config: AddressValidationFieldConfig, context: FormEngin
 // Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<AddressValidationFieldConfig, AddressValidationProps>({
 	type: "addressValidation",
+	kind: "field",
 	component: AddressValidation,
 	schema: addressValidationFieldConfigSchema,
-	description: "An address input with validation support",
+	description: "A US street address input that is verified against an address validation service before it is accepted",
+	example: { id: "homeAddress", label: "Home address*" },
+	value: { empty: null },
 	transformConfig,
 	transformProps,
 });

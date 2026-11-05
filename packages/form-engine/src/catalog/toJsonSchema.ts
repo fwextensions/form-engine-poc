@@ -56,10 +56,10 @@ export function catalogToJsonSchema(
 		const jsonSchema = { ...zodSchemaToJsonSchema(entry.schema), title: type };
 
 		// Optionally add description from catalog entry
-		if (includeDescriptions && entry.description) {
+		if (includeDescriptions && entry.meta?.description) {
 			if (typeof jsonSchema === "object" && jsonSchema !== null) {
 				// Add description to the schema
-				(jsonSchema as any).description = entry.description;
+				(jsonSchema as any).description = entry.meta.description;
 			}
 		}
 

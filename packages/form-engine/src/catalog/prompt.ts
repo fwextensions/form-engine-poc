@@ -2,8 +2,9 @@
 // Generates LLM-consumable documentation from the component catalog
 
 import { z } from "zod";
+import * as yaml from "js-yaml";
 import { zodSchemaToJsonSchema } from "./toJsonSchema";
-import type { Catalog, CatalogEntry } from "./catalog";
+import { entryAllowsChildren, type Catalog, type CatalogEntry } from "./catalog";
 
 export interface CatalogPromptOptions {
 	/** Include YAML examples for each component */
@@ -199,12 +200,12 @@ function formatComponentDocumentation(
 	lines.push(`### ${type}`);
 
 	// Description
-	if (entry.description) {
-		lines.push(`\n${entry.description}`);
+	if (entry.meta?.description) {
+		lines.push(`\n${entry.meta.description}`);
 	}
 
 	// Children capability
-	if (entry.hasChildren) {
+	if (entryAllowsChildren(entry)) {
 		lines.push("\n**Can contain children:** Yes");
 	}
 
@@ -214,7 +215,7 @@ function formatComponentDocumentation(
 
 	// Example
 	if (includeExamples) {
-		const example = generateComponentExample(type);
+		const example = generateComponentExample(type, entry);
 		if (example) {
 			lines.push("\n**Example:**\n");
 			lines.push("```yaml");
@@ -223,30 +224,40 @@ function formatComponentDocumentation(
 		}
 	}
 
+	// Notes
+	if (entry.meta?.notes) {
+		lines.push(`\n${entry.meta.notes}`);
+	}
+
 	return lines.join("\n");
 }
 
 /**
- * Generates a simple YAML example for a component.
+ * Renders the entry's declared example as YAML. Entries without an example
+ * get a minimal one derived from their schema (id and label when present).
  */
-function generateComponentExample(type: string): string | null {
-	// Generate a basic example based on the component type
-	// This is a simplified version - could be enhanced with more sophisticated example generation
+export function generateComponentExample(type: string, entry: CatalogEntry): string | null {
+	const example: Record<string, unknown> = { type };
 
-	const lines: string[] = [];
-	lines.push(`type: ${type}`);
-
-	// Add id if it's likely a field component
-	if (type !== "form" && type !== "page" && type !== "html") {
-		lines.push(`id: example${type.charAt(0).toUpperCase() + type.slice(1)}`);
+	if (entry.meta?.example) {
+		Object.assign(example, entry.meta.example);
+	} else {
+		const properties = schemaProperties(entry.schema);
+		const capitalized = type.charAt(0).toUpperCase() + type.slice(1);
+		if ("id" in properties) example.id = `example${capitalized}`;
+		if ("label" in properties) example.label = `Example ${capitalized}`;
 	}
 
-	// Add common properties based on type
-	if (["text", "email", "password", "tel", "number", "textarea", "select", "checkbox", "radio"].includes(type)) {
-		lines.push(`label: Example ${type.charAt(0).toUpperCase() + type.slice(1)}`);
-	}
+	return yaml.dump(example, { indent: 2, lineWidth: -1, noRefs: true, sortKeys: false }).trimEnd();
+}
 
-	return lines.join("\n");
+function schemaProperties(schema: z.ZodType<any>): Record<string, unknown> {
+	try {
+		const jsonSchema = zodSchemaToJsonSchema(schema);
+		return (jsonSchema.properties as Record<string, unknown>) ?? {};
+	} catch {
+		return {};
+	}
 }
 
 /**

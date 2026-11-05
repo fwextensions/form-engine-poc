@@ -99,9 +99,12 @@ export const Text: React.FC<TextProps> = ({ containerProps, inputProps }) => {
 // TEXT
 createComponent<TextConfig, TextProps>({
 	type: "text",
+	kind: "field",
 	schema: TextConfigSchema,
 	component: Text,
 	description: "A single-line text input field",
+	example: { id: "firstName", label: "First name*", placeholder: "Jane" },
+	value: { empty: "" },
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
@@ -124,9 +127,12 @@ createComponent<TextConfig, TextProps>({
 // EMAIL
 createComponent<EmailConfig, TextProps>({
 	type: "email",
+	kind: "field",
 	schema: EmailConfigSchema,
 	component: Text,
 	description: "An email input field with email validation",
+	example: { id: "email", label: "Email address*" },
+	value: { empty: "" },
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
@@ -149,9 +155,12 @@ createComponent<EmailConfig, TextProps>({
 // PASSWORD
 createComponent<PasswordConfig, TextProps>({
 	type: "password",
+	kind: "field",
 	schema: PasswordConfigSchema,
 	component: Text,
 	description: "A password input field with masked characters",
+	example: { id: "password", label: "Password*" },
+	value: { empty: "" },
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
@@ -174,9 +183,12 @@ createComponent<PasswordConfig, TextProps>({
 // TEL
 createComponent<TelConfig, TextProps>({
 	type: "tel",
+	kind: "field",
 	schema: TelConfigSchema,
 	component: Text,
 	description: "A telephone number input field",
+	example: { id: "phone", label: "Phone number" },
+	value: { empty: "" },
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
@@ -199,9 +211,12 @@ createComponent<TelConfig, TextProps>({
 // NUMBER
 createComponent<NumberConfig, TextProps>({
 	type: "number",
+	kind: "field",
 	schema: NumberConfigSchema,
 	component: Text,
 	description: "A numeric input field with optional min/max/step constraints",
+	example: { id: "householdSize", label: "Household size*", min: 1, max: 20 },
+	value: { empty: undefined },
 	transformConfig: commonFieldTransform,
 	transformProps: (config, context) => {
 		const { id, label, description, placeholder, defaultValue, validation, type, min, max, step, disabled } = config;

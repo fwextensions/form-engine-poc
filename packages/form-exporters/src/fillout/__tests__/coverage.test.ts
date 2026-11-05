@@ -1,19 +1,17 @@
 // Keeps the Fillout exporter in step with the form-engine component registry.
 
 import { describe, it, expect } from "vitest";
-import { getAllComponentDefinitions, getRegisteredCatalogEntry } from "form-engine";
+import { getAllComponentDefinitions } from "form-engine";
 import { exportToFillout, getSupportedComponentTypes } from "../index";
-
-const LAYOUT_TYPES = new Set(["form", "page"]);
 
 describe("fillout exporter coverage", () => {
 	const registered = [...getAllComponentDefinitions().keys()];
 	const supported = new Set(getSupportedComponentTypes());
 
 	it("has a mapper for every registered non-layout type", () => {
-		const missing = registered.filter(
-			(type) => !LAYOUT_TYPES.has(type) && !getRegisteredCatalogEntry(type)?.hasChildren && !supported.has(type),
-		);
+		const missing = [...getAllComponentDefinitions().values()]
+			.filter((def) => def.kind !== "layout" && !supported.has(def.type))
+			.map((def) => def.type);
 		expect(missing).toEqual([]);
 	});
 

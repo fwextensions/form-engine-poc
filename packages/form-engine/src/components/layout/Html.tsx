@@ -146,9 +146,12 @@ const Html: React.FC<HtmlProps> = ({
 // 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<HtmlConfig, HtmlProps>({
 	type: "html",
+	kind: "static",
 	schema: HtmlConfigSchema,
 	component: Html,
-	description: "Static HTML content block for rendering custom markup",
+	description: "Static HTML content block for rendering custom markup (headings, instructions, links)",
+	example: { content: "<p>Please review the information below before continuing.</p>" },
+	notes: "HTML content containing colons, angle brackets or quotes must be quoted or written as a YAML block scalar.",
 });
 
 export default Html;
