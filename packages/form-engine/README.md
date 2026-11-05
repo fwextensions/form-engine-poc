@@ -6,7 +6,7 @@ This package provides the core logic for rendering dynamic forms based on YAML s
 ## Features
 
 - Parses YAML form schemas.
-- Renders the registered field types (text, email, password, tel, number, textarea, select, radiogroup, checkbox, date, file, addressValidation) plus `html` content blocks inside `form`/`page` layouts.
+- Renders the registered field types (text, email, password, tel, number, textarea, select, radiogroup, checkboxgroup, checkbox, yesno, date, dateOfBirth, name, file, addressValidation) plus `html` content blocks inside `form` / `page` / `section` layouts.
 - Every component is registered once (`createComponent()` / `defineField()`); validation, the LLM prompt, the JSON Schema and the exporters are all derived from that registry.
 - Supports multi-page and single-page form layouts.
 - Handles basic field validation (e.g., required fields).

@@ -5,10 +5,8 @@ import { Label, Message } from "@radix-ui/react-form";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
 import { defineField } from "../../core/defineField";
-import { optionLabelClassName } from "./styles";
+import { checkboxClassName, optionLabelClassName } from "./styles";
 
-const checkboxClassName =
-	"flex h-5 w-5 items-center justify-center rounded border border-ink-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600 data-[state=checked]:text-white disabled:bg-gray-100 disabled:cursor-not-allowed";
 
 export const CheckboxConfigSchema = defineField<{ defaultValue: z.ZodOptional<z.ZodBoolean> }, boolean>({
 	type: "checkbox",

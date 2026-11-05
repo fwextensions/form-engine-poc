@@ -174,6 +174,43 @@ id: agreeToTerms
 label: I agree to the terms*
 ```
 
+### checkboxgroup
+
+A group of checkboxes for selecting any number of options from a list ("select all that apply"); the value is an array
+
+**Properties:**
+
+- **id** (string) [Required] Constraints: minLength: 1
+- **type** (literal: "checkboxgroup") [Required]
+- **rules** (array<object>) [Optional]
+- **hidden** (boolean) [Optional] - Hide the component; rules can set this dynamically
+- **condition** (any) [Optional] - JSONLogic expression; the component renders only when it is truthy
+- **label** (string) [Optional] - Label shown above the control; a trailing * marks the field required
+- **description** (string) [Optional] - Help text shown under the label
+- **required** (boolean) [Optional] - Shorthand for validation.required
+- **disabled** (boolean) [Optional]
+- **validation** (object) [Optional]
+- **options** (array<object | string>) [Required] - List of options. Each option is either a {label, value} object or a plain string (used as both label and value).
+- **defaultValue** (array<any>) [Optional] - Option values selected initially
+- **orientation** (enum: "horizontal" | "vertical") [Optional] Default: `"vertical"`
+
+**Example:**
+
+```yaml
+type: checkboxgroup
+id: housingPriorities
+label: Which of these apply to you?
+options:
+  - label: Veteran
+    value: veteran
+  - label: Senior (62+)
+    value: senior
+  - label: Person with a disability
+    value: disability
+```
+
+Use `checkboxgroup` for "select all that apply" questions and `checkbox` for a single yes/no agreement. `validation.required: true` means at least one option must be selected.
+
 ### date
 
 A date picker input field (values are ISO dates, YYYY-MM-DD)
@@ -202,6 +239,37 @@ type: date
 id: dateOfBirth
 label: Date of birth*
 ```
+
+### dateOfBirth
+
+Date of birth entered as month, day and year inputs; the value is an ISO date (YYYY-MM-DD) like the `date` field
+
+**Properties:**
+
+- **id** (string) [Required] Constraints: minLength: 1
+- **type** (literal: "dateOfBirth") [Required]
+- **rules** (array<object>) [Optional]
+- **hidden** (boolean) [Optional] - Hide the component; rules can set this dynamically
+- **condition** (any) [Optional] - JSONLogic expression; the component renders only when it is truthy
+- **label** (string) [Optional] - Label shown above the control; a trailing * marks the field required
+- **description** (string) [Optional] - Help text shown under the label
+- **required** (boolean) [Optional] - Shorthand for validation.required
+- **disabled** (boolean) [Optional]
+- **validation** (object) [Optional]
+- **minAge** (integer) [Optional] Constraints: min: 0, max: 9007199254740991 - Minimum age in whole years
+- **maxAge** (integer) [Optional] Constraints: max: 9007199254740991 - Maximum age in whole years
+- **defaultValue** (string) [Optional] Constraints: pattern: ^\d{4}-\d{2}-\d{2}$
+
+**Example:**
+
+```yaml
+type: dateOfBirth
+id: dateOfBirth
+label: Your date of birth*
+minAge: 18
+```
+
+Use `dateOfBirth` instead of `date` for birth dates: it rejects future dates and can enforce `minAge` / `maxAge`.
 
 ### email
 
@@ -262,7 +330,7 @@ accept: .pdf,image/*
 
 Root form container with submit handling and multi-page navigation
 
-**Can contain children:** Yes (allowed types: addressValidation, checkbox, date, email, file, html, number, page, password, radiogroup, select, tel, text, textarea)
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, page, password, radiogroup, section, select, tel, text, textarea, yesno)
 
 **Properties:**
 
@@ -319,6 +387,35 @@ content: <p>Please review the information below before continuing.</p>
 
 HTML content containing colons, angle brackets or quotes must be quoted or written as a YAML block scalar.
 
+### name
+
+A person's name collected as first, middle (optional) and last name; the value is an object { first, middle, last }
+
+**Properties:**
+
+- **id** (string) [Required] Constraints: minLength: 1
+- **type** (literal: "name") [Required]
+- **rules** (array<object>) [Optional]
+- **hidden** (boolean) [Optional] - Hide the component; rules can set this dynamically
+- **condition** (any) [Optional] - JSONLogic expression; the component renders only when it is truthy
+- **label** (string) [Optional] - Label shown above the control; a trailing * marks the field required
+- **description** (string) [Optional] - Help text shown under the label
+- **required** (boolean) [Optional] - Shorthand for validation.required
+- **disabled** (boolean) [Optional]
+- **validation** (object) [Optional]
+- **showMiddleName** (boolean) [Optional] Default: `true`
+- **defaultValue** (object) [Optional]
+
+**Example:**
+
+```yaml
+type: name
+id: applicantName
+label: Your name*
+```
+
+When the field is required, first and last name are required and middle name stays optional. Set `showMiddleName: false` to hide the middle name input.
+
 ### number
 
 A numeric input field with optional min/max/step constraints
@@ -357,7 +454,7 @@ max: 20
 
 A page container for grouping form fields, used in multi-page forms
 
-**Can contain children:** Yes (allowed types: addressValidation, checkbox, date, email, file, html, number, password, radiogroup, select, tel, text, textarea)
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, section, select, tel, text, textarea, yesno)
 
 **Properties:**
 
@@ -441,6 +538,36 @@ options:
 ```
 
 Prefer the `{label, value}` object form for options. Plain strings are also accepted and use the string as both label and value. Use `radiogroup` for up to about six options and `select` for longer lists.
+
+### section
+
+Groups related fields under a heading with optional help text, within a page
+
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, section, select, tel, text, textarea, yesno)
+
+**Properties:**
+
+- **id** (string) [Optional]
+- **type** (literal: "section") [Required]
+- **rules** (array<object>) [Optional]
+- **hidden** (boolean) [Optional] - Hide the component; rules can set this dynamically
+- **condition** (any) [Optional] - JSONLogic expression; the component renders only when it is truthy
+- **children** (array<any>) [Optional]
+- **title** (string) [Optional] - Heading shown above the group
+- **description** (string) [Optional] - Help text shown under the heading
+- **className** (string) [Optional]
+
+**Example:**
+
+```yaml
+type: section
+id: yourName
+title: Your name
+description: Enter your name as it appears on your ID.
+children: []
+```
+
+Use a section when a paper form has a labelled block of related fields ("YOUR ADDRESS", "ALTERNATE CONTACT"). Sections live inside pages and may be nested.
 
 ### select
 
@@ -564,6 +691,37 @@ id: comments
 label: Additional comments
 rows: 4
 ```
+
+### yesno
+
+A yes/no question rendered as two radio buttons; the value is a boolean (true for yes)
+
+**Properties:**
+
+- **id** (string) [Required] Constraints: minLength: 1
+- **type** (literal: "yesno") [Required]
+- **rules** (array<object>) [Optional]
+- **hidden** (boolean) [Optional] - Hide the component; rules can set this dynamically
+- **condition** (any) [Optional] - JSONLogic expression; the component renders only when it is truthy
+- **label** (string) [Optional] - Label shown above the control; a trailing * marks the field required
+- **description** (string) [Optional] - Help text shown under the label
+- **required** (boolean) [Optional] - Shorthand for validation.required
+- **disabled** (boolean) [Optional]
+- **validation** (object) [Optional]
+- **yesLabel** (string) [Optional] Default: `"Yes"`
+- **noLabel** (string) [Optional] Default: `"No"`
+- **defaultValue** (boolean) [Optional]
+- **orientation** (enum: "horizontal" | "vertical") [Optional] Default: `"horizontal"`
+
+**Example:**
+
+```yaml
+type: yesno
+id: worksInSanFrancisco
+label: Do you work in San Francisco?*
+```
+
+Prefer `yesno` over a two-option `radiogroup` for boolean questions: rules can then use `is: true` or `is: false` without guessing how yes and no were encoded.
 
 ## Schema Structure Rules
 

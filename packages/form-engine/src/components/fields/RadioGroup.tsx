@@ -5,7 +5,7 @@ import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
 import { defineField } from "../../core/defineField";
 import { serializeForUI, deserializeFromUI } from "../../utils/valueSerialization";
 import { radioOptionsSchema } from "./options";
-import { optionLabelClassName } from "./styles";
+import { optionLabelClassName, radioItemClassName } from "./styles";
 
 export const RadioGroupConfigSchema = defineField<
 	{
@@ -63,7 +63,7 @@ export const RadioGroupConfigSchema = defineField<
 								value={option.value}
 								id={itemId}
 								disabled={option.disabled}
-								className="h-4 w-4 rounded-full border border-ink-200 text-primary-600 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600"
+								className={radioItemClassName}
 							>
 								<RadioGroupPrimitive.Indicator className="flex items-center justify-center">
 									<div className="h-1.5 w-1.5 rounded-full bg-white"></div>

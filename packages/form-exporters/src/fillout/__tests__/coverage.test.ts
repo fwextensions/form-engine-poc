@@ -70,3 +70,48 @@ describe("fillout exporter uses validated config", () => {
 		expect(w.map((x) => text(x.template.label))).toEqual(["A", "B"]);
 	});
 });
+
+describe("fillout exporter: newer field types", () => {
+	function widgets(children: unknown[]) {
+		const { output, diagnostics } = exportToFillout({ type: "form", id: "f", children });
+		const steps = Object.values((output.template as any).steps as Record<string, any>).filter((s) => s.type === "form");
+		const all = steps.flatMap((s) => Object.values(s.template.widgets as Record<string, any>)).filter((w) => w.type !== "Button");
+		return { widgets: all as Array<{ type: string; template: any }>, diagnostics };
+	}
+	const text = (logic: any) => logic?.logic?.value ?? logic;
+
+	it("exports checkboxgroup as Fillout Checkboxes", () => {
+		const { widgets: w } = widgets([{ type: "checkboxgroup", id: "p", label: "Priorities", options: ["A", "B"] }]);
+		expect(w.map((x) => x.type)).toEqual(["Checkboxes"]);
+		expect(w[0].template.options.staticOptions.map((o: any) => text(o.label))).toEqual(["A", "B"]);
+	});
+
+	it("exports yesno as a two-option MultipleChoice", () => {
+		const { widgets: w } = widgets([{ type: "yesno", id: "v", label: "Veteran?*", noLabel: "Nope" }]);
+		expect(w[0].type).toBe("MultipleChoice");
+		expect(w[0].template.options.staticOptions.map((o: any) => text(o.label))).toEqual(["Yes", "Nope"]);
+		expect(w[0].template.required.logic).toBe(true);
+	});
+
+	it("expands name into first/middle/last short answers", () => {
+		const { widgets: w } = widgets([{ type: "name", id: "n", label: "Your name*" }]);
+		expect(w.map((x) => text(x.template.label))).toEqual(["Your name: First name", "Your name: Middle name", "Your name: Last name"]);
+		expect(w.map((x) => x.template.required.logic)).toEqual([true, false, true]);
+		const { widgets: two } = widgets([{ type: "name", id: "n", label: "Name", showMiddleName: false }]);
+		expect(two).toHaveLength(2);
+	});
+
+	it("exports dateOfBirth as a DatePicker and notes unenforced age limits", () => {
+		const { widgets: w, diagnostics } = widgets([{ type: "dateOfBirth", id: "dob", label: "DOB", minAge: 18 }]);
+		expect(w[0].type).toBe("DatePicker");
+		expect(diagnostics.some((d) => d.componentId === "dob" && /minAge/.test(d.message))).toBe(true);
+	});
+
+	it("emits a heading for a section and flattens its fields", () => {
+		const { widgets: w } = widgets([
+			{ type: "section", id: "s", title: "Your name", description: "As on your ID", children: [{ type: "text", id: "a", label: "A" }] },
+		]);
+		expect(w.map((x) => x.type)).toEqual(["Html", "ShortAnswer"]);
+		expect(text(w[0].template.html ?? w[0].template.content ?? w[0].template.label)).toContain("Your name");
+	});
+});
