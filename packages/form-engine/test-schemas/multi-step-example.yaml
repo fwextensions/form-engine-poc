@@ -79,7 +79,7 @@ children:
           - value: "gb"
             label: "United Kingdom"
 
-      - id: listingSpecificQuestion
+      - id: listingSpecificQuestionPage2
         type: text
         label: Listing Specific Question (for listing-123-abc)
         condition:

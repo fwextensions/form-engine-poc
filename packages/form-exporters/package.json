@@ -6,12 +6,15 @@
   "types": "src/index.ts",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint src/"
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "form-engine": "*"
   },
   "devDependencies": {
-    "typescript": "^5.8.3"
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
   }
 }

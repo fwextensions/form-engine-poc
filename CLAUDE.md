@@ -5,140 +5,92 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Common Development Commands
 
 ### Root-level commands (run from repository root):
-- `npm install` - Install all workspace dependencies
+- `npm install` - Install all workspace dependencies (`.npmrc` sets `legacy-peer-deps`; see Dependency notes)
 - `npm run dev` - Start form-editor with live preview (Next.js dev server)
-- `npm run build` - Build form-editor package
-- `npm run lint` - Lint form-editor package
-- `npm run generate-schema` - Generate JSON schema from component definitions
-- `npm run lint:all` - Lint all packages
-- `npm run build:all` - Build all packages
+- `npm run check` - Lint, typecheck, test and build every package. This is what CI runs; run it before pushing.
+- `npm run lint:all` / `npm run typecheck` / `npm test` / `npm run build:all` - The individual gates
+- `npm run generate-schema` - Write the registry-derived JSON Schema to `packages/form-engine/dist/form-schema.json`
 
 ### Package-specific commands:
-- **form-engine**: `npm run build --workspace=form-engine` (generates TypeScript build + JSON schema)
+- **form-engine**: `npm run test --workspace=form-engine` (vitest), `npm run build --workspace=form-engine` (JSON schema + tsc)
 - **form-editor**: `npm run dev --workspace=form-editor` (Next.js with Monaco editor)
+- **form-exporters**: `npm run test --workspace=form-exporters`
 
 ### Testing:
-- No formal test suite exists yet - verify functionality by running the applications
-- Use `npm run lint:all` to check code quality across packages
+- Every package has a vitest suite; `npm test` runs them all. CI (`.github/workflows/ci.yml`) runs `npm run check`.
+- `packages/form-engine/src/catalog/__tests__/catalog.invariants.test.ts` and `jsonSchema.test.ts` are the guard rails for the catalog: every registered type must have a kind, description and an example that parses through its own schema; committed `test-schemas/*.yaml` must validate; the prompt may only mention registered types.
+- `packages/form-engine/src/catalog/__tests__/__snapshots__/catalog-prompt.md` is a snapshot of the LLM system prompt. If you change the prompt or a component's docs on purpose, update it with `npx vitest run -u` inside `packages/form-engine` and review the diff.
+- For UI changes, the editor can be driven with the pre-installed Playwright (`require("playwright")`) against `npm run dev`.
 
 ## Project Architecture
 
 ### Monorepo Structure
 This is an npm workspace monorepo with 3 packages:
 
-1. **form-engine** (`packages/form-engine/`) - Core rendering library
+1. **form-engine** (`packages/form-engine/`) - Core rendering library and component catalog
    - Main entry point: `src/index.ts`
-   - Exports: `FormEngine` component, `createComponent` factory, schema parser
-   - Built with React 19, Zod validation, Radix UI components
+   - Built with React 19, Zod 4, Radix UI components
    - Test schemas in `test-schemas/` directory
 
-2. **form-editor** (`packages/form-editor/`) - Schema editor with live preview  
-   - Next.js 16 application with Monaco editor
-   - Real-time YAML editing with form preview
+2. **form-editor** (`packages/form-editor/`) - Schema editor with live preview
+   - Next.js 16 application with a Monaco YAML editor (schema-aware via `monaco-yaml`) and an AI assistant that edits the schema with JSONL patches
 
 3. **form-exporters** (`packages/form-exporters/`) - Export adapters for external platforms
-   - Converts form-engine schemas to other form platform formats
-   - Currently supports: Fillout (v2 export JSON)
-   - Best-effort export with diagnostics for unmappable features
+   - Currently supports: Fillout (v2 export JSON). Best-effort export with diagnostics for unmappable features.
 
-### Core Components & Architecture
+### The component registry is the single source of truth
 
-#### Component Registration System (`packages/form-engine/src/core/componentFactory.ts`)
-- Uses factory pattern: `createComponent()` registers components with:
-  - Zod schema for validation
-  - React component implementation  
-  - Optional prop transformation functions
-  - Optional config preprocessing
-- Components auto-register when imported
-- Registry accessible via `getComponentDefinition(type)` and `getAllComponentDefinitions()`
+Every component type is registered once, in its own file, with `createComponent()` (`src/core/componentFactory.ts`) or, for fields, `defineField()` (`src/core/defineField.tsx`). The registry entry (`ComponentDefinition`) carries everything downstream consumers need, and all of them are derived from it rather than keyed by hand-typed strings:
 
-#### Form Engine (`packages/form-engine/src/engine/FormEngine.tsx`)
-- Main entry component that renders forms from YAML schemas
-- Handles multi-page navigation, form state management
-- Supports controlled/uncontrolled mode for page navigation
-- Provides imperative API via React.forwardRef for external control
-- Props: `schema`, `onSubmit`, `onDataChange`, `onPageChange`, `displayMode`, etc.
+| Consumer | Reads from the registry |
+|---|---|
+| `DynamicRenderer` | `component`, `transformProps`, lenient `checkConfig()` |
+| `parseRootFormSchema()` / `validateSchemaTree()` | `checkConfig()`, `children.allow/deny`, `kind` |
+| `generateCatalogPrompt()` (LLM system prompt) | `schema`, `meta.description/example/notes`, `children` |
+| `catalogToFormJsonSchema()` (VS Code, Monaco, validators) | `schema`, `children.allow/deny` |
+| Fillout exporter | `validateConfig()`/`checkConfig()`, `kind` |
+| JSONL patch applier (editor) | `validateConfig()`, `children.allow/deny` |
 
-#### Dynamic Rendering (`packages/form-engine/src/engine/DynamicRenderer.tsx`)
-- Recursively renders components from schema config
-- Merges static props with dynamic props from rules engine
-- Handles component lookup and prop transformation
+`ComponentDefinition` fields:
+- `type`, `kind` (`"field" | "layout" | "static"`), `schema` (Zod, strict), `component`
+- `meta.description`, `meta.example` (minimal valid config minus `type`; verified by a test), `meta.notes`
+- `children: { allow: "any" | string[], deny?: string[] }` on layout components only
+- `value: { empty, serialize?, deserialize? }` on fields only
+- `validateConfig(data)` throws on any issue, including unknown keys; `checkConfig(data)` strips unknown keys and returns them as warnings
 
-#### Rules Engine (`packages/form-engine/src/hooks/useFormRules.ts`)
-- Implements conditional logic: `when`/`then` rules in YAML schema
-- Updates component props dynamically based on form state
-- Returns `DynamicPropsMap` of component ID to props
-- Supports actions: `set` (modify props), `log` (debugging)
+### Adding a field component
+1. Create `packages/form-engine/src/components/fields/MyField.tsx` and call `defineField({ type, description, example, schema, value, control })`. `schema` holds only the props beyond `baseFieldConfigSchema`; `control` receives `{ config, value, setValue, disabled, required, inputProps }` and renders the control. Label, description, required/disabled handling, `aria-describedby` and value fallback are handled for you. Use `labelPlacement: "control"` when the control renders its own label (see `Checkbox.tsx`).
+2. If the field accepts validation keys beyond `required`, extend `textValidationSchema` or `numberValidationSchema` from `core/baseSchemas.ts` and wire each key to the native constraint attribute on the control. `FormFieldContainer` already renders a message for every constraint state.
+3. Export the file from `packages/form-engine/src/components/index.ts`. It registers itself on import.
+4. Add a Fillout mapper in `packages/form-exporters/src/fillout/fillout-exporter.ts` (the coverage test fails until you do).
+5. Run `npm run check`; update the prompt snapshot.
 
-#### Field Components (`packages/form-engine/src/components/fields/`)
-- Standard form fields: Text, Checkbox, RadioGroup, Select, DatePicker, Textarea, File
-- Built with Radix UI primitives and Tailwind CSS
-- Each component registers itself via `createComponent()`
-- Support for validation, required fields (asterisk notation), conditional logic
-
-#### Layout Components (`packages/form-engine/src/components/layout/`)
-- Form: Root form container with submission handling
-- Page: Multi-step form page container  
-- FormFieldContainer: Individual field wrapper with labels/validation
-- Html: Static HTML content blocks
+Layout and static components (`form`, `page`, `html`) and fields with bespoke rendering (`addressValidation`) use `createComponent()` directly.
 
 ### Schema Processing Flow
-1. YAML schema → `parseRootFormSchema()` → `FormConfig` object
+1. YAML → `parseRootFormSchema()` → `{ config, issues, errors? }`. `issues` covers the whole tree (unknown types, invalid or unknown props, disallowed nesting, duplicate ids) with severities; the root config is returned whenever the root itself is usable so the editor can keep rendering.
 2. `FormEngine` processes config, extracts pages, manages state
-3. `DynamicRenderer` recursively renders components
-4. `useFormRules` evaluates conditional logic, merges dynamic props
-5. Component factory looks up registered components and renders
+3. `DynamicRenderer` recursively renders components, using `checkConfig()` so a typo key warns once instead of hiding the field
+4. `useFormRules` evaluates `rules` (`when`/`whenLogic` → `then: set|log`) and merges dynamic props
+5. The component factory looks up the registered component and renders it
 
-### Form State Management
-- Form data stored in `FormEngine` state as `Record<string, unknown>`
-- Data flows up via `onDataChange` callback to parent components
-- Rules engine subscribes to data changes for conditional logic
-- Multi-page navigation managed internally or externally (controlled mode)
+### Validation
+- Schemas are strict. Unknown keys are errors for `validateConfig()` (tests, patches, exporters) and warnings for `checkConfig()` (renderer, editor).
+- `validation.required` is accepted everywhere. Text-like fields also accept `minLength`/`maxLength`/`pattern`; `number` accepts `min`/`max`; `email` accepts `email`. Each is enforced through native constraint validation. The prompt documents exactly this set; keep them in sync.
+- Required fields: `validation.required: true`, top-level `required: true`, or a trailing `*` in `label` (all normalised by `commonFieldTransform`).
 
-## Key Implementation Patterns
-
-### Adding New Field Components
-1. Create component file in `packages/form-engine/src/components/fields/`
-2. Define Zod schema for component configuration
-3. Implement React component with proper TypeScript interface
-4. Register using `createComponent()` with schema and component
-5. Export from `packages/form-engine/src/components/index.ts`
-6. Component will auto-register when engine imports `./components`
-
-### Schema Structure
-- Root type: `form` with `children` array
-- Page type: `page` with `children` array for multi-page forms  
-- Field components: Various types (text, checkbox, etc.) with field-specific props
-- Conditional logic: `rules` array with `when`/`then` structure
-- Required fields: Use asterisk notation in `label` (e.g., "Name*")
+### Form Editor (`packages/form-editor/`)
+- `src/app/page.tsx` owns the YAML text, the parsed schema and the JSON patch history; schema errors and warnings are listed above the preview.
+- `src/components/YamlEditor.tsx` + `src/lib/monaco-setup.ts` load the npm `monaco-editor` build and attach `monaco-yaml` with `catalogToFormJsonSchema()`, giving completions and squiggles from the registry.
+- `src/lib/jsonl/` is the AI editing loop: `prompt.ts` (JSONL preamble), `patch-compiler.ts` (stream → ops), `patch-applier.ts` (ops → schema, validated against the registry; rejected ops are fed back to the model on its next turn), `history.ts` (undo/redo).
 
 ### Form Exporters (`packages/form-exporters/`)
-- Converts form-engine `FormConfig` schemas to external platform formats
-- **Fillout exporter** (`src/fillout/`): Maps form-engine types to Fillout v2 export JSON
-  - `exportToFillout(schema)` → `{ output, diagnostics }`
-  - Always produces output (best-effort), with diagnostics for lossy mappings
-  - Component mapping: text→ShortAnswer, email→EmailInput, select→Dropdown, radiogroup→MultipleChoice, checkbox→Checkbox, date→DatePicker, textarea→LongAnswer, file→FileUpload, html→Html/Paragraph
-  - Warns on: rules/conditions (no Fillout equivalent), disabled fields, unknown component types
+- `exportToFillout(rawSchema)` validates every node through the registry first, so label asterisks, top-level `required` and option shorthand are normalised once, in the engine. Unknown or unmappable types produce diagnostics instead of being dropped.
 
-### Build Process
-- `form-engine` package builds TypeScript to `dist/` and generates JSON schema
-- `form-editor` is a Next.js application
-- `form-exporters` package builds TypeScript to `dist/`
-- No current CI/CD - packages used within monorepo only
-- JSON schema generation: `npm run generate-schema` creates schema from Zod definitions
-
-## Development Workflows
-
-### Schema Development
-1. Use form-editor (`npm run dev`) for Monaco editor with live preview
-2. Reference test schemas in `packages/form-engine/test-schemas/` for examples
-
-### Component Development  
-1. Add/modify components in `packages/form-engine/src/components/`
-2. Test using the form-editor live preview
-3. Run `npm run generate-schema` to update JSON schema definitions
-
-### Multi-Package Development
-- Changes to form-engine automatically picked up by dependent packages in monorepo
-- Use workspace-specific commands to work on individual packages
-- `npm run dev` typically starts the most useful development server (form-editor)
+## Dependency notes
+- `.npmrc` sets `legacy-peer-deps=true` because `eslint-plugin-react` does not declare eslint 10 support.
+- The chat stack is `ai` 7 + `@ai-sdk/*` 4/5 + `@assistant-ui/react` 0.15 + `@assistant-ui/react-ai-sdk` 1.4. State is read with `useAuiState((s) => s.thread.isRunning)` style selectors (`useThread`/`useMessage` no longer exist). The AI SDK option is `maxOutputTokens`; the `/api/llm` request body still calls it `maxTokens`.
+- When the lockfile has to be regenerated, use `rm -rf node_modules packages/*/node_modules package-lock.json && npm install --prefer-dedupe`. Then check `npm ls @assistant-ui/store` shows one copy: two copies (root and `packages/form-editor/node_modules`) mean two React contexts and the editor fails with `The current scope does not have a "threads" property`. Never run `npm dedupe`: it drops the optional native packages for every platform other than the current one (`lightningcss-win32-*`, `@tailwindcss/oxide-*`), so `npm ci` on Windows or macOS then fails with `Cannot find module '../lightningcss.<platform>.node'`.
+- To verify the chat loop without a provider key: generate a stream from the SDK's mock model (`ai/test`, `MockLanguageModelV3`, `toUIMessageStreamResponse()`), serve it for `/api/llm` with Playwright's `page.route`, and check the YAML gains the patched field.
+- `monaco-editor` is overridden to 0.52.2: `monaco-yaml`'s worker helper imports a path that 0.53+ no longer exports and uses the pre-0.53 worker bootstrap.
+- The workspace package is named `form-engine`, which is also an unrelated public npm package. The `"form-engine": "*"` dependencies resolve to the workspace; keep it that way (or rename to a scoped name).

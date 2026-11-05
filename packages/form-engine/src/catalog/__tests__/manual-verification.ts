@@ -20,7 +20,7 @@ const catalog: Catalog = {
 					maxLength: z.number().optional(),
 				}).optional(),
 			}),
-			description: "A text input field for single-line text entry",
+			meta: { description: "A text input field for single-line text entry" },
 		},
 		form: {
 			schema: z.object({
@@ -28,8 +28,7 @@ const catalog: Catalog = {
 				id: z.string(),
 				title: z.string().optional(),
 			}),
-			description: "The root form container",
-			hasChildren: true,
+			meta: { description: "The root form container" },			children: { allow: "any" },
 		},
 		checkbox: {
 			schema: z.object({
@@ -38,7 +37,7 @@ const catalog: Catalog = {
 				label: z.string().optional(),
 				defaultChecked: z.boolean().default(false),
 			}),
-			description: "A checkbox input for boolean values",
+			meta: { description: "A checkbox input for boolean values" },
 		},
 	},
 };

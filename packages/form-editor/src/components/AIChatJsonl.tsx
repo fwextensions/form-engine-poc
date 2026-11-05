@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useSyncExternalStore } from "reac
 import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
-	useThread,
+	useAuiState,
 } from "@assistant-ui/react";
 import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import {
@@ -66,7 +66,8 @@ function AIChatJsonlInner({
 	onPdfExtracted: (result: PdfExtractionResult, filename: string) => void;
 	onPdfAttachDirectly: (pdf: PdfFile) => void;
 }) {
-	const thread = useThread();
+	const threadIsEmpty = useAuiState((s) => s.thread.messages.length === 0);
+	const threadIsRunning = useAuiState((s) => s.thread.isRunning);
 
 	const isClient = useSyncExternalStore(
 		subscribeToClientSnapshot,
@@ -89,13 +90,13 @@ function AIChatJsonlInner({
 		});
 	}, []);
 
-	const isEmpty = thread.messages.length === 0;
+	const isEmpty = threadIsEmpty;
 
 	return (
 		<PdfDropZone
 			onExtracted={onPdfExtracted}
 			onAttachDirectly={onPdfAttachDirectly}
-			disabled={thread.isRunning}
+			disabled={threadIsRunning}
 		>
 			<ThreadPrimitive.Root className="flex-1 overflow-hidden relative">
 				{isEmpty ? (
@@ -187,12 +188,12 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 		initialMessages,
 		onFieldHighlight,
 	} = props;
-	const [validationResults, setValidationResults] = useState<ValidationResults>(
-		new Map(),
-	);
+	const [validationResults, setValidationResults] = useState<ValidationResults>(restoreValidationResults);
 	const [pdfExtractionMap, setPdfExtractionMap] = useState<PdfExtractionMap>(new Map());
 
 	const lastUserMessageRef = useRef<string>("");
+	/** Rejected patches from the last response, fed back on the next request. */
+	const lastPatchErrorsRef = useRef<string[]>([]);
 
 	// Pending PDF context: stored in a ref for the transport to consume, mirrored to state for UI
 	const pendingPdfRef = useRef<PendingPdfContext | null>(null);
@@ -231,17 +232,20 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 	const generator = React.useMemo(() => new JsonlSchemaGenerator(), []);
 	const transport = React.useMemo(
 		// eslint-disable-next-line react-hooks/refs -- closure is called at send time, not during render
-		() => createJsonlChatTransport(generator, () => currentSchema, () => consumePendingPdfRef.current()),
+		() => createJsonlChatTransport(generator, () => currentSchema, () => consumePendingPdfRef.current(), () => {
+			const errors = lastPatchErrorsRef.current;
+			lastPatchErrorsRef.current = [];
+			return errors;
+		}),
 		[generator, currentSchema],
 	);
 
 	// Restore patch cards for messages reloaded from localStorage.
 	// handleFinish only runs for new LLM responses, so historical JSONL
-	// messages need their cards reconstructed from stored text on mount.
-	React.useEffect(() => {
-		if (!initialMessages || initialMessages.length === 0) return;
-
+	// messages need their cards reconstructed from stored text.
+	function restoreValidationResults(): ValidationResults {
 		const restoredResults = new Map<string, ValidationResult>();
+		if (!initialMessages || initialMessages.length === 0) return restoredResults;
 
 		for (const msg of initialMessages) {
 			if (msg.role !== "assistant") continue;
@@ -269,10 +273,13 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 			}
 		}
 
-		if (restoredResults.size > 0) {
-			setValidationResults(restoredResults);
-		}
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+		return restoredResults;
+	}
+
+	// Keep a stable ref to runtime so handleFinish can access thread state
+	// without runtime being in its dependency array (which would be circular).
+	// It is populated by an effect after useChatRuntime() below.
+	const runtimeRef = useRef<ReturnType<typeof useChatRuntime> | null>(null);
 
 	// Process JSONL response on completion
 	const handleFinish = useCallback(
@@ -283,7 +290,7 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 			const extraction = pendingExtractionAssocRef.current;
 			if (extraction) {
 				pendingExtractionAssocRef.current = null;
-				const messages = runtimeRef.current.thread.getState().messages;
+				const messages = runtimeRef.current?.thread.getState().messages ?? [];
 				// Find the user message immediately before this assistant message
 				const assistantIdx = messages.findIndex((m: any) => m.id === message.id);
 				const userMsg = assistantIdx > 0
@@ -374,6 +381,10 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 				};
 			});
 
+			lastPatchErrorsRef.current = patchCards
+				.filter((card) => card.error)
+				.map((card) => `${JSON.stringify(card.patch).slice(0, 200)} → ${card.error}`);
+
 			setValidationResults((prev) => {
 				const newMap = new Map(prev);
 				newMap.set(message.id, {
@@ -398,10 +409,9 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 		},
 	});
 
-	// Keep a stable ref to runtime so handleFinish can access thread state
-	// without runtime being in its dependency array (which would be circular)
-	const runtimeRef = useRef(runtime);
-	runtimeRef.current = runtime;
+	React.useEffect(() => {
+		runtimeRef.current = runtime;
+	}, [runtime]);
 
 	// Capture user messages for history descriptions + persist to localStorage
 	React.useEffect(() => {

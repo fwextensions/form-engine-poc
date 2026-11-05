@@ -1,229 +1,163 @@
 // packages/form-engine/src/components/fields/Text.tsx
+// The single-line input family: text, email, password, tel, number.
 import React from "react";
 import { z } from "zod";
 import { Control } from "@radix-ui/react-form";
-import {
-	baseFieldConfigSchema,
-	commonFieldTransform,
-} from "../../core/baseSchemas";
-import { createComponent } from "../../core/componentFactory";
-import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
+import { defineField } from "../../core/defineField";
+import { numberValidationSchema, textValidationSchema } from "../../core/baseSchemas";
+import { inputClassName } from "./styles";
 
-// --- TEXT ---
-// 1. Define Configuration Schema for Text
-export const TextConfigSchema = baseFieldConfigSchema.extend({
-	type: z.literal("text"),
+const inputTypes = ["text", "email", "password", "tel", "url", "number", "date", "datetime-local", "month", "week", "time"] as const;
+export type InputType = (typeof inputTypes)[number];
+
+const textLikeShape = {
 	placeholder: z.string().optional(),
 	defaultValue: z.string().optional(),
-	inputType: z.enum(["text", "email", "password", "tel", "url", "number", "date", "datetime-local", "month", "week", "time"]).optional().default("text"),
-});
+	validation: textValidationSchema.optional(),
+};
+
+type TextValidation = z.infer<typeof textValidationSchema> | undefined;
+
+/** Native constraint attributes derived from `validation`. */
+function constraintAttrs(validation: TextValidation) {
+	return {
+		minLength: validation?.minLength,
+		maxLength: validation?.maxLength,
+		pattern: validation?.pattern,
+	};
+}
+
+/** Shared control for every string-valued single-line input. */
+function StringInput({
+	inputType,
+	value,
+	setValue,
+	inputProps,
+	placeholder,
+}: {
+	inputType: InputType;
+	value: string;
+	setValue: (v: string) => void;
+	inputProps: React.InputHTMLAttributes<HTMLInputElement>;
+	placeholder?: string;
+}) {
+	return (
+		<Control asChild>
+			<input
+				{...inputProps}
+				type={inputType}
+				placeholder={placeholder}
+				value={value}
+				onChange={(e) => setValue(e.target.value)}
+				className={inputClassName}
+			/>
+		</Control>
+	);
+}
+
+// --- TEXT ---
+export const TextConfigSchema = defineField({
+	type: "text",
+	description: "A single-line text input field",
+	example: { id: "firstName", label: "First name*", placeholder: "Jane" },
+	notes: "Set `inputType` to use a native HTML input type such as `url` or `time` without a dedicated component.",
+	schema: {
+		...textLikeShape,
+		inputType: z.enum(inputTypes).optional().default("text"),
+	},
+	value: { empty: "" },
+	control: ({ config, value, setValue, inputProps }) => (
+		<StringInput inputType={config.inputType ?? "text"} value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
+	),
+}).schema;
 export type TextConfig = z.infer<typeof TextConfigSchema>;
 
 // --- EMAIL ---
-// 1. Define Configuration Schema for Email
-export const EmailConfigSchema = baseFieldConfigSchema.extend({
-	type: z.literal("email"),
-	placeholder: z.string().optional(),
-	defaultValue: z.string().optional(),
-	// Email specific validation can be added here if needed,
-	// or rely on Zod's string().email() in a more complex validation object.
-	validation: z.object({
-		required: z.boolean().optional(), // from base
-		email: z.union([z.string(), z.boolean()]).optional(), // For custom email validation message or true
-	}).passthrough().optional(),
-});
+export const EmailConfigSchema = defineField({
+	type: "email",
+	description: "An email input field with email validation",
+	example: { id: "email", label: "Email address*" },
+	schema: {
+		...textLikeShape,
+		validation: textValidationSchema.extend({
+			email: z.union([z.string(), z.boolean()]).optional().describe("Validate the address format; a string is used as the error message"),
+		}).optional(),
+	},
+	value: { empty: "" },
+	control: ({ config, value, setValue, inputProps }) => (
+		<StringInput inputType="email" value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
+	),
+}).schema;
 export type EmailConfig = z.infer<typeof EmailConfigSchema>;
 
 // --- PASSWORD ---
-// 1. Define Configuration Schema for Password
-export const PasswordConfigSchema = baseFieldConfigSchema.extend({
-	type: z.literal("password"),
-	placeholder: z.string().optional(),
-	defaultValue: z.string().optional(),
-});
+export const PasswordConfigSchema = defineField({
+	type: "password",
+	description: "A password input field with masked characters",
+	example: { id: "password", label: "Password*" },
+	schema: textLikeShape,
+	value: { empty: "" },
+	control: ({ config, value, setValue, inputProps }) => (
+		<StringInput inputType="password" value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
+	),
+}).schema;
 export type PasswordConfig = z.infer<typeof PasswordConfigSchema>;
 
 // --- TEL ---
-// 1. Define Configuration Schema for Tel
-export const TelConfigSchema = baseFieldConfigSchema.extend({
-	type: z.literal("tel"),
-	placeholder: z.string().optional(),
-	defaultValue: z.string().optional(),
-	validation: z.object({
-		required: z.boolean().optional(), // from base
-		// tel specific validation if any, e.g. pattern
-	}).passthrough().optional(),
-});
+export const TelConfigSchema = defineField({
+	type: "tel",
+	description: "A telephone number input field",
+	example: { id: "phone", label: "Phone number" },
+	schema: textLikeShape,
+	value: { empty: "" },
+	control: ({ config, value, setValue, inputProps }) => (
+		<StringInput inputType="tel" value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
+	),
+}).schema;
 export type TelConfig = z.infer<typeof TelConfigSchema>;
 
 // --- NUMBER ---
-// 1. Define Configuration Schema for Number
-export const NumberConfigSchema = baseFieldConfigSchema.extend({
-	type: z.literal("number"),
-	placeholder: z.string().optional(),
-	defaultValue: z.number().optional(),
-	min: z.number().optional(),
-	max: z.number().optional(),
-	step: z.number().optional(),
-	validation: z.object({
-		required: z.boolean().optional(), // from base
-		min: z.union([z.number(), z.string()]).optional(), // Allow message for min
-		max: z.union([z.number(), z.string()]).optional(), // Allow message for max
-	}).passthrough().optional(),
-});
-export type NumberConfig = z.infer<typeof NumberConfigSchema>;
-
-
-// 2. Define Props for the React Component (shared by Text, Email, Password, Tel, Number)
-export interface TextProps {
-	containerProps: Omit<FormFieldContainerProps, "children">;
-	inputProps: React.InputHTMLAttributes<HTMLInputElement>;
-}
-
-// 3. Create the React Component (shared by Text, Email, Password, Tel, Number)
-export const Text: React.FC<TextProps> = ({ containerProps, inputProps }) => {
-	return (
-		<FormFieldContainer {...containerProps}>
-			<Control asChild>
-				<input
-					{...inputProps}
-					className={`mt-1.5 block w-full px-3 py-2 border border-ink-100 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm ${inputProps.className || ""}`}
-				/>
-			</Control>
-		</FormFieldContainer>
-	);
-};
-
-// 4. Register Components
-
-// TEXT
-createComponent<TextConfig, TextProps>({
-	type: "text",
-	schema: TextConfigSchema,
-	component: Text,
-	description: "A single-line text input field",
-	transformConfig: commonFieldTransform,
-	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
-		return {
-			containerProps: { name: id, label, description, htmlFor: id },
-			inputProps: {
-				type,
-				id,
-				name: id,
-				placeholder,
-				value: context.formData[id] ?? defaultValue ?? "",
-				onChange: (e) => context.onDataChange(id, e.target.value),
-				disabled: context.formMode === "view" || disabled,
-				required: validation?.required,
-			},
-		};
+export const NumberConfigSchema = defineField<
+	{
+		placeholder: z.ZodOptional<z.ZodString>;
+		defaultValue: z.ZodOptional<z.ZodNumber>;
+		min: z.ZodOptional<z.ZodNumber>;
+		max: z.ZodOptional<z.ZodNumber>;
+		step: z.ZodOptional<z.ZodNumber>;
+		validation: z.ZodOptional<typeof numberValidationSchema>;
 	},
-});
-
-// EMAIL
-createComponent<EmailConfig, TextProps>({
-	type: "email",
-	schema: EmailConfigSchema,
-	component: Text,
-	description: "An email input field with email validation",
-	transformConfig: commonFieldTransform,
-	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
-		return {
-			containerProps: { name: id, label, description, htmlFor: id },
-			inputProps: {
-				type,
-				id,
-				name: id,
-				placeholder,
-				value: context.formData[id] ?? defaultValue ?? "",
-				onChange: (e) => context.onDataChange(id, e.target.value),
-				disabled: context.formMode === "view" || disabled,
-				required: validation?.required,
-			},
-		};
-	},
-});
-
-// PASSWORD
-createComponent<PasswordConfig, TextProps>({
-	type: "password",
-	schema: PasswordConfigSchema,
-	component: Text,
-	description: "A password input field with masked characters",
-	transformConfig: commonFieldTransform,
-	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
-		return {
-			containerProps: { name: id, label, description, htmlFor: id },
-			inputProps: {
-				type,
-				id,
-				name: id,
-				placeholder,
-				value: context.formData[id] ?? defaultValue ?? "",
-				onChange: (e) => context.onDataChange(id, e.target.value),
-				disabled: context.formMode === "view" || disabled,
-				required: validation?.required,
-			},
-		};
-	},
-});
-
-// TEL
-createComponent<TelConfig, TextProps>({
-	type: "tel",
-	schema: TelConfigSchema,
-	component: Text,
-	description: "A telephone number input field",
-	transformConfig: commonFieldTransform,
-	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type, disabled } = config;
-		return {
-			containerProps: { name: id, label, description, htmlFor: id },
-			inputProps: {
-				type,
-				id,
-				name: id,
-				placeholder,
-				value: context.formData[id] ?? defaultValue ?? "",
-				onChange: (e) => context.onDataChange(id, e.target.value),
-				disabled: context.formMode === "view" || disabled,
-				required: validation?.required,
-			},
-		};
-	},
-});
-
-// NUMBER
-createComponent<NumberConfig, TextProps>({
+	number | undefined
+>({
 	type: "number",
-	schema: NumberConfigSchema,
-	component: Text,
 	description: "A numeric input field with optional min/max/step constraints",
-	transformConfig: commonFieldTransform,
-	transformProps: (config, context) => {
-		const { id, label, description, placeholder, defaultValue, validation, type, min, max, step, disabled } = config;
-		return {
-			containerProps: { name: id, label, description, htmlFor: id },
-			inputProps: {
-				type,
-				id,
-				name: id,
-				placeholder,
-				value: context.formData[id] ?? defaultValue ?? "", // Number input handles empty string for no value
-				onChange: (e) => {
-					// For number, ensure we store a number or undefined if empty
-					const numValue = e.target.valueAsNumber;
-					context.onDataChange(id, isNaN(numValue) ? undefined : numValue);
-				},
-				min,
-				max,
-				step,
-				disabled: context.formMode === "view" || disabled,
-				required: validation?.required,
-			},
-		};
+	example: { id: "householdSize", label: "Household size*", min: 1, max: 20 },
+	schema: {
+		placeholder: z.string().optional(),
+		defaultValue: z.number().optional(),
+		min: z.number().optional(),
+		max: z.number().optional(),
+		step: z.number().optional(),
+		validation: numberValidationSchema.optional(),
 	},
-});
+	notes: "`min`/`max`/`step` on the field and `validation.min`/`validation.max` both constrain the value; the field-level props win when both are set.",
+	value: { empty: undefined },
+	control: ({ config, value, setValue, inputProps }) => (
+		<Control asChild>
+			<input
+				{...inputProps}
+				type="number"
+				placeholder={config.placeholder}
+				min={config.min ?? config.validation?.min}
+				max={config.max ?? config.validation?.max}
+				step={config.step}
+				value={value ?? ""}
+				onChange={(e) => {
+					const numValue = e.target.valueAsNumber;
+					setValue(Number.isNaN(numValue) ? undefined : numValue);
+				}}
+				className={inputClassName}
+			/>
+		</Control>
+	),
+}).schema;
+export type NumberConfig = z.infer<typeof NumberConfigSchema>;

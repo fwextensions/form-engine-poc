@@ -1,83 +1,116 @@
 import { z } from "zod";
-import React from "react";
-import { FormEngineContext } from "../engine/FormEngineContext";
-import type { CatalogEntry, Catalog } from "../catalog/catalog";
+import type React from "react";
+import type { FormEngineContext } from "../engine/FormEngineContext";
+import type { Catalog, CatalogEntry, ChildrenSpec, ComponentKind, ComponentMeta, ValueSpec } from "../catalog/catalog";
 
-export interface ComponentDefinition<ConfigType = any, PropsType = any> {
-	type: string;
-	schema: z.ZodType<ConfigType, any, any>; // Zod schema for the component's configuration
-	component: React.ComponentType<PropsType & { children?: React.ReactNode }>; // The React component
-	validateConfig: (data: unknown) => ConfigType; // Parses and validates the raw config data
-	transformProps?: (
-		parsedConfig: ConfigType,
-		context: FormEngineContext,
-		renderChildren: (childrenConfig: unknown[] | undefined, context: FormEngineContext) => React.ReactNode
-	) => PropsType; // Transforms validated config and context into React props
-	transformConfig?: (data: Record<string, any>) => Record<string, any>; // Optional config preprocessing
-	catalogEntry?: CatalogEntry; // Reference to the catalog entry if using catalog-based registration
+export type RenderChildren = (
+	childrenConfig: unknown[] | undefined,
+	context: FormEngineContext,
+) => React.ReactNode;
+
+export type TransformProps<ConfigType, PropsType> = (
+	parsedConfig: ConfigType,
+	context: FormEngineContext,
+	renderChildren: RenderChildren,
+) => PropsType;
+
+/** One problem found while checking a component config. */
+export interface ConfigIssue {
+	/** Path inside the component config (empty for the component itself). */
+	path: (string | number)[];
+	message: string;
+	/** Warnings never prevent rendering; errors do. */
+	severity: "error" | "warning";
+	/** Zod issue code, or "unknown_key" for a stripped unrecognised key. */
+	code: string;
 }
 
-const componentRegistry = new Map<string, ComponentDefinition>();
-const catalogRegistry = new Map<string, CatalogEntry>();
+/** Result of a lenient config check. */
+export interface ConfigCheck<ConfigType = any> {
+	/** Present when the config is usable (possibly after stripping unknown keys). */
+	config?: ConfigType;
+	issues: ConfigIssue[];
+}
 
 /**
- * Arguments for createComponent() - includes catalog metadata for auto-registration.
+ * Everything the engine and its consumers know about one component type.
+ * The catalog-facing subset (`CatalogEntry`) has no React dependency; the
+ * rest wires the type to a React implementation.
  */
-type CreateComponentArgs<
-	ConfigType extends { type: string; [key: string]: any },
-	PropsType extends object
-> = {
+export interface ComponentDefinition<ConfigType = any, PropsType = any> extends CatalogEntry {
 	type: string;
+	kind: ComponentKind;
+	schema: z.ZodType<ConfigType, any, any>;
+	meta: ComponentMeta & { description: string };
+	component: React.ComponentType<PropsType & { children?: React.ReactNode }>;
+	/** Parses and validates raw config, applying `transformConfig` first. Throws on any issue, including unknown keys. */
+	validateConfig: (data: unknown) => ConfigType;
+	/**
+	 * Lenient variant for live rendering and editors: unknown keys are stripped
+	 * and reported as warnings; anything else is reported as an error with no config.
+	 */
+	checkConfig: (data: unknown) => ConfigCheck<ConfigType>;
+	transformProps?: TransformProps<ConfigType, PropsType>;
+}
+
+/** Arguments for createComponent(). */
+export interface CreateComponentArgs<
+	ConfigType extends { type: string; [key: string]: any },
+	PropsType extends object,
+> {
+	type: string;
+	kind: ComponentKind;
 	schema: z.ZodType<ConfigType, any, any>;
 	component: React.ComponentType<PropsType & { children?: React.ReactNode }>;
-	transformProps?: (
-		parsedConfig: ConfigType,
-		context: FormEngineContext,
-		renderChildren: (childrenConfig: unknown[] | undefined, context: FormEngineContext) => React.ReactNode
-	) => PropsType;
+	transformProps?: TransformProps<ConfigType, PropsType>;
 	transformConfig?: (data: Record<string, any>) => Record<string, any>;
-	/** Human-readable description for catalog (useful for docs, AI prompts, editor hints) */
-	description?: string;
-	/** Whether this component can contain children (for catalog metadata) */
-	hasChildren?: boolean;
-};
+	/** One-line description used in docs, editor hints and the LLM prompt. */
+	description: string;
+	/** Minimal valid configuration (without `type`). Verified against `schema` by tests. */
+	example?: Omit<ConfigType, "type"> extends infer E ? Partial<E> & Record<string, unknown> : never;
+	/** Longer guidance appended to the prompt entry. */
+	notes?: string;
+	/** Which types may appear in `children`; omit for leaf components. */
+	children?: ChildrenSpec;
+	/** Value semantics for fields. */
+	value?: ValueSpec;
+}
+
+/** Zod 4 paths may contain symbols; issue paths only keep string and number segments. */
+function issuePath(path: readonly PropertyKey[]): (string | number)[] {
+	return path.filter((segment): segment is string | number => typeof segment !== "symbol");
+}
+
+const registry = new Map<string, ComponentDefinition>();
 
 /**
- * Creates and registers a component definition.
- *
- * Automatically registers the component's schema in the catalog registry,
- * making it available via `getRegisteredCatalog()` without manual catalog
- * entry file maintenance.
+ * Creates and registers a component definition. Registration is the single
+ * source of truth for rendering, validation, JSON Schema, prompts and
+ * exporters: everything else is derived from this map.
  */
 export function createComponent<
 	ConfigType extends { type: string; [key: string]: any },
-	PropsType extends object
->(
-	args: CreateComponentArgs<ConfigType, PropsType>): ComponentDefinition<ConfigType, PropsType>
-{
-	const { type, schema, component, transformProps, transformConfig, description, hasChildren } = args;
-
-	// Build the catalog entry from the component definition
-	const catalogEntry: CatalogEntry = {
-		schema,
-		description,
-		hasChildren,
-		transformConfig,
-	};
+	PropsType extends object,
+>(args: CreateComponentArgs<ConfigType, PropsType>): ComponentDefinition<ConfigType, PropsType> {
+	const { type, kind, schema, component, transformProps, transformConfig, description, example, notes, children, value } = args;
 
 	const definition: ComponentDefinition<ConfigType, PropsType> = {
 		type,
+		kind,
 		schema,
 		component,
 		transformProps,
 		transformConfig,
-		catalogEntry,
+		children,
+		value,
+		meta: { description, example: example as Record<string, unknown> | undefined, notes },
 		validateConfig: (rawData: unknown): ConfigType => {
 			if (typeof rawData === "object" && rawData && "type" in rawData && (rawData as any).type !== type) {
 				throw new z.ZodError([{
-					code: z.ZodIssueCode.custom,
+					code: "custom",
 					path: ["type"],
 					message: `Expected component type "${type}" but received "${(rawData as any).type}"`,
+					input: rawData,
 				}]);
 			}
 
@@ -90,42 +123,82 @@ export function createComponent<
 
 			return schema.parse(dataToParse) as ConfigType;
 		},
+		checkConfig: (rawData: unknown): ConfigCheck<ConfigType> => {
+			if (typeof rawData !== "object" || rawData === null) {
+				return { issues: [{ path: [], message: "Component configuration must be an object", severity: "error", code: "invalid_type" }] };
+			}
+			if ("type" in rawData && (rawData as any).type !== type) {
+				return { issues: [{ path: ["type"], message: `Expected component type "${type}" but received "${(rawData as any).type}"`, severity: "error", code: "custom" }] };
+			}
+
+			const dataToParse = transformConfig ? transformConfig(rawData as Record<string, any>) : (rawData as Record<string, any>);
+			const first = schema.safeParse(dataToParse);
+			if (first.success) {
+				return { config: first.data as ConfigType, issues: [] };
+			}
+
+			// Strip unrecognised keys (reported as warnings) and try once more.
+			const warnings: ConfigIssue[] = [];
+			const stripped = structuredClone(dataToParse);
+			for (const issue of first.error.issues) {
+				if (issue.code === "unrecognized_keys") {
+					const parent = issue.path.reduce<any>((acc, key) => (acc == null ? acc : acc[key as any]), stripped);
+					for (const key of (issue as any).keys as string[]) {
+						if (parent && typeof parent === "object") delete parent[key];
+						warnings.push({
+							path: [...issuePath(issue.path), key],
+							message: `Unknown property "${key}" for component type "${type}"; it was ignored`,
+							severity: "warning",
+							code: "unknown_key",
+						});
+					}
+				}
+			}
+			const second = warnings.length > 0 ? schema.safeParse(stripped) : first;
+			if (second.success) {
+				return { config: second.data as ConfigType, issues: warnings };
+			}
+			const errors: ConfigIssue[] = second.error.issues
+				.filter((issue) => issue.code !== "unrecognized_keys")
+				.map((issue) => ({ path: issuePath(issue.path), message: issue.message, severity: "error" as const, code: issue.code }));
+			return { issues: [...errors, ...warnings] };
+		},
 	};
 
-	// Register in both registries
-	componentRegistry.set(type, definition);
-	catalogRegistry.set(type, catalogEntry);
+	if (registry.has(type)) {
+		console.warn(`createComponent: component type "${type}" is being registered twice; the later definition wins.`);
+	}
+	registry.set(type, definition);
 
 	return definition;
 }
 
-export function getComponentDefinition(type: string) {
-	return componentRegistry.get(type);
+export function getComponentDefinition(type: string): ComponentDefinition | undefined {
+	return registry.get(type);
 }
 
-export function getAllComponentDefinitions() {
-	return componentRegistry;
+export function getAllComponentDefinitions(): ReadonlyMap<string, ComponentDefinition> {
+	return registry;
+}
+
+/** Registered component types of the given kind. */
+export function getComponentTypesByKind(kind: ComponentKind): string[] {
+	return [...registry.values()].filter((def) => def.kind === kind).map((def) => def.type);
 }
 
 /**
- * Returns the auto-registered catalog containing all component schemas.
- * The catalog is built automatically as components call `createComponent()`.
- *
- * This allows accessing schema information without manually maintaining
- * a separate catalog file - the catalog builds itself when components
- * are imported.
+ * Returns the catalog view of the registry: every registered definition,
+ * keyed by type. Built automatically as components call `createComponent()`.
  */
-export function getRegisteredCatalog(): Catalog {
-	const components: Record<string, CatalogEntry> = {};
-	for (const [type, entry] of catalogRegistry) {
-		components[type] = entry;
+export function getRegisteredCatalog(): Catalog<ComponentDefinition> {
+	const components: Record<string, ComponentDefinition> = {};
+	for (const [type, def] of registry) {
+		components[type] = def;
 	}
 	return { components };
 }
 
-/**
- * Gets a single catalog entry by type.
- */
-export function getRegisteredCatalogEntry(type: string): CatalogEntry | undefined {
-	return catalogRegistry.get(type);
+/** Gets a single registered definition by type (alias of getComponentDefinition). */
+export function getRegisteredCatalogEntry(type: string): ComponentDefinition | undefined {
+	return registry.get(type);
 }

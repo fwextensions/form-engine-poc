@@ -39,10 +39,12 @@ export const PageComponent: React.FC<PageProps> = ({ title, children, className,
 // 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<PageConfig, PageProps>({
 	type: "page",
+	kind: "layout",
 	schema: PageConfigSchema,
 	component: PageComponent,
 	description: "A page container for grouping form fields, used in multi-page forms",
-	hasChildren: true,
+	example: { id: "personalInfo", title: "Personal information", children: [] },
+	children: { allow: "any", deny: ["form", "page"] },
 	transformProps: (config: PageConfig, context: FormEngineContext, renderChildren): PageProps => {
 		const { id, children, title, className, style } = config;
 

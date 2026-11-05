@@ -6,8 +6,16 @@ export {
 	createCatalog,
 	getCatalogEntry,
 	getCatalogTypes,
+	getCatalogTypesByKind,
+	getEntryKind,
+	entryAllowsChildren,
+	resolveAllowedChildren,
 	type Catalog,
 	type CatalogEntry,
+	type ComponentKind,
+	type ComponentMeta,
+	type ChildrenSpec,
+	type ValueSpec,
 } from "./catalog";
 
 // Auto-registered catalog - built automatically when components are imported
@@ -21,13 +29,16 @@ export {
 export {
 	catalogToJsonSchema,
 	catalogToUnifiedJsonSchema,
+	catalogToFormJsonSchema,
 	entryToJsonSchema,
 	type CatalogToJsonSchemaOptions,
+	type CatalogToFormJsonSchemaOptions,
 } from "./toJsonSchema";
 
 // LLM Prompt Generation utilities
 export {
 	generateCatalogPrompt,
+	generateComponentExample,
 	formatPropsFromZodSchema,
 	type CatalogPromptOptions,
 } from "./prompt";

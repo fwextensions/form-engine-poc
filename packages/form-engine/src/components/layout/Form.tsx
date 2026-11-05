@@ -42,11 +42,6 @@ export const FormComponent: React.FC<FormProps> = ({
 	const context = useFormEngine();
 	const pageContentRef = useRef<HTMLDivElement>(null);
 
-	if (!context) {
-		console.error("FormComponent must be rendered within a FormEngineContextObject.Provider");
-		return <div>Error: Form context not found.</div>;
-	}
-
 	const {
 		formData,
 		onSubmit: onFinalSubmit, // Renaming to avoid conflict with Radix's onSubmit prop
@@ -142,14 +137,16 @@ export const FormComponent: React.FC<FormProps> = ({
 // 4. Register the Component (schema is colocated, auto-registered to catalog)
 createComponent<FormConfig, FormProps>({
 	type: "form",
+	kind: "layout",
 	schema: FormConfigSchema,
 	component: FormComponent,
 	description: "Root form container with submit handling and multi-page navigation",
-	hasChildren: true,
+	example: { id: "applicationForm", title: "Housing application", display: "multipage", children: [] },
+	children: { allow: "any", deny: ["form"] },
 	// transformProps now primarily passes the original config and children
 	// The component itself will use context for most dynamic values and actions
 	transformProps: (config: FormConfig, context: FormEngineContext, renderChildren): FormProps => {
-		const { id, children, className, style } = config;
+		const { children, className, style } = config;
 		// In multi-page, DynamicRenderer inside FormComponent will get page-specific children.
 		// Here, we pass all children definitions to be processed by FormComponent itself based on context.
 		// However, renderChildren is typically used to render the children *before* passing them to the component.

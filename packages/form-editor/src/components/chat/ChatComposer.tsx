@@ -4,13 +4,12 @@ import { useState, useEffect } from "react";
 import {
 	ComposerPrimitive,
 	AttachmentPrimitive,
-	useThread,
-	useThreadComposerAttachment,
+	useAuiState,
 } from "@assistant-ui/react";
 
 /** Image thumbnail preview using data URL from the attachment File */
 function ImageThumb() {
-	const file = useThreadComposerAttachment((a) => a.file);
+	const file = useAuiState((s) => s.attachment.file);
 	const [src, setSrc] = useState<string | undefined>();
 	useEffect(() => {
 		if (!file) return;
@@ -36,8 +35,7 @@ function ComposerAttachmentImage() {
 
 /** Composer with attachment support (image paste/attach) */
 export function ChatComposer({ placeholder }: { placeholder: string }) {
-	const thread = useThread();
-	const isRunning = thread.isRunning;
+	const isRunning = useAuiState((s) => s.thread.isRunning);
 
 	return (
 		<ComposerPrimitive.Root className="flex flex-col gap-2">

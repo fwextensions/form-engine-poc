@@ -1,67 +1,18 @@
+// Writes the registry-derived JSON Schema for whole form documents to
+// dist/form-schema.json, for editors (VS Code YAML extension, Monaco) and
+// external validators. The schema itself is built by catalogToFormJsonSchema().
 import * as fs from "fs";
 import * as path from "path";
-import { z, ZodObject, ZodTypeAny } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import { getAllComponentDefinitions } from "../src/core/componentFactory";
-// Import all component definitions to ensure they are registered in the factory
 import "../src/components";
-
-console.log("Generating JSON schema from Zod types...");
-
-// Get all registered component schemas from the factory
-const componentDefinitions = getAllComponentDefinitions();
-const componentSchemas = Array.from(componentDefinitions.values()).map(def => def.schema);
-
-if (componentSchemas.length === 0) {
-	throw new Error("No component schemas found. Make sure all components are imported.");
-}
-
-// Define a base interface for recursive components.
-// This helps TypeScript understand the recursive structure without creating a circular type alias.
-interface ComponentConfig {
-	children?: ComponentConfig[];
-	[key: string]: any;
-}
-
-// Create a lazy-loaded schema that will eventually resolve to the union of all component schemas.
-// This is the key to handling recursion: `baseComponentSchema` can be used inside the definition
-// of the schemas that will eventually form the union it resolves to.
-const baseComponentSchema: z.ZodType<ComponentConfig> = z.lazy(() =>
-	z.union(finalComponentSchemas as [ZodTypeAny, ZodTypeAny, ...ZodTypeAny[]])
-);
-
-// Iterate over the original component schemas and update any that have a `children` property
-// to use our recursive `baseComponentSchema`.
-const finalComponentSchemas = componentSchemas.map(schema => {
-	// Use `instanceof` to check if the schema is a ZodObject, which has a `.shape` property.
-	if (schema instanceof ZodObject && 'children' in schema.shape) {
-		// `extend` creates a new schema, overriding the `children` property with the recursive one.
-		return schema.extend({
-			children: z.array(baseComponentSchema).optional(),
-		});
-	}
-	return schema;
-});
-
-// Define the top-level form schema
-const formSchema = z.object({
-	id: z.string().min(1),
-	title: z.string().min(1),
-	type: z.literal('form'),
-	// The form's children must be an array of our valid, recursive components.
-	children: z.array(baseComponentSchema).min(1),
-});
+import { getRegisteredCatalog } from "../src/core/componentFactory";
+import { catalogToFormJsonSchema } from "../src/catalog/toJsonSchema";
 
 const outputPath = path.resolve(__dirname, "../dist/form-schema.json");
-const outputDir = path.dirname(outputPath);
+fs.mkdirSync(path.dirname(outputPath), { recursive: true });
 
-if (!fs.existsSync(outputDir)) {
-	fs.mkdirSync(outputDir, { recursive: true });
-	console.log(`Created directory: ${outputDir}`);
-}
-
-const jsonSchema = zodToJsonSchema(formSchema, "FormSchema");
+const catalog = getRegisteredCatalog();
+const jsonSchema = catalogToFormJsonSchema(catalog, { id: "https://form-engine.sf.gov/form-schema.json" });
 
 fs.writeFileSync(outputPath, JSON.stringify(jsonSchema, null, 2));
 
-console.log(`JSON Schema successfully generated at: ${outputPath}`);
+console.log(`JSON Schema for ${Object.keys(catalog.components).length} component types written to ${outputPath}`);

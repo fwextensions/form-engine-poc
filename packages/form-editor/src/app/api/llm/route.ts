@@ -5,6 +5,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 import type { LLMProvider } from "@/lib/settings";
+import { describeStreamError } from "./stream-error";
 
 /**
  * Request body structure for LLM API calls.
@@ -236,11 +237,18 @@ export async function POST(request: NextRequest) {
 			model: providerInstance(model),
 			messages: filteredMessages,
 			...(system && { system }),
-			...(maxTokens && { maxTokens }),
+			...(maxTokens && { maxOutputTokens: maxTokens }),
 		});
 
-		// Return streaming response compatible with useChat
-		return result.toUIMessageStreamResponse();
+		// Return streaming response compatible with useChat. Provider errors
+		// surface inside the stream (the call is lazy), so give the client the
+		// real reason instead of the SDK's default "An error occurred."
+		return result.toUIMessageStreamResponse({
+			onError: (error) => {
+				console.error("LLM stream error:", error);
+				return describeStreamError(error);
+			},
+		});
 	} catch (error) {
 		console.error("LLM API error:", error);
 

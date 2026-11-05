@@ -4,92 +4,60 @@ import { z } from "zod";
 import { Label, Message } from "@radix-ui/react-form";
 import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
 import { CheckIcon } from "@radix-ui/react-icons";
-import { baseFieldConfigSchema, commonFieldTransform } from "../../core/baseSchemas";
-import { createComponent } from "../../core/componentFactory";
-import { FormFieldContainer, FormFieldContainerProps } from "../layout/FormFieldContainer";
+import { defineField } from "../../core/defineField";
+import { optionLabelClassName } from "./styles";
 
-// 1. Define Configuration Schema (colocated with component)
-export const CheckboxConfigSchema = baseFieldConfigSchema.extend({
-	type: z.literal("checkbox"),
-	defaultValue: z.boolean().optional(),
-});
-export type CheckboxConfig = z.infer<typeof CheckboxConfigSchema>;
+const checkboxClassName =
+	"flex h-5 w-5 items-center justify-center rounded border border-ink-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600 data-[state=checked]:text-white disabled:bg-gray-100 disabled:cursor-not-allowed";
 
-// 2. Define Props for the React Component
-export interface CheckboxProps {
-	containerProps: Omit<FormFieldContainerProps, "children" | "htmlFor">; // htmlFor is handled internally
-	checkboxRootProps: CheckboxPrimitive.CheckboxProps & { id: string; label?: string; required?: boolean };
-}
-
-// 3. Create the React Component
-export const Checkbox: React.FC<CheckboxProps> = ({ containerProps, checkboxRootProps }) => {
-	const { label, id } = checkboxRootProps;
-
-	return (
-		<FormFieldContainer {...containerProps} htmlFor={id}>
-			<>
+export const CheckboxConfigSchema = defineField<{ defaultValue: z.ZodOptional<z.ZodBoolean> }, boolean>({
+	type: "checkbox",
+	description: "A checkbox input for boolean values",
+	example: { id: "agreeToTerms", label: "I agree to the terms*" },
+	schema: {
+		defaultValue: z.boolean().optional(),
+	},
+	value: { empty: false },
+	// The label sits beside the box, so the control renders it.
+	labelPlacement: "control",
+	control: ({ config, value, setValue, required, inputProps }) => (
+		<>
 			<div className="flex items-center gap-2 mt-1.5">
 				<CheckboxPrimitive.Root
-					{...checkboxRootProps}
-					className={`flex h-5 w-5 items-center justify-center rounded border border-ink-200 bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 data-[state=checked]:bg-primary-600 data-[state=checked]:border-primary-600 data-[state=checked]:text-white disabled:bg-gray-100 disabled:cursor-not-allowed ${checkboxRootProps.className || ""}`}
-					aria-required={checkboxRootProps.required}
+					{...inputProps}
+					checked={value === true}
+					onCheckedChange={(checked) => setValue(checked === true)}
+					className={checkboxClassName}
+					aria-required={required}
 				>
 					<CheckboxPrimitive.Indicator>
 						<CheckIcon className="h-4 w-4" />
 					</CheckboxPrimitive.Indicator>
 				</CheckboxPrimitive.Root>
-				{label && (
-					<Label htmlFor={id} className="block text-sm text-ink-700">
-						{label}
+				{config.label && (
+					<Label htmlFor={inputProps.id} className={optionLabelClassName}>
+						{config.label}
 					</Label>
 				)}
 			</div>
-			{checkboxRootProps?.required && (
-				<Message name={id} match={(value) => {
-					switch (typeof value) {
-						case "boolean":
-							return !value; // Show message if boolean value is false
-						case "string":
-							// Show message if string value (case-insensitive) is not "true"
-							return value.toLowerCase() !== "true";
-						default:
-							// For undefined, null, or other types, consider it "not checked"
-							return true;
-					}
-				}}>
-					{label || "This checkbox"} must be checked.
+			{required && (
+				<Message
+					name={inputProps.id}
+					match={(v) => {
+						switch (typeof v) {
+							case "boolean":
+								return !v;
+							case "string":
+								return v.toLowerCase() !== "true";
+							default:
+								return true; // undefined, null, etc. count as unchecked
+						}
+					}}
+				>
+					{config.label || "This checkbox"} must be checked.
 				</Message>
 			)}
-			</>
-		</FormFieldContainer>
-	);
-};
-
-// 4. Register the Component (schema is colocated, auto-registered to catalog)
-createComponent<CheckboxConfig, CheckboxProps>({
-	type: "checkbox",
-	schema: CheckboxConfigSchema,
-	component: Checkbox,
-	description: "A checkbox input for boolean values",
-	transformConfig: commonFieldTransform,
-	transformProps: (config, context) => {
-		const { id, label, description, defaultValue, validation } = config;
-		const checked = context.formData[id] ?? defaultValue ?? false;
-
-		return {
-			containerProps: {
-				name: id,
-				description,
-			},
-			checkboxRootProps: {
-				id,
-				name: id,
-				label,
-				checked: checked as boolean, // Radix expects boolean or 'indeterminate'
-				onCheckedChange: (isChecked) => context.onDataChange(id, isChecked),
-				disabled: context.formMode === "view",
-				required: validation?.required,
-			},
-		};
-	},
-});
+		</>
+	),
+}).schema;
+export type CheckboxConfig = z.infer<typeof CheckboxConfigSchema>;

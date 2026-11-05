@@ -22,6 +22,8 @@ export function createJsonlChatTransport(
 	generator: JsonlSchemaGenerator,
 	getCurrentSchema: () => SchemaComponent | null,
 	getPendingPdfContext?: () => PendingPdfContext | null,
+	/** Errors from the previous response's rejected patches; consumed once. */
+	takePreviousPatchErrors?: () => string[],
 ): AssistantChatTransport<UIMessage> {
 	return new AssistantChatTransport({
 		api: "/api/llm",
@@ -89,6 +91,7 @@ export function createJsonlChatTransport(
 						fullPrompt = generator.buildEditPrompt(
 							schemaJson,
 							originalText,
+							takePreviousPatchErrors?.() ?? [],
 						);
 					} else {
 						fullPrompt = generator.buildCreatePrompt(originalText);

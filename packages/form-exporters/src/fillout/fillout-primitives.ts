@@ -11,16 +11,8 @@
 // ─── ID generation ─────────────────────────────────────────────────────────────
 
 export function genId(): string {
-  const bytes = new Uint8Array(16);
-  if (typeof globalThis.crypto !== "undefined" && globalThis.crypto.getRandomValues) {
-    globalThis.crypto.getRandomValues(bytes);
-  } else {
-    // Node.js fallback
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { randomBytes } = require("crypto") as typeof import("crypto");
-    const buf = randomBytes(16);
-    bytes.set(buf);
-  }
+  // Web Crypto is available in every supported runtime (browsers, Node 18+).
+  const bytes = globalThis.crypto.getRandomValues(new Uint8Array(16));
   // Base64url encode without padding, matching Fillout's 22-char IDs
   const base64 = btoa(String.fromCharCode(...bytes))
     .replace(/\+/g, "-")

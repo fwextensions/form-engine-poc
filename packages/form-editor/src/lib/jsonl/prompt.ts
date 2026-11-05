@@ -129,10 +129,15 @@ Use to explain what you did, answer questions, or provide context. This does NOT
 export function buildJsonlEditPrompt(
 	currentSchemaJson: string,
 	userMessage: string,
+	previousErrors: string[] = [],
 ): string {
+	const feedback = previousErrors.length
+		? `\n\nSome operations in your previous response were rejected and NOT applied. Fix them if the user's request still needs them:\n${previousErrors.map((e) => `- ${e}`).join("\n")}`
+		: "";
+
 	return `Here is the current form schema as JSON:
 
-${currentSchemaJson}
+${currentSchemaJson}${feedback}
 
 User request: ${userMessage}
 

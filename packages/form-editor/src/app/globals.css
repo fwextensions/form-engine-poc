@@ -148,8 +148,16 @@
 		border: 1px solid #fca5a5; /* red-300 */
 		padding: 1rem;
 		border-radius: 0.5rem;
-		white-space: pre-wrap; /* Keep formatting of error messages */
-		font-family: monospace;
+		font-size: 0.875rem;
+	}
+
+	.warning-message {
+		color: #92400e; /* amber-800 */
+		background-color: #fef3c7; /* amber-100 */
+		border: 1px solid #fcd34d; /* amber-300 */
+		padding: 1rem;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
 	}
 
 	/* Click-to-source: hover effect on fields in the preview panel (only when Ctrl is held) */

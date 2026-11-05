@@ -2,8 +2,10 @@
 // Generates LLM-consumable documentation from the component catalog
 
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import type { Catalog, CatalogEntry } from "./catalog";
+import * as yaml from "js-yaml";
+import { zodSchemaToJsonSchema } from "./toJsonSchema";
+import { entryAllowsChildren, resolveAllowedChildren, type Catalog, type CatalogEntry } from "./catalog";
+import { ruleSchema } from "../core/baseSchemas";
 
 export interface CatalogPromptOptions {
 	/** Include YAML examples for each component */
@@ -34,7 +36,7 @@ export function generateCatalogPrompt(
 
 	for (const type of componentTypes) {
 		const entry = catalog.components[type];
-		sections.push(formatComponentDocumentation(type, entry, includeExamples));
+		sections.push(formatComponentDocumentation(type, entry, includeExamples, catalog));
 	}
 
 	// 3. Schema structure rules
@@ -57,7 +59,7 @@ export function generateCatalogPrompt(
 export function formatPropsFromZodSchema(schema: z.ZodType<any>): string {
 	try {
 		// Convert Zod schema to JSON Schema for easier introspection
-		const jsonSchema = zodToJsonSchema(schema as any, { $refStrategy: "none" });
+		const jsonSchema = zodSchemaToJsonSchema(schema);
 
 		if (!jsonSchema || typeof jsonSchema !== "object" || !("properties" in jsonSchema)) {
 			return "No properties defined.";
@@ -192,20 +194,22 @@ function getConstraints(schema: any): string[] {
 function formatComponentDocumentation(
 	type: string,
 	entry: CatalogEntry,
-	includeExamples: boolean
+	includeExamples: boolean,
+	catalog?: Catalog,
 ): string {
 	const lines: string[] = [];
 
 	lines.push(`### ${type}`);
 
 	// Description
-	if (entry.description) {
-		lines.push(`\n${entry.description}`);
+	if (entry.meta?.description) {
+		lines.push(`\n${entry.meta.description}`);
 	}
 
 	// Children capability
-	if (entry.hasChildren) {
-		lines.push("\n**Can contain children:** Yes");
+	if (entryAllowsChildren(entry)) {
+		const allowed = catalog ? resolveAllowedChildren(catalog, entry).sort() : [];
+		lines.push(`\n**Can contain children:** Yes${allowed.length ? ` (allowed types: ${allowed.join(", ")})` : ""}`);
 	}
 
 	// Properties
@@ -223,30 +227,40 @@ function formatComponentDocumentation(
 		}
 	}
 
+	// Notes
+	if (entry.meta?.notes) {
+		lines.push(`\n${entry.meta.notes}`);
+	}
+
 	return lines.join("\n");
 }
 
 /**
- * Generates a simple YAML example for a component.
+ * Renders the entry's declared example as YAML. Entries without an example
+ * get a minimal one derived from their schema (id and label when present).
  */
-function generateComponentExample(type: string, entry: CatalogEntry): string | null {
-	// Generate a basic example based on the component type
-	// This is a simplified version - could be enhanced with more sophisticated example generation
+export function generateComponentExample(type: string, entry: CatalogEntry): string | null {
+	const example: Record<string, unknown> = { type };
 
-	const lines: string[] = [];
-	lines.push(`type: ${type}`);
-
-	// Add id if it's likely a field component
-	if (type !== "form" && type !== "page" && type !== "html") {
-		lines.push(`id: example${type.charAt(0).toUpperCase() + type.slice(1)}`);
+	if (entry.meta?.example) {
+		Object.assign(example, entry.meta.example);
+	} else {
+		const properties = schemaProperties(entry.schema);
+		const capitalized = type.charAt(0).toUpperCase() + type.slice(1);
+		if ("id" in properties) example.id = `example${capitalized}`;
+		if ("label" in properties) example.label = `Example ${capitalized}`;
 	}
 
-	// Add common properties based on type
-	if (["text", "email", "password", "tel", "number", "textarea", "select", "checkbox", "radio"].includes(type)) {
-		lines.push(`label: Example ${type.charAt(0).toUpperCase() + type.slice(1)}`);
-	}
+	return yaml.dump(example, { indent: 2, lineWidth: -1, noRefs: true, sortKeys: false }).trimEnd();
+}
 
-	return lines.join("\n");
+function schemaProperties(schema: z.ZodType<any>): Record<string, unknown> {
+	try {
+		const jsonSchema = zodSchemaToJsonSchema(schema);
+		return (jsonSchema.properties as Record<string, unknown>) ?? {};
+	} catch {
+		return {};
+	}
 }
 
 /**
@@ -481,17 +495,13 @@ rules:
           required: true
 \`\`\`
 
-### When Conditions
+### Rule Properties
 
-- **field**: The ID of the field to check
-- **is**: The expected value (can be string, number, boolean, etc.)
-- Multiple conditions can be specified as an array (AND logic)
+${formatPropsFromZodSchema(ruleSchema)}
 
-### Then Actions
-
-- **set**: Updates component properties dynamically
-  - Can set any property: \`hidden\`, \`required\`, \`disabled\`, \`label\`, etc.
-- **log**: Outputs debug messages (useful for development)
+- \`when\` is an equality check: \`field\` is the id of the field to read and \`is\` the value it must equal. An array of conditions means all must match (AND).
+- \`whenLogic\` is a JSONLogic expression evaluated against \`{ formData, context }\`; use it for anything beyond equality.
+- \`then\` actions: \`set\` merges properties into the component while the condition holds (any property, e.g. \`hidden\`, \`required\`, \`disabled\`, \`label\`); \`log\` prints debug messages.
 
 ### Example: Conditional Required Field
 
@@ -521,17 +531,15 @@ rules:
 function getValidationRulesDocumentation(): string {
 	return `## Validation Rules
 
-Fields support validation through the \`validation\` property.
+Fields support validation through the \`validation\` property. Only the keys listed for a field type are accepted; anything else is rejected.
 
-### Common Validation Properties
+### Keys the engine enforces
 
-- **required**: Boolean - field must have a value
-- **minLength**: Number - minimum string length
-- **maxLength**: Number - maximum string length
-- **min**: Number - minimum numeric value
-- **max**: Number - maximum numeric value
-- **pattern**: String - regex pattern for validation
-- **email**: Boolean - validates email format (for email fields)
+- **required** (all fields): Boolean - the field must have a value
+- **minLength** / **maxLength** (text, email, password, tel, textarea): Number - string length limits
+- **pattern** (text, email, password, tel, textarea): String - regular expression the value must match
+- **min** / **max** (number): Number - numeric range (the field-level \`min\`/\`max\` props do the same)
+- **email** (email): Boolean or String - validate the address format; a string is used as the error message
 
 ### Example: Required Field with Length Constraints
 
@@ -565,3 +573,4 @@ This is equivalent to:
     required: true
 \`\`\``;
 }
+

@@ -89,7 +89,7 @@ describe("SettingsDialog", () => {
 		).toBeInTheDocument();
 	});
 
-	it("should load existing settings when dialog opens", () => {
+	it("should load existing settings when dialog opens", async () => {
 		vi.mocked(settings.getSettings).mockReturnValue({
 			provider: "openai",
 			apiKey: "test-key-123",
@@ -99,10 +99,10 @@ describe("SettingsDialog", () => {
 		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
 
 		const providerSelect = screen.getByLabelText("Provider") as HTMLSelectElement;
+		await waitFor(() => expect(providerSelect.value).toBe("openai"));
 		const apiKeyInput = screen.getByLabelText("API Key") as HTMLInputElement;
 		const modelInput = screen.getByLabelText("Model (Optional)") as HTMLInputElement;
 
-		expect(providerSelect.value).toBe("openai");
 		expect(apiKeyInput.value).toBe("test-key-123");
 		expect(modelInput.value).toBe("gpt-4");
 	});
@@ -320,7 +320,7 @@ describe("SettingsDialog", () => {
 		).toBeInTheDocument();
 	});
 
-	it("should load AWS credentials when dialog opens with Bedrock provider", () => {
+	it("should load AWS credentials when dialog opens with Bedrock provider", async () => {
 		vi.mocked(settings.getSettings).mockReturnValue({
 			provider: "bedrock",
 			awsAccessKeyId: "AKIAIOSFODNN7EXAMPLE",
@@ -332,7 +332,7 @@ describe("SettingsDialog", () => {
 		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
 
 		const providerSelect = screen.getByLabelText("Provider") as HTMLSelectElement;
-		const awsAccessKeyInput = screen.getByLabelText("AWS Access Key ID") as HTMLInputElement;
+		const awsAccessKeyInput = (await screen.findByLabelText("AWS Access Key ID")) as HTMLInputElement;
 		const awsSecretKeyInput = screen.getByLabelText("AWS Secret Access Key") as HTMLInputElement;
 		const awsRegionInput = screen.getByLabelText("AWS Region") as HTMLInputElement;
 		const modelInput = screen.getByLabelText("Model (Optional)") as HTMLInputElement;
@@ -420,7 +420,7 @@ describe("SettingsDialog", () => {
 		});
 	});
 
-	it("should load Google provider settings correctly", () => {
+	it("should load Google provider settings correctly", async () => {
 		vi.mocked(settings.getSettings).mockReturnValue({
 			provider: "google",
 			apiKey: "google-api-key-123",
@@ -430,15 +430,15 @@ describe("SettingsDialog", () => {
 		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
 
 		const providerSelect = screen.getByLabelText("Provider") as HTMLSelectElement;
+		await waitFor(() => expect(providerSelect.value).toBe("google"));
 		const apiKeyInput = screen.getByLabelText("API Key") as HTMLInputElement;
 		const modelInput = screen.getByLabelText("Model (Optional)") as HTMLInputElement;
 
-		expect(providerSelect.value).toBe("google");
 		expect(apiKeyInput.value).toBe("google-api-key-123");
 		expect(modelInput.value).toBe("gemini-2.0-flash");
 	});
 
-	it("should show server credential banner when Bedrock is selected and server credentials are configured", () => {
+	it("should show server credential banner when Bedrock is selected and server credentials are configured", async () => {
 		vi.mocked(settings.getSettings).mockReturnValue({
 			provider: "bedrock",
 		});
@@ -447,7 +447,7 @@ describe("SettingsDialog", () => {
 		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
 
 		expect(
-			screen.getByText("Server-provided Bedrock credentials are active. Entering your own is optional."),
+			await screen.findByText("Server-provided Bedrock credentials are active. Entering your own is optional."),
 		).toBeInTheDocument();
 	});
 
@@ -478,7 +478,7 @@ describe("SettingsDialog", () => {
 		).not.toBeInTheDocument();
 	});
 
-	it("should keep credential input fields visible when server credentials are active", () => {
+	it("should keep credential input fields visible when server credentials are active", async () => {
 		vi.mocked(settings.getSettings).mockReturnValue({
 			provider: "bedrock",
 		});
@@ -488,7 +488,7 @@ describe("SettingsDialog", () => {
 
 		// Banner should be visible
 		expect(
-			screen.getByText("Server-provided Bedrock credentials are active. Entering your own is optional."),
+			await screen.findByText("Server-provided Bedrock credentials are active. Entering your own is optional."),
 		).toBeInTheDocument();
 
 		// Credential fields should still be visible

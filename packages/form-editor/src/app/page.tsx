@@ -9,6 +9,7 @@ import {
 	type FormConfig,
 	type FormEngineHandle,
 	type FormMeta,
+	type SchemaIssue,
 } from "form-engine";
 import { exportToFillout, type ExportDiagnostic } from "form-exporters";
 import EditorToolbar from "@/components/EditorToolbar";
@@ -63,6 +64,22 @@ function yamlToSchema(yamlStr: string): SchemaComponent | null {
 	} catch {
 		return null;
 	}
+}
+
+function SchemaIssueList({ title, issues, className }: { title: string; issues: SchemaIssue[]; className: string }) {
+	return (
+		<div className={`${className} mb-4`} role={className === "error-message" ? "alert" : "status"}>
+			<div className="font-semibold mb-1">{title}</div>
+			<ul className="list-disc pl-5 space-y-0.5">
+				{issues.map((issue, index) => (
+					<li key={index}>
+						{issue.path && <code className="mr-1">{issue.path}</code>}
+						{issue.message}
+					</li>
+				))}
+			</ul>
+		</div>
+	);
 }
 
 /** Sentinel empty schema used as the initial history base. */
@@ -194,47 +211,36 @@ export default function FormEditorPage() {
 		}
 	}, [yamlInput, selectedForm]);
 
-	// Parse YAML and update form config
-	const { formConfig, error } = useMemo((): {
+	// Parse YAML and update form config. The form renders whenever the root is
+	// usable; errors and warnings anywhere in the tree are listed above it.
+	const { formConfig, issues } = useMemo((): {
 		formConfig: FormConfig | null;
-		error: string | null;
+		issues: SchemaIssue[];
 	} => {
 		if (!yamlInput) {
-			return {
-				formConfig: null,
-				error: "",
-			};
+			return { formConfig: null, issues: [] };
 		}
 
 		try {
 			const parsedYaml = yaml.load(yamlInput);
-			const { config, errors } = parseRootFormSchema(parsedYaml);
-
-			if (config) {
-				return {
-					formConfig: config,
-					error: null,
-				};
-			}
-
-			if (errors) {
-				return {
-					formConfig: null,
-					error: JSON.stringify(errors.flatten(), null, 2),
-				};
-			}
-
-			return {
-				formConfig: null,
-				error: "An unknown parsing error occurred.",
-			};
+			const { config, issues } = parseRootFormSchema(parsedYaml);
+			return { formConfig: config, issues };
 		} catch (error) {
 			return {
 				formConfig: null,
-				error: error instanceof Error ? error.message : String(error),
+				issues: [{
+					path: "",
+					message: `YAML syntax error: ${error instanceof Error ? error.message : String(error)}`,
+					severity: "error",
+					code: "yaml_syntax",
+				}],
 			};
 		}
 	}, [yamlInput]);
+
+	const schemaErrors = issues.filter((issue) => issue.severity === "error");
+	const schemaWarnings = issues.filter((issue) => issue.severity === "warning");
+	const error = schemaErrors.length > 0;
 
 	// Sync YAML editor changes → JSON state (Option B: only when switching tabs)
 	const handleTabChange = useCallback(
@@ -586,7 +592,12 @@ export default function FormEditorPage() {
 									}
 								}}
 							>
-								{error && <pre className="error-message">{error}</pre>}
+								{schemaErrors.length > 0 && (
+									<SchemaIssueList title="Schema errors" issues={schemaErrors} className="error-message" />
+								)}
+								{schemaWarnings.length > 0 && (
+									<SchemaIssueList title="Schema warnings" issues={schemaWarnings} className="warning-message" />
+								)}
 								{error && formOutput ? (
 									<div className="opacity-50">{formOutput}</div>
 								) : (

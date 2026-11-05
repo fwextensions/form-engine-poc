@@ -6,7 +6,8 @@ This package provides the core logic for rendering dynamic forms based on YAML s
 ## Features
 
 - Parses YAML form schemas.
-- Renders various field types (text, select, checkbox, radio, date, textarea).
+- Renders the registered field types (text, email, password, tel, number, textarea, select, radiogroup, checkbox, date, file, addressValidation) plus `html` content blocks inside `form`/`page` layouts.
+- Every component is registered once (`createComponent()` / `defineField()`); validation, the LLM prompt, the JSON Schema and the exporters are all derived from that registry.
 - Supports multi-page and single-page form layouts.
 - Handles basic field validation (e.g., required fields).
 - Allows conditional display of form elements using JSON Logic.
@@ -14,7 +15,7 @@ This package provides the core logic for rendering dynamic forms based on YAML s
 
 ## JSON Form Schema
 
-This package includes the ability to generate a JSON schema from its internal Zod type definitions. This JSON schema can be used by editors (like VS Code with the YAML extension) to provide real-time validation and autocompletion for your YAML form definition files.
+This package generates a JSON Schema (draft 2020-12) for whole form documents from the component registry (`catalogToFormJsonSchema()`): every component type is a `$defs` entry and each layout component's `children` only admits the types it allows. The form-editor feeds the same schema to Monaco (`monaco-yaml`); VS Code can use the generated file with the YAML extension.
 
 
 ### Generating the Schema
