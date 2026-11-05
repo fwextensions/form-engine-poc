@@ -4,8 +4,8 @@ Date: 2026-11-05
 
 > **Status (2026-11-05):** Phase 0 and proposals 3.1–3.6 are implemented on this branch; see the commit history
 > ("proposal 1" … "proposal 6") and `CLAUDE.md` for the resulting architecture. Phase 2 (explicit catalog
-> instances) is not started. The dependency update surfaced two pins worth knowing about: `@assistant-ui/*`
-> (a `getSnapshot` loop in newer 0.14.x releases) and `monaco-editor` 0.52 (for `monaco-yaml`).
+> instances) is not started. The dependency update surfaced one pin worth knowing about: `monaco-editor` 0.52 (for `monaco-yaml`).
+> The chat stack was moved to `ai` 7 / assistant-ui 0.15 in a follow-up change.
 
 Scope: the whole monorepo, with emphasis on how the component catalog (the set of form element types, their schemas, and everything derived from them) is defined, registered, built and consumed. This follows on from `form-engine-architecture-review.md` (2025-10-14); it does not repeat that document's rendering and styling recommendations except where they intersect with the catalog.
 

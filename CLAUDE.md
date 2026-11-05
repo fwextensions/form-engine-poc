@@ -89,6 +89,8 @@ Layout and static components (`form`, `page`, `html`) and fields with bespoke re
 
 ## Dependency notes
 - `.npmrc` sets `legacy-peer-deps=true` because `eslint-plugin-react` does not declare eslint 10 support.
-- `@assistant-ui/react` and `@assistant-ui/react-ai-sdk` are pinned (with root `overrides` for their internal `core`/`store`/`tap`/`assistant-stream` packages): newer 0.14.x/1.3.x releases throw "Maximum update depth exceeded … getSnapshot" as soon as the editor mounts. Moving to the 0.15 line requires the `ai` 7 migration.
+- The chat stack is `ai` 7 + `@ai-sdk/*` 4/5 + `@assistant-ui/react` 0.15 + `@assistant-ui/react-ai-sdk` 1.4. State is read with `useAuiState((s) => s.thread.isRunning)` style selectors (`useThread`/`useMessage` no longer exist). The AI SDK option is `maxOutputTokens`; the `/api/llm` request body still calls it `maxTokens`.
+- After changing these dependencies run `npm dedupe` and check `npm ls @assistant-ui/store` shows one copy. Two copies (root and `packages/form-editor/node_modules`) mean two React contexts and the editor fails with `The current scope does not have a "threads" property`.
+- To verify the chat loop without a provider key: generate a stream from the SDK's mock model (`ai/test`, `MockLanguageModelV3`, `toUIMessageStreamResponse()`), serve it for `/api/llm` with Playwright's `page.route`, and check the YAML gains the patched field.
 - `monaco-editor` is overridden to 0.52.2: `monaco-yaml`'s worker helper imports a path that 0.53+ no longer exports and uses the pre-0.53 worker bootstrap.
 - The workspace package is named `form-engine`, which is also an unrelated public npm package. The `"form-engine": "*"` dependencies resolve to the workspace; keep it that way (or rename to a scoped name).

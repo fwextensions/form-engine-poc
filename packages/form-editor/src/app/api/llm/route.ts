@@ -236,7 +236,7 @@ export async function POST(request: NextRequest) {
 			model: providerInstance(model),
 			messages: filteredMessages,
 			...(system && { system }),
-			...(maxTokens && { maxTokens }),
+			...(maxTokens && { maxOutputTokens: maxTokens }),
 		});
 
 		// Return streaming response compatible with useChat

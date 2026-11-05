@@ -2,7 +2,7 @@
 
 import {
 	MessagePrimitive,
-	useMessage,
+	useAuiState,
 } from "@assistant-ui/react";
 import { Streamdown } from "streamdown";
 import { MarkdownText } from "@/components/assistant-ui/markdown-text";
@@ -16,7 +16,7 @@ import { PatchCards } from "./PatchCards";
 import { PdfExtractionCard } from "./PdfExtractionCard";
 
 export function ChatMessage() {
-	const message = useMessage();
+	const message = useAuiState((s) => s.message);
 	const validation = useValidationResult(message.id);
 	const pdfExtraction = usePdfExtraction(message.id);
 
