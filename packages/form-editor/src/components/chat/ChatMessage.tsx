@@ -15,6 +15,15 @@ import { ValidationFeedback } from "./ValidationFeedback";
 import { PatchCards } from "./PatchCards";
 import { PdfExtractionCard } from "./PdfExtractionCard";
 
+/** Turns the runtime's error payload (a string, an Error-like object, or nothing) into text. */
+function describeRunError(error: unknown): string {
+	if (typeof error === "string" && error.trim()) return error;
+	if (error && typeof error === "object" && "message" in error && typeof (error as { message: unknown }).message === "string") {
+		return (error as { message: string }).message;
+	}
+	return "The request could not be completed. Check your API key and model in Settings, then try again.";
+}
+
 export function ChatMessage() {
 	const message = useAuiState((s) => s.message);
 	const validation = useValidationResult(message.id);
@@ -41,6 +50,23 @@ export function ChatMessage() {
 		message.status !== null &&
 		'type' in message.status &&
 		message.status.type === 'running';
+
+	// A run that failed (expired key, rate limit, provider outage) ends the
+	// assistant message with an error status; show it instead of a blank bubble.
+	const runError =
+		isAssistant &&
+		typeof message.status === "object" &&
+		message.status !== null &&
+		message.status.type === "incomplete" &&
+		message.status.reason === "error"
+			? describeRunError(message.status.error)
+			: null;
+	const errorBanner = runError ? (
+		<div role="alert" className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-800">
+			<span className="font-medium">Request failed. </span>
+			{runError}
+		</div>
+	) : null;
 
 	// Detect YAML code blocks specifically (```yaml or ```yml)
 	const yamlCodeBlockMatch = messageContent.match(/```ya?ml/i);
@@ -101,6 +127,7 @@ export function ChatMessage() {
 							<p className="text-xs font-medium text-success-700 mb-2">Schema updated</p>
 						)}
 						<PatchCards cards={validation.patchCards} />
+						{errorBanner}
 					</div>
 				</MessagePrimitive.Root>
 				<ValidationFeedback
@@ -181,6 +208,7 @@ export function ChatMessage() {
 					{showStreamingIndicator && (
 						<StreamingIndicator label={streamingLabel} hasContent={!!displayContent} />
 					)}
+					{errorBanner}
 					{pdfExtraction && (
 						<PdfExtractionCard
 							result={pdfExtraction.result}
