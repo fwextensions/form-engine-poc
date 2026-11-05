@@ -532,17 +532,15 @@ rules:
 function getValidationRulesDocumentation(): string {
 	return `## Validation Rules
 
-Fields support validation through the \`validation\` property.
+Fields support validation through the \`validation\` property. Only the keys listed for a field type are accepted; anything else is rejected.
 
-### Common Validation Properties
+### Keys the engine enforces
 
-- **required**: Boolean - field must have a value
-- **minLength**: Number - minimum string length
-- **maxLength**: Number - maximum string length
-- **min**: Number - minimum numeric value
-- **max**: Number - maximum numeric value
-- **pattern**: String - regex pattern for validation
-- **email**: Boolean - validates email format (for email fields)
+- **required** (all fields): Boolean - the field must have a value
+- **minLength** / **maxLength** (text, email, password, tel, textarea): Number - string length limits
+- **pattern** (text, email, password, tel, textarea): String - regular expression the value must match
+- **min** / **max** (number): Number - numeric range (the field-level \`min\`/\`max\` props do the same)
+- **email** (email): Boolean or String - validate the address format; a string is used as the error message
 
 ### Example: Required Field with Length Constraints
 
@@ -576,3 +574,4 @@ This is equivalent to:
     required: true
 \`\`\``;
 }
+

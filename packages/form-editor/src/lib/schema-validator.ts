@@ -1,5 +1,5 @@
 import * as yaml from "js-yaml";
-import { parseRootFormSchema, getRegisteredCatalog, getCatalogTypes } from "form-engine";
+import { validateSchemaTree, type SchemaIssue } from "form-engine";
 
 /**
  * Result of schema validation containing validation status and any errors/warnings.
@@ -11,171 +11,62 @@ export interface ValidationResult {
   errors: string[];
   /** Non-critical warnings about potential issues */
   warnings: string[];
+  /** The underlying per-node issues from the form-engine registry */
+  issues: SchemaIssue[];
 }
 
 /**
  * Validates a YAML schema string against form-engine requirements.
- * 
+ *
  * Performs the following checks:
  * 1. YAML syntax validation using js-yaml
- * 2. Schema structure validation using form-engine parseRootFormSchema
- * 3. Component type validation against registered catalog
- * 4. Duplicate field ID detection (warning)
- * 
- * @param yamlString - The YAML schema string to validate
- * @returns ValidationResult with valid flag, errors, and warnings
+ * 2. Every node in the tree against the component registry (unknown types,
+ *    unknown or invalid properties, disallowed nesting)
+ * 3. Duplicate field ID detection (warning)
+ *
+ * Messages are aggregated per category so they read well in a list.
  */
 export function validateSchema(yamlString: string): ValidationResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  // Step 1: Check for empty input
   if (!yamlString || yamlString.trim().length === 0) {
     errors.push("Schema is empty");
-    return { valid: false, errors, warnings };
+    return { valid: false, errors, warnings, issues: [] };
   }
 
-  // Step 2: Parse YAML syntax
   let parsedYaml: unknown;
   try {
     parsedYaml = yaml.load(yamlString);
   } catch (error) {
-    if (error instanceof Error) {
-      errors.push(`YAML syntax error: ${error.message}`);
-    } else {
-      errors.push("YAML syntax error: Unable to parse YAML");
-    }
-    return { valid: false, errors, warnings };
+    errors.push(`YAML syntax error: ${error instanceof Error ? error.message : "Unable to parse YAML"}`);
+    return { valid: false, errors, warnings, issues: [] };
   }
 
-  // Step 3: Get catalog for validation
-  const catalog = getRegisteredCatalog();
-  const validTypes = getCatalogTypes(catalog);
+  const issues = validateSchemaTree(parsedYaml);
 
-  // Step 4: Check for unknown component types before form-engine validation
-  // This allows us to provide better error messages with available types
-  const unknownTypes = findUnknownComponentTypes(parsedYaml, validTypes);
-  
+  const unknownTypes = [...new Set(issues.filter((i) => i.code === "unknown_type").map((i) => i.componentType ?? "?"))];
   if (unknownTypes.length > 0) {
-    const typeList = unknownTypes.join(", ");
-    const availableTypes = validTypes.join(", ");
-    errors.push(`Unknown component type(s): ${typeList}. Available types: ${availableTypes}`);
+    const available = issues.find((i) => i.code === "unknown_type")?.message.match(/Available types: (.*)$/)?.[1] ?? "";
+    errors.push(`Unknown component type(s): ${unknownTypes.join(", ")}. Available types: ${available}`);
   }
 
-  // Step 5: Validate against form-engine schema parser (only if no unknown types)
-  // If there are unknown types, skip this to avoid duplicate errors
-  if (unknownTypes.length === 0) {
-    const parseResult = parseRootFormSchema(parsedYaml);
-    if (parseResult.errors) {
-      // Extract error messages from Zod errors
-      const zodErrors = parseResult.errors.issues.map((err) => {
-        const path = err.path.length > 0 ? `${err.path.join(".")}: ` : "";
-        return `${path}${err.message}`;
-      });
-      errors.push(...zodErrors);
+  for (const issue of issues) {
+    if (issue.severity === "error" && issue.code !== "unknown_type") {
+      errors.push(issue.path ? `${issue.path}: ${issue.message}` : issue.message);
     }
   }
 
-  // Step 6: Check for duplicate field IDs (warning only)
-  // Do this even if there are errors, as it's just a warning
-  const duplicateIds = findDuplicateIds(parsedYaml);
+  const duplicateIds = [...new Set(issues.filter((i) => i.code === "duplicate_id").map((i) => i.componentId ?? "?"))];
   if (duplicateIds.length > 0) {
-    const idList = duplicateIds.join(", ");
-    warnings.push(`Duplicate field IDs found: ${idList}`);
+    warnings.push(`Duplicate field IDs found: ${duplicateIds.join(", ")}`);
   }
 
-  // If we have errors at this point, return with errors and warnings
-  if (errors.length > 0) {
-    return { valid: false, errors, warnings };
-  }
-
-  // Final validation result
-  const valid = errors.length === 0;
-  return { valid, errors, warnings };
-}
-
-/**
- * Recursively finds all component types used in the schema that are not
- * registered in the catalog.
- * 
- * @param obj - The parsed schema object to search
- * @param validTypes - Array of valid component type names from the catalog
- * @returns Array of unknown component type names
- */
-function findUnknownComponentTypes(obj: unknown, validTypes: string[]): string[] {
-  const unknownTypes = new Set<string>();
-
-  function traverse(value: unknown): void {
-    if (value === null || value === undefined) {
-      return;
-    }
-
-    if (Array.isArray(value)) {
-      value.forEach(traverse);
-      return;
-    }
-
-    if (typeof value === "object") {
-      const record = value as Record<string, unknown>;
-      
-      // Check if this object has a 'type' property
-      if ("type" in record && typeof record.type === "string") {
-        if (!validTypes.includes(record.type)) {
-          unknownTypes.add(record.type);
-        }
-      }
-
-      // Recursively traverse all properties
-      Object.values(record).forEach(traverse);
+  for (const issue of issues) {
+    if (issue.severity === "warning" && issue.code !== "duplicate_id") {
+      warnings.push(issue.path ? `${issue.path}: ${issue.message}` : issue.message);
     }
   }
 
-  traverse(obj);
-  return Array.from(unknownTypes);
-}
-
-/**
- * Recursively finds all field IDs in the schema and identifies duplicates.
- * 
- * @param obj - The parsed schema object to search
- * @returns Array of duplicate ID values
- */
-function findDuplicateIds(obj: unknown): string[] {
-  const idCounts = new Map<string, number>();
-
-  function traverse(value: unknown): void {
-    if (value === null || value === undefined) {
-      return;
-    }
-
-    if (Array.isArray(value)) {
-      value.forEach(traverse);
-      return;
-    }
-
-    if (typeof value === "object") {
-      const record = value as Record<string, unknown>;
-      
-      // Check if this object has an 'id' property
-      if ("id" in record && typeof record.id === "string") {
-        const currentCount = idCounts.get(record.id) || 0;
-        idCounts.set(record.id, currentCount + 1);
-      }
-
-      // Recursively traverse all properties
-      Object.values(record).forEach(traverse);
-    }
-  }
-
-  traverse(obj);
-
-  // Return only IDs that appear more than once
-  const duplicates: string[] = [];
-  idCounts.forEach((count, id) => {
-    if (count > 1) {
-      duplicates.push(id);
-    }
-  });
-
-  return duplicates;
+  return { valid: errors.length === 0, errors, warnings, issues };
 }

@@ -4,6 +4,7 @@ import React from "react";
 import { z } from "zod";
 import { Control } from "@radix-ui/react-form";
 import { defineField } from "../../core/defineField";
+import { numberValidationSchema, textValidationSchema } from "../../core/baseSchemas";
 import { inputClassName } from "./styles";
 
 const inputTypes = ["text", "email", "password", "tel", "url", "number", "date", "datetime-local", "month", "week", "time"] as const;
@@ -12,7 +13,19 @@ export type InputType = (typeof inputTypes)[number];
 const textLikeShape = {
 	placeholder: z.string().optional(),
 	defaultValue: z.string().optional(),
+	validation: textValidationSchema.optional(),
 };
+
+type TextValidation = z.infer<typeof textValidationSchema> | undefined;
+
+/** Native constraint attributes derived from `validation`. */
+function constraintAttrs(validation: TextValidation) {
+	return {
+		minLength: validation?.minLength,
+		maxLength: validation?.maxLength,
+		pattern: validation?.pattern,
+	};
+}
 
 /** Shared control for every string-valued single-line input. */
 function StringInput({
@@ -54,7 +67,7 @@ export const TextConfigSchema = defineField({
 	},
 	value: { empty: "" },
 	control: ({ config, value, setValue, inputProps }) => (
-		<StringInput inputType={config.inputType ?? "text"} value={value} setValue={setValue} inputProps={inputProps} placeholder={config.placeholder} />
+		<StringInput inputType={config.inputType ?? "text"} value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
 	),
 }).schema;
 export type TextConfig = z.infer<typeof TextConfigSchema>;
@@ -66,14 +79,13 @@ export const EmailConfigSchema = defineField({
 	example: { id: "email", label: "Email address*" },
 	schema: {
 		...textLikeShape,
-		validation: z.object({
-			required: z.boolean().optional(),
-			email: z.union([z.string(), z.boolean()]).optional(), // custom message or true
-		}).passthrough().optional(),
+		validation: textValidationSchema.extend({
+			email: z.union([z.string(), z.boolean()]).optional().describe("Validate the address format; a string is used as the error message"),
+		}).optional(),
 	},
 	value: { empty: "" },
 	control: ({ config, value, setValue, inputProps }) => (
-		<StringInput inputType="email" value={value} setValue={setValue} inputProps={inputProps} placeholder={config.placeholder} />
+		<StringInput inputType="email" value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
 	),
 }).schema;
 export type EmailConfig = z.infer<typeof EmailConfigSchema>;
@@ -86,7 +98,7 @@ export const PasswordConfigSchema = defineField({
 	schema: textLikeShape,
 	value: { empty: "" },
 	control: ({ config, value, setValue, inputProps }) => (
-		<StringInput inputType="password" value={value} setValue={setValue} inputProps={inputProps} placeholder={config.placeholder} />
+		<StringInput inputType="password" value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
 	),
 }).schema;
 export type PasswordConfig = z.infer<typeof PasswordConfigSchema>;
@@ -96,15 +108,10 @@ export const TelConfigSchema = defineField({
 	type: "tel",
 	description: "A telephone number input field",
 	example: { id: "phone", label: "Phone number" },
-	schema: {
-		...textLikeShape,
-		validation: z.object({
-			required: z.boolean().optional(),
-		}).passthrough().optional(),
-	},
+	schema: textLikeShape,
 	value: { empty: "" },
 	control: ({ config, value, setValue, inputProps }) => (
-		<StringInput inputType="tel" value={value} setValue={setValue} inputProps={inputProps} placeholder={config.placeholder} />
+		<StringInput inputType="tel" value={value} setValue={setValue} inputProps={{ ...inputProps, ...constraintAttrs(config.validation) }} placeholder={config.placeholder} />
 	),
 }).schema;
 export type TelConfig = z.infer<typeof TelConfigSchema>;
@@ -117,7 +124,7 @@ export const NumberConfigSchema = defineField<
 		min: z.ZodOptional<z.ZodNumber>;
 		max: z.ZodOptional<z.ZodNumber>;
 		step: z.ZodOptional<z.ZodNumber>;
-		validation: z.ZodOptional<z.ZodObject<any>>;
+		validation: z.ZodOptional<typeof numberValidationSchema>;
 	},
 	number | undefined
 >({
@@ -130,12 +137,9 @@ export const NumberConfigSchema = defineField<
 		min: z.number().optional(),
 		max: z.number().optional(),
 		step: z.number().optional(),
-		validation: z.object({
-			required: z.boolean().optional(),
-			min: z.union([z.number(), z.string()]).optional(), // allow a message for min
-			max: z.union([z.number(), z.string()]).optional(), // allow a message for max
-		}).passthrough().optional(),
+		validation: numberValidationSchema.optional(),
 	},
+	notes: "`min`/`max`/`step` on the field and `validation.min`/`validation.max` both constrain the value; the field-level props win when both are set.",
 	value: { empty: undefined },
 	control: ({ config, value, setValue, inputProps }) => (
 		<Control asChild>
@@ -143,8 +147,8 @@ export const NumberConfigSchema = defineField<
 				{...inputProps}
 				type="number"
 				placeholder={config.placeholder}
-				min={config.min}
-				max={config.max}
+				min={config.min ?? config.validation?.min}
+				max={config.max ?? config.validation?.max}
 				step={config.step}
 				value={value ?? ""}
 				onChange={(e) => {

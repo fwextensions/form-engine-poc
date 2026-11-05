@@ -45,8 +45,8 @@ export class JsonlSchemaGenerator {
 	 * @param currentSchemaJson - The current schema as a JSON string
 	 * @param userMessage - The user's natural language request
 	 */
-	buildEditPrompt(currentSchemaJson: string, userMessage: string): string {
-		return buildJsonlEditPrompt(currentSchemaJson, userMessage);
+	buildEditPrompt(currentSchemaJson: string, userMessage: string, previousErrors: string[] = []): string {
+		return buildJsonlEditPrompt(currentSchemaJson, userMessage, previousErrors);
 	}
 
 	/**

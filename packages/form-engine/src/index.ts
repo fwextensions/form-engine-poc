@@ -25,8 +25,11 @@ export {
 	getComponentTypesByKind,
 	type ComponentDefinition,
 	type CreateComponentArgs,
+	type ConfigCheck,
+	type ConfigIssue,
 } from "./core/componentFactory";
-export { parseRootFormSchema } from "./core/schemaParser";
+export { parseRootFormSchema, validateSchemaTree, type SchemaIssue, type ParseRootFormSchemaResult } from "./core/schemaParser";
+export { baseValidationSchema, textValidationSchema, numberValidationSchema, ruleSchema, type Rule } from "./core/baseSchemas";
 
 // Catalog exports - for schema validation, JSON Schema generation, and AI integration
 export {

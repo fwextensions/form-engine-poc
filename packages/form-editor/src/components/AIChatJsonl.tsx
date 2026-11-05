@@ -191,6 +191,8 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 	const [pdfExtractionMap, setPdfExtractionMap] = useState<PdfExtractionMap>(new Map());
 
 	const lastUserMessageRef = useRef<string>("");
+	/** Rejected patches from the last response, fed back on the next request. */
+	const lastPatchErrorsRef = useRef<string[]>([]);
 
 	// Pending PDF context: stored in a ref for the transport to consume, mirrored to state for UI
 	const pendingPdfRef = useRef<PendingPdfContext | null>(null);
@@ -229,7 +231,11 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 	const generator = React.useMemo(() => new JsonlSchemaGenerator(), []);
 	const transport = React.useMemo(
 		// eslint-disable-next-line react-hooks/refs -- closure is called at send time, not during render
-		() => createJsonlChatTransport(generator, () => currentSchema, () => consumePendingPdfRef.current()),
+		() => createJsonlChatTransport(generator, () => currentSchema, () => consumePendingPdfRef.current(), () => {
+			const errors = lastPatchErrorsRef.current;
+			lastPatchErrorsRef.current = [];
+			return errors;
+		}),
 		[generator, currentSchema],
 	);
 
@@ -373,6 +379,10 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 					nearFieldPosition: result?.removedNear?.position,
 				};
 			});
+
+			lastPatchErrorsRef.current = patchCards
+				.filter((card) => card.error)
+				.map((card) => `${JSON.stringify(card.patch).slice(0, 200)} → ${card.error}`);
 
 			setValidationResults((prev) => {
 				const newMap = new Map(prev);

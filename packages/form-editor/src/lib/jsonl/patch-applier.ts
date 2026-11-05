@@ -4,8 +4,14 @@
  * Takes the current form schema (as a JSON object) and applies JSONL patch
  * operations to produce the next state. All operations are immutable — a new
  * schema object is returned, leaving the input unchanged.
+ *
+ * Every component an operation introduces or changes is validated against the
+ * form-engine registry before it is accepted, so the model gets a precise
+ * error back instead of silently producing a tree the renderer cannot draw.
  */
 
+import { ZodError } from "zod";
+import { getComponentDefinition, getRegisteredCatalog, resolveAllowedChildren, validateSchemaTree } from "form-engine";
 import type { PatchOp, SchemaComponent, AddOp, UpdateOp, RemoveOp, MoveOp, ReplaceOp } from "./types";
 
 /**
@@ -90,6 +96,62 @@ function removeById(root: SchemaComponent, id: string): SchemaComponent | null {
 	return null;
 }
 
+// ─── Registry validation ──────────────────────────────────────────────────────
+
+/**
+ * Validates one component (not its children) strictly against the registry.
+ * Returns an error string, or null when valid.
+ */
+function componentError(component: SchemaComponent): string | null {
+	if (!component || typeof component !== "object" || typeof component.type !== "string") {
+		return "Component must be an object with a string `type`";
+	}
+	const definition = getComponentDefinition(component.type);
+	if (!definition) {
+		const types = Object.keys(getRegisteredCatalog().components).sort().join(", ");
+		return `Unknown component type "${component.type}". Available types: ${types}`;
+	}
+	try {
+		definition.validateConfig(component);
+		return null;
+	} catch (error) {
+		if (error instanceof ZodError) {
+			return error.issues
+				.map((issue) => {
+					const path = issue.path.filter((p): p is string | number => typeof p !== "symbol").join(".");
+					return path ? `${path}: ${issue.message}` : issue.message;
+				})
+				.join("; ");
+		}
+		return String(error);
+	}
+}
+
+/** Returns an error when `parent` may not contain a component of `childType`. */
+function nestingError(parent: SchemaComponent, childType: string): string | null {
+	const parentDef = getComponentDefinition(parent.type);
+	if (!parentDef) return null; // unknown parents are reported elsewhere
+	if (!parentDef.children) {
+		return `"${parent.id ?? parent.type}" is a ${parent.type} and cannot contain children`;
+	}
+	const allowed = resolveAllowedChildren(getRegisteredCatalog(), parentDef);
+	if (!allowed.includes(childType)) {
+		return `A ${parent.type} cannot contain a ${childType}`;
+	}
+	return null;
+}
+
+/** Validates every node of a full tree; returns the first few errors joined. */
+function treeError(schema: SchemaComponent): string | null {
+	const errors = validateSchemaTree(schema).filter((issue) => issue.severity === "error");
+	if (errors.length === 0) return null;
+	const shown = errors.slice(0, 5).map((issue) => (issue.path ? `${issue.path}: ${issue.message}` : issue.message));
+	const more = errors.length > 5 ? ` (and ${errors.length - 5} more)` : "";
+	return shown.join("; ") + more;
+}
+
+// ─── Operations ───────────────────────────────────────────────────────────────
+
 /**
  * Apply a single patch operation to a schema.
  * Returns a new schema (the input is not mutated).
@@ -102,7 +164,7 @@ export function applyPatch(schema: SchemaComponent, patch: PatchOp): ApplyResult
 
 	// Replace replaces the entire schema
 	if (patch.op === "replace") {
-		return applyReplace(patch);
+		return applyReplace(schema, patch);
 	}
 
 	// All other ops need a deep clone to work on
@@ -110,13 +172,13 @@ export function applyPatch(schema: SchemaComponent, patch: PatchOp): ApplyResult
 
 	switch (patch.op) {
 		case "add":
-			return applyAdd(clone, patch);
+			return applyAdd(schema, clone, patch);
 		case "update":
-			return applyUpdate(clone, patch);
+			return applyUpdate(schema, clone, patch);
 		case "remove":
 			return applyRemove(clone, patch);
 		case "move":
-			return applyMove(clone, patch);
+			return applyMove(schema, clone, patch);
 		default:
 			return { schema, success: false, error: `Unknown op: ${(patch as any).op}` };
 	}
@@ -163,13 +225,25 @@ function resolveParent(
 	return null;
 }
 
-function applyAdd(schema: SchemaComponent, patch: AddOp): ApplyResult {
+function applyAdd(original: SchemaComponent, schema: SchemaComponent, patch: AddOp): ApplyResult {
 	const parent = resolveParent(schema, patch.parentId);
 	if (!parent) {
-		return { schema, success: false, error: `Parent not found: ${patch.parentId}` };
+		return { schema: original, success: false, error: `Parent not found: ${patch.parentId}` };
 	}
 
 	const target = parent.component;
+
+	const invalid = componentError(patch.component) ?? nestingError(target, patch.component.type);
+	if (invalid) {
+		return { schema: original, success: false, error: invalid };
+	}
+	if (patch.component.children?.length) {
+		const childError = treeError(patch.component);
+		if (childError) return { schema: original, success: false, error: childError };
+	}
+	if (patch.component.id && findById(schema, patch.component.id)) {
+		return { schema: original, success: false, error: `A component with id "${patch.component.id}" already exists` };
+	}
 
 	// Ensure children array exists
 	if (!target.children) {
@@ -193,10 +267,10 @@ function applyAdd(schema: SchemaComponent, patch: AddOp): ApplyResult {
 	return { schema, success: true };
 }
 
-function applyUpdate(schema: SchemaComponent, patch: UpdateOp): ApplyResult {
+function applyUpdate(original: SchemaComponent, schema: SchemaComponent, patch: UpdateOp): ApplyResult {
 	const found = findById(schema, patch.id);
 	if (!found) {
-		return { schema, success: false, error: `Component not found: ${patch.id}` };
+		return { schema: original, success: false, error: `Component not found: ${patch.id}` };
 	}
 
 	const target = found.component;
@@ -213,6 +287,11 @@ function applyUpdate(schema: SchemaComponent, patch: UpdateOp): ApplyResult {
 		} else {
 			target[key] = value;
 		}
+	}
+
+	const invalid = componentError(target);
+	if (invalid) {
+		return { schema: original, success: false, error: `Update to "${patch.id}" rejected: ${invalid}` };
 	}
 
 	return { schema, success: true };
@@ -248,21 +327,24 @@ function applyRemove(schema: SchemaComponent, patch: RemoveOp): ApplyResult {
 	return { schema, success: true, removedNear };
 }
 
-function applyMove(schema: SchemaComponent, patch: MoveOp): ApplyResult {
+function applyMove(original: SchemaComponent, schema: SchemaComponent, patch: MoveOp): ApplyResult {
 	// Remove the component from its current location
 	const removed = removeById(schema, patch.id);
 	if (!removed) {
-		return { schema, success: false, error: `Component not found: ${patch.id}` };
+		return { schema: original, success: false, error: `Component not found: ${patch.id}` };
 	}
 
 	// Find the new parent
 	const parent = resolveParent(schema, patch.parentId);
 	if (!parent) {
-		// Oops, put it back (best effort — we already mutated the clone)
-		return { schema, success: false, error: `New parent not found: ${patch.parentId}` };
+		return { schema: original, success: false, error: `New parent not found: ${patch.parentId}` };
 	}
 
 	const target = parent.component;
+	const invalid = nestingError(target, removed.type);
+	if (invalid) {
+		return { schema: original, success: false, error: invalid };
+	}
 	if (!target.children) {
 		target.children = [];
 	}
@@ -277,6 +359,10 @@ function applyMove(schema: SchemaComponent, patch: MoveOp): ApplyResult {
 	return { schema, success: true };
 }
 
-function applyReplace(_patch: ReplaceOp): ApplyResult {
-	return { schema: deepClone(_patch.schema), success: true };
+function applyReplace(original: SchemaComponent, patch: ReplaceOp): ApplyResult {
+	const invalid = treeError(patch.schema);
+	if (invalid) {
+		return { schema: original, success: false, error: `Replacement schema rejected: ${invalid}` };
+	}
+	return { schema: deepClone(patch.schema), success: true };
 }

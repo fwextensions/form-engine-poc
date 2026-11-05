@@ -14,6 +14,24 @@ export type TransformProps<ConfigType, PropsType> = (
 	renderChildren: RenderChildren,
 ) => PropsType;
 
+/** One problem found while checking a component config. */
+export interface ConfigIssue {
+	/** Path inside the component config (empty for the component itself). */
+	path: (string | number)[];
+	message: string;
+	/** Warnings never prevent rendering; errors do. */
+	severity: "error" | "warning";
+	/** Zod issue code, or "unknown_key" for a stripped unrecognised key. */
+	code: string;
+}
+
+/** Result of a lenient config check. */
+export interface ConfigCheck<ConfigType = any> {
+	/** Present when the config is usable (possibly after stripping unknown keys). */
+	config?: ConfigType;
+	issues: ConfigIssue[];
+}
+
 /**
  * Everything the engine and its consumers know about one component type.
  * The catalog-facing subset (`CatalogEntry`) has no React dependency; the
@@ -25,8 +43,13 @@ export interface ComponentDefinition<ConfigType = any, PropsType = any> extends 
 	schema: z.ZodType<ConfigType, any, any>;
 	meta: ComponentMeta & { description: string };
 	component: React.ComponentType<PropsType & { children?: React.ReactNode }>;
-	/** Parses and validates raw config, applying `transformConfig` first. */
+	/** Parses and validates raw config, applying `transformConfig` first. Throws on any issue, including unknown keys. */
 	validateConfig: (data: unknown) => ConfigType;
+	/**
+	 * Lenient variant for live rendering and editors: unknown keys are stripped
+	 * and reported as warnings; anything else is reported as an error with no config.
+	 */
+	checkConfig: (data: unknown) => ConfigCheck<ConfigType>;
 	transformProps?: TransformProps<ConfigType, PropsType>;
 }
 
@@ -51,6 +74,11 @@ export interface CreateComponentArgs<
 	children?: ChildrenSpec;
 	/** Value semantics for fields. */
 	value?: ValueSpec;
+}
+
+/** Zod 4 paths may contain symbols; issue paths only keep string and number segments. */
+function issuePath(path: readonly PropertyKey[]): (string | number)[] {
+	return path.filter((segment): segment is string | number => typeof segment !== "symbol");
 }
 
 const registry = new Map<string, ComponentDefinition>();
@@ -94,6 +122,46 @@ export function createComponent<
 			}
 
 			return schema.parse(dataToParse) as ConfigType;
+		},
+		checkConfig: (rawData: unknown): ConfigCheck<ConfigType> => {
+			if (typeof rawData !== "object" || rawData === null) {
+				return { issues: [{ path: [], message: "Component configuration must be an object", severity: "error", code: "invalid_type" }] };
+			}
+			if ("type" in rawData && (rawData as any).type !== type) {
+				return { issues: [{ path: ["type"], message: `Expected component type "${type}" but received "${(rawData as any).type}"`, severity: "error", code: "custom" }] };
+			}
+
+			const dataToParse = transformConfig ? transformConfig(rawData as Record<string, any>) : (rawData as Record<string, any>);
+			const first = schema.safeParse(dataToParse);
+			if (first.success) {
+				return { config: first.data as ConfigType, issues: [] };
+			}
+
+			// Strip unrecognised keys (reported as warnings) and try once more.
+			const warnings: ConfigIssue[] = [];
+			const stripped = structuredClone(dataToParse);
+			for (const issue of first.error.issues) {
+				if (issue.code === "unrecognized_keys") {
+					const parent = issue.path.reduce<any>((acc, key) => (acc == null ? acc : acc[key as any]), stripped);
+					for (const key of (issue as any).keys as string[]) {
+						if (parent && typeof parent === "object") delete parent[key];
+						warnings.push({
+							path: [...issuePath(issue.path), key],
+							message: `Unknown property "${key}" for component type "${type}"; it was ignored`,
+							severity: "warning",
+							code: "unknown_key",
+						});
+					}
+				}
+			}
+			const second = warnings.length > 0 ? schema.safeParse(stripped) : first;
+			if (second.success) {
+				return { config: second.data as ConfigType, issues: warnings };
+			}
+			const errors: ConfigIssue[] = second.error.issues
+				.filter((issue) => issue.code !== "unrecognized_keys")
+				.map((issue) => ({ path: issuePath(issue.path), message: issue.message, severity: "error" as const, code: issue.code }));
+			return { issues: [...errors, ...warnings] };
 		},
 	};
 

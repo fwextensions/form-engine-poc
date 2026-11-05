@@ -3,6 +3,7 @@ import React from "react";
 import { z } from "zod";
 import { Control } from "@radix-ui/react-form";
 import { defineField } from "../../core/defineField";
+import { textValidationSchema } from "../../core/baseSchemas";
 import { inputClassName } from "./styles";
 
 export const TextareaConfigSchema = defineField({
@@ -13,6 +14,7 @@ export const TextareaConfigSchema = defineField({
 		placeholder: z.string().optional(),
 		defaultValue: z.string().optional(),
 		rows: z.number().optional(),
+		validation: textValidationSchema.optional(),
 	},
 	value: { empty: "" },
 	control: ({ config, value, setValue, inputProps }) => (
@@ -21,6 +23,8 @@ export const TextareaConfigSchema = defineField({
 				{...inputProps}
 				placeholder={config.placeholder}
 				rows={config.rows}
+				minLength={config.validation?.minLength}
+				maxLength={config.validation?.maxLength}
 				value={value}
 				onChange={(e) => setValue(e.target.value)}
 				className={inputClassName}

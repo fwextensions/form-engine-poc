@@ -72,6 +72,13 @@ export const DynamicRenderer: React.FC<DynamicRendererProps> = ({ config, ErrorC
 	}
 };
 
+const warned = new Set<string>();
+function warnOnce(key: string, message: string) {
+	if (warned.has(key)) return;
+	warned.add(key);
+	console.warn(message);
+}
+
 function resolve(
 	componentType: string,
 	config: object,
@@ -85,8 +92,15 @@ function resolve(
 		return { kind: "error", error };
 	}
 
-	// Use validateConfig to ensure transforms are applied before parsing
-	let validatedConfig = componentDef.validateConfig(config);
+	// Lenient check: unknown keys are stripped and reported once; real errors throw.
+	const check = componentDef.checkConfig(config);
+	for (const issue of check.issues) {
+		if (issue.severity === "warning") warnOnce(`${componentType}:${(config as any).id ?? ""}:${issue.path.join(".")}`, `DynamicRenderer: ${issue.message}`);
+	}
+	if (!check.config) {
+		throw new ZodError(check.issues.filter((i) => i.severity === "error").map((i) => ({ code: "custom" as const, path: i.path, message: i.message, input: config })));
+	}
+	let validatedConfig = check.config;
 
 	// Merge dynamic props from the rules engine. Deep merge so nested objects
 	// are preserved; dynamic props take precedence.
