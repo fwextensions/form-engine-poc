@@ -13,6 +13,12 @@ export { useFormMeta } from "./engine/useFormMeta";
 export type { FormConfig } from "./components/layout/Form";
 export type { PageConfig } from "./components/layout/Page";
 export {
+	defineField,
+	type DefineFieldArgs,
+	type FieldControlArgs,
+	type FieldInputProps,
+} from "./core/defineField";
+export {
 	createComponent,
 	getComponentDefinition,
 	getAllComponentDefinitions,

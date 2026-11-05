@@ -30,3 +30,9 @@ export const transition = "transition-all duration-200";
 
 // Common border radius
 export const borderRadius = "rounded";
+
+// Single-line class strings used by field controls. Keep each on one line so
+// Tailwind's source scanner picks every class up.
+export const inputClassName = "mt-1.5 block w-full px-3 py-2 border border-ink-100 rounded shadow-sm focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed";
+export const fileInputClassName = "mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500";
+export const optionLabelClassName = "block text-sm text-ink-700";
