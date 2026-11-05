@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import * as fc from "fast-check";
-import { getSettings, saveSettings, type LLMSettings, type LLMProvider } from "../settings";
+import { getSettings, saveSettings, LLM_PROVIDERS, type LLMSettings, type LLMProvider } from "../settings";
 
 // Configure fast-check
 fc.configureGlobal({
@@ -58,7 +58,7 @@ describe("Settings Storage - Property-Based Tests", () => {
      */
 
     // Generator for valid LLM providers
-    const providerArb = fc.constantFrom<LLMProvider>("anthropic", "openai", "google", "bedrock");
+    const providerArb = fc.constantFrom<LLMProvider>(...LLM_PROVIDERS);
 
     // Generator for non-empty strings (for API keys, models, etc.)
     const nonEmptyStringArb = fc.string({ minLength: 1, maxLength: 100 });
@@ -70,6 +70,7 @@ describe("Settings Storage - Property-Based Tests", () => {
       anthropicModel: fc.option(nonEmptyStringArb, { nil: undefined }),
       openaiModel: fc.option(nonEmptyStringArb, { nil: undefined }),
       googleModel: fc.option(nonEmptyStringArb, { nil: undefined }),
+      openrouterModel: fc.option(nonEmptyStringArb, { nil: undefined }),
       bedrockModel: fc.option(nonEmptyStringArb, { nil: undefined }),
       bedrockAuthMethod: fc.option(fc.constantFrom<"iam" | "apiKey">("iam", "apiKey"), { nil: undefined }),
       awsAccessKeyId: fc.option(nonEmptyStringArb, { nil: undefined }),
@@ -263,7 +264,7 @@ describe("Settings Storage - Property-Based Tests", () => {
             
             // Check types are preserved
             expect(typeof loaded.provider).toBe("string");
-            expect(["anthropic", "openai", "google", "bedrock"]).toContain(loaded.provider);
+            expect(LLM_PROVIDERS).toContain(loaded.provider);
             
             if (settings.apiKey !== undefined) {
               expect(typeof loaded.apiKey).toBe("string");

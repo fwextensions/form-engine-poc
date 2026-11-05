@@ -4,6 +4,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import type { LLMProvider } from "@/lib/settings";
 import { describeStreamError } from "./stream-error";
 
@@ -32,7 +33,7 @@ interface LLMRequest {
 /**
  * Creates a provider instance based on the provider type and credentials.
  * 
- * @param provider - The LLM provider type (anthropic, openai, google, bedrock)
+ * @param provider - The LLM provider type (anthropic, openai, google, openrouter, bedrock)
  * @param credentials - Provider-specific credentials
  * @returns A provider instance with a model method
  * @throws Error if required credentials are missing
@@ -71,6 +72,17 @@ export function createProvider(
 			}
 			return createGoogleGenerativeAI({
 				apiKey: credentials.apiKey,
+			});
+
+		case "openrouter":
+			if (!credentials.apiKey) {
+				throw new Error("API key is required for OpenRouter provider");
+			}
+			return createOpenRouter({
+				apiKey: credentials.apiKey,
+				compatibility: "strict",
+				// Optional attribution shown on the user's OpenRouter activity page.
+				headers: { "X-Title": "Form Editor" },
 			});
 
 		case "bedrock": {

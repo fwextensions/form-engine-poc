@@ -15,6 +15,11 @@ vi.mock("@/lib/settings", () => ({
 	getSettings: vi.fn(),
 	saveSettings: vi.fn(),
 	getServerCredentialStatus: vi.fn(),
+	subscribeToSettings: vi.fn(() => () => {}),
+}));
+
+vi.mock("@/lib/openrouter-auth", () => ({
+	startOpenRouterLogin: vi.fn(),
 }));
 
 describe("SettingsDialog", () => {
@@ -46,18 +51,36 @@ describe("SettingsDialog", () => {
 		expect(screen.queryByText("LLM Settings")).not.toBeInTheDocument();
 	});
 
-	it("should display provider dropdown with all four provider options", () => {
+	it("should display provider dropdown with all five provider options", () => {
 		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
 
 		const providerSelect = screen.getByLabelText("Provider");
 		expect(providerSelect).toBeInTheDocument();
 
 		const options = screen.getAllByRole("option");
-		expect(options).toHaveLength(4);
+		expect(options).toHaveLength(5);
 		expect(options[0]).toHaveTextContent("Anthropic (Claude)");
 		expect(options[1]).toHaveTextContent("OpenAI (GPT)");
 		expect(options[2]).toHaveTextContent("Google (Gemini)");
-		expect(options[3]).toHaveTextContent("Amazon Bedrock");
+		expect(options[3]).toHaveTextContent("OpenRouter");
+		expect(options[4]).toHaveTextContent("Amazon Bedrock");
+	});
+
+	it("should offer the OpenRouter login and save the OpenRouter model", async () => {
+		const { startOpenRouterLogin } = await import("@/lib/openrouter-auth");
+		render(<SettingsDialog open={true} onOpenChange={() => {}} />);
+
+		fireEvent.change(screen.getByLabelText("Provider"), { target: { value: "openrouter" } });
+		fireEvent.click(screen.getByRole("button", { name: "Connect OpenRouter account" }));
+		expect(startOpenRouterLogin).toHaveBeenCalledOnce();
+
+		fireEvent.change(screen.getByLabelText("Model (Optional)"), {
+			target: { value: "openai/gpt-5" },
+		});
+		fireEvent.click(screen.getByRole("button", { name: "Save" }));
+		expect(settings.saveSettings).toHaveBeenCalledWith(
+			expect.objectContaining({ provider: "openrouter", openrouterModel: "openai/gpt-5" }),
+		);
 	});
 
 	it("should display API key password input", () => {

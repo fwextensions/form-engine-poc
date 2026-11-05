@@ -3,9 +3,14 @@
  * Manages API keys and provider settings in localStorage.
  */
 
-const SETTINGS_KEY = "form-editor-llm-settings";
+export const SETTINGS_KEY = "form-editor-llm-settings";
 
-export type LLMProvider = "anthropic" | "openai" | "google" | "bedrock";
+export type LLMProvider = "anthropic" | "openai" | "google" | "openrouter" | "bedrock";
+
+export const LLM_PROVIDERS: readonly LLMProvider[] = ["anthropic", "openai", "google", "openrouter", "bedrock"];
+
+/** Fired on `window` after settings are saved in this tab (other tabs get a `storage` event). */
+export const SETTINGS_CHANGED_EVENT = "form-editor-settings-changed";
 
 export type BedrockAuthMethod = "iam" | "apiKey";
 
@@ -16,6 +21,7 @@ export interface LLMSettings {
 	anthropicModel?: string;
 	openaiModel?: string;
 	googleModel?: string;
+	openrouterModel?: string;
 	bedrockModel?: string;
 	// AWS Bedrock specific credentials
 	bedrockAuthMethod?: BedrockAuthMethod;
@@ -35,6 +41,7 @@ export const DEFAULT_MODELS: Record<LLMProvider, string> = {
 	anthropic: "claude-sonnet-4-20250514",
 	openai: "gpt-4o",
 	google: "gemini-2.0-flash",
+	openrouter: "anthropic/claude-sonnet-4.5",
 	bedrock: "us.anthropic.claude-haiku-4-5-20251001-v1:0",
 };
 
@@ -57,6 +64,8 @@ export function getModelForProvider(settings: LLMSettings): string {
 			return settings.openaiModel || DEFAULT_MODELS.openai;
 		case "google":
 			return settings.googleModel || DEFAULT_MODELS.google;
+		case "openrouter":
+			return settings.openrouterModel || DEFAULT_MODELS.openrouter;
 		case "bedrock":
 			return settings.bedrockModel || DEFAULT_MODELS.bedrock;
 		default:
@@ -87,12 +96,7 @@ export function getSettings(): LLMSettings {
 		}
 
 		// Validate provider is valid
-		if (
-			parsed.provider !== "anthropic" &&
-			parsed.provider !== "openai" &&
-			parsed.provider !== "google" &&
-			parsed.provider !== "bedrock"
-		) {
+		if (!LLM_PROVIDERS.includes(parsed.provider)) {
 			return DEFAULT_SETTINGS;
 		}
 
@@ -102,6 +106,7 @@ export function getSettings(): LLMSettings {
 			anthropicModel: typeof parsed.anthropicModel === "string" ? parsed.anthropicModel : undefined,
 			openaiModel: typeof parsed.openaiModel === "string" ? parsed.openaiModel : undefined,
 			googleModel: typeof parsed.googleModel === "string" ? parsed.googleModel : undefined,
+			openrouterModel: typeof parsed.openrouterModel === "string" ? parsed.openrouterModel : undefined,
 			bedrockModel: typeof parsed.bedrockModel === "string" ? parsed.bedrockModel : undefined,
 			bedrockAuthMethod: parsed.bedrockAuthMethod === "iam" || parsed.bedrockAuthMethod === "apiKey"
 				? parsed.bedrockAuthMethod
@@ -135,6 +140,7 @@ export function saveSettings(settings: LLMSettings): void {
 			anthropicModel: settings.anthropicModel,
 			openaiModel: settings.openaiModel,
 			googleModel: settings.googleModel,
+			openrouterModel: settings.openrouterModel,
 			bedrockModel: settings.bedrockModel,
 			bedrockAuthMethod: settings.bedrockAuthMethod,
 			awsAccessKeyId: settings.awsAccessKeyId,
@@ -151,6 +157,10 @@ export function saveSettings(settings: LLMSettings): void {
 		throw new Error("Failed to save settings. Storage may be full.", {
 			cause: error,
 		});
+	}
+
+	if (typeof window.dispatchEvent === "function") {
+		window.dispatchEvent(new Event(SETTINGS_CHANGED_EVENT));
 	}
 }
 
@@ -242,9 +252,27 @@ export function hasApiKey(): boolean {
 		case "anthropic":
 		case "openai":
 		case "google":
+		case "openrouter":
 			// Other providers require API key
 			return typeof settings.apiKey === "string" && settings.apiKey.length > 0;
 		default:
 			return false;
 	}
+}
+
+/**
+ * Subscribes to settings changes made in this tab or another one (e.g. the
+ * OpenRouter login popup). Returns an unsubscribe function.
+ */
+export function subscribeToSettings(callback: () => void): () => void {
+	if (typeof window === "undefined") return () => {};
+	const onStorage = (event: StorageEvent) => {
+		if (event.key === SETTINGS_KEY) callback();
+	};
+	window.addEventListener(SETTINGS_CHANGED_EVENT, callback);
+	window.addEventListener("storage", onStorage);
+	return () => {
+		window.removeEventListener(SETTINGS_CHANGED_EVENT, callback);
+		window.removeEventListener("storage", onStorage);
+	};
 }

@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { getSettings, saveSettings, getServerCredentialStatus, type LLMProvider } from "@/lib/settings";
+import { getSettings, saveSettings, getServerCredentialStatus, subscribeToSettings, type LLMProvider } from "@/lib/settings";
+import { startOpenRouterLogin } from "@/lib/openrouter-auth";
 
 interface SettingsDialogProps {
 	open: boolean;
@@ -24,6 +25,7 @@ export default function SettingsDialog({
 	const [anthropicModel, setAnthropicModel] = useState("");
 	const [openaiModel, setOpenaiModel] = useState("");
 	const [googleModel, setGoogleModel] = useState("");
+	const [openrouterModel, setOpenrouterModel] = useState("");
 	const [bedrockModel, setBedrockModel] = useState("");
 	const [bedrockAuthMethod, setBedrockAuthMethod] = useState<"iam" | "apiKey">("iam");
 	const [awsAccessKeyId, setAwsAccessKeyId] = useState("");
@@ -42,6 +44,7 @@ export default function SettingsDialog({
 				setAnthropicModel(settings.anthropicModel || "");
 				setOpenaiModel(settings.openaiModel || "");
 				setGoogleModel(settings.googleModel || "");
+				setOpenrouterModel(settings.openrouterModel || "");
 				setBedrockModel(settings.bedrockModel || "");
 				setBedrockAuthMethod(settings.bedrockAuthMethod || "iam");
 				setAwsAccessKeyId(settings.awsAccessKeyId || "");
@@ -53,6 +56,18 @@ export default function SettingsDialog({
 		}
 	}, [open]);
 
+	// The OpenRouter login popup saves the new key straight to settings.
+	useEffect(() => {
+		if (!open) return;
+		return subscribeToSettings(() => {
+			const settings = getSettings();
+			if (settings.provider === "openrouter") {
+				setProvider("openrouter");
+				setApiKey(settings.apiKey || "");
+			}
+		});
+	}, [open]);
+
 	const handleSave = () => {
 		try {
 			saveSettings({
@@ -61,6 +76,7 @@ export default function SettingsDialog({
 				anthropicModel: anthropicModel.trim() || undefined,
 				openaiModel: openaiModel.trim() || undefined,
 				googleModel: googleModel.trim() || undefined,
+				openrouterModel: openrouterModel.trim() || undefined,
 				bedrockModel: bedrockModel.trim() || undefined,
 				bedrockAuthMethod: provider === "bedrock" ? bedrockAuthMethod : undefined,
 				awsAccessKeyId: awsAccessKeyId.trim() || undefined,
@@ -116,11 +132,30 @@ export default function SettingsDialog({
 								<option value="anthropic">Anthropic (Claude)</option>
 								<option value="openai">OpenAI (GPT)</option>
 								<option value="google">Google (Gemini)</option>
+								<option value="openrouter">OpenRouter (any model, your credits)</option>
 								<option value="bedrock">Amazon Bedrock</option>
 							</select>
 						</div>
 
-						{/* API Key Input (for Anthropic, OpenAI, Google) */}
+						{/* OpenRouter login: creates a key on the user's own account */}
+						{provider === "openrouter" && (
+							<div className="rounded border border-slate-200 bg-slate-50 p-3 text-sm">
+								<button
+									type="button"
+									onClick={startOpenRouterLogin}
+									className="bg-slate-800 hover:bg-slate-900 text-white font-medium py-2 px-3 rounded text-sm transition-colors"
+								>
+									{apiKey ? "Reconnect OpenRouter account" : "Connect OpenRouter account"}
+								</button>
+								<p className="text-xs text-slate-600 mt-2">
+									{apiKey
+										? "Connected. Usage is billed to your OpenRouter credits."
+										: "Sign in to OpenRouter to create a key billed to your own credits, or paste a key below."}
+								</p>
+							</div>
+						)}
+
+						{/* API Key Input (for Anthropic, OpenAI, Google, OpenRouter) */}
 						{provider !== "bedrock" && (
 							<div>
 								<label
@@ -288,6 +323,8 @@ export default function SettingsDialog({
 										? openaiModel
 										: provider === "google"
 										? googleModel
+										: provider === "openrouter"
+										? openrouterModel
 										: bedrockModel
 								}
 								onChange={(e) => {
@@ -295,6 +332,7 @@ export default function SettingsDialog({
 									if (provider === "anthropic") setAnthropicModel(value);
 									else if (provider === "openai") setOpenaiModel(value);
 									else if (provider === "google") setGoogleModel(value);
+									else if (provider === "openrouter") setOpenrouterModel(value);
 									else setBedrockModel(value);
 								}}
 								placeholder={
@@ -304,6 +342,8 @@ export default function SettingsDialog({
 										? "e.g., gpt-4o"
 										: provider === "google"
 										? "e.g., gemini-2.0-flash"
+										: provider === "openrouter"
+										? "e.g., anthropic/claude-sonnet-4.5"
 										: "e.g., anthropic.claude-3-sonnet-20240229-v1:0"
 								}
 								className="w-full bg-white border border-slate-300 rounded py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"

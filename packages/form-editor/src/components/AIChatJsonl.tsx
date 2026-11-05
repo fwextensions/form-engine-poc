@@ -9,6 +9,7 @@ import {
 import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import {
 	hasApiKey,
+	subscribeToSettings,
 	getSettings,
 	fetchServerCredentialStatus,
 	saveSettings,
@@ -88,6 +89,8 @@ function AIChatJsonlInner({
 			}
 			setHasKey(hasApiKey());
 		});
+		// Pick up keys saved later (settings dialog, OpenRouter login popup).
+		return subscribeToSettings(() => setHasKey(hasApiKey()));
 	}, []);
 
 	const isEmpty = threadIsEmpty;

@@ -50,9 +50,10 @@ describe("settings", () => {
 			expect(DEFAULT_MODELS.bedrock).toBe("us.anthropic.claude-haiku-4-5-20251001-v1:0");
 		});
 
-		it("should have all four providers defined", () => {
+		it("should have every provider defined", () => {
 			const providers = Object.keys(DEFAULT_MODELS);
-			expect(providers).toHaveLength(4);
+			expect(providers).toHaveLength(5);
+			expect(providers).toContain("openrouter");
 			expect(providers).toContain("anthropic");
 			expect(providers).toContain("openai");
 			expect(providers).toContain("google");

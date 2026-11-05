@@ -61,6 +61,24 @@ describe("Provider Factory", () => {
 		});
 	});
 
+	describe("OpenRouter Provider", () => {
+		it("should throw error when API key is missing", () => {
+			expect(() => {
+				createProvider("openrouter", {});
+			}).toThrow("API key is required for OpenRouter provider");
+		});
+
+		it("should create OpenRouter provider with valid API key", () => {
+			const provider = createProvider("openrouter", {
+				apiKey: "test-api-key",
+			});
+
+			expect(provider).toBeDefined();
+			expect(typeof provider).toBe("function");
+			expect(provider("anthropic/claude-sonnet-4.5").modelId).toBe("anthropic/claude-sonnet-4.5");
+		});
+	});
+
 	describe("Bedrock Provider", () => {
 		it("should throw error when AWS credentials are missing", () => {
 			expect(() => {
