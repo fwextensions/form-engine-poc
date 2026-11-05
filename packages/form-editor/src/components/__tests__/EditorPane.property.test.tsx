@@ -12,7 +12,7 @@ import * as fc from "fast-check";
 import EditorPane from "../EditorPane";
 
 // Mock Monaco Editor
-vi.mock("@monaco-editor/react", async () => {
+vi.mock("../YamlEditor", async () => {
 	const { MockMonacoEditor } = await import("./monaco-mock");
 	return { default: MockMonacoEditor };
 });

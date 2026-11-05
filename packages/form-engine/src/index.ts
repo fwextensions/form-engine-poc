@@ -53,8 +53,10 @@ export {
 	// JSON Schema utilities
 	catalogToJsonSchema,
 	catalogToUnifiedJsonSchema,
+	catalogToFormJsonSchema,
 	entryToJsonSchema,
 	type CatalogToJsonSchemaOptions,
+	type CatalogToFormJsonSchemaOptions,
 	// LLM Prompt Generation utilities
 	generateCatalogPrompt,
 	generateComponentExample,

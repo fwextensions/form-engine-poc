@@ -5,7 +5,7 @@ import * as Tabs from "@radix-ui/react-tabs";
 import * as Toolbar from "@radix-ui/react-toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
 import { UndoIcon, RedoIcon } from "./icons";
-import Editor from "@monaco-editor/react";
+import YamlEditor from "./YamlEditor";
 import AIChatJsonl from "./AIChatJsonl";
 import type { SchemaComponent, PatchOp } from "@/lib/jsonl";
 import type { UIMessage } from "ai";
@@ -162,9 +162,7 @@ const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function Editor
 
 			{/* YAML Editor Tab Content */}
 			<Tabs.Content value="yaml" className="flex-1 overflow-hidden">
-				<Editor
-					height="100%"
-					language="yaml"
+				<YamlEditor
 					defaultValue={schema}
 					onMount={(editor) => {
 						editorRef.current = editor;
@@ -173,12 +171,6 @@ const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>(function Editor
 						const nextSchema = value || "";
 						localSchemaEchoesRef.current.add(nextSchema);
 						onSchemaChange(nextSchema);
-					}}
-					options={{
-						minimap: { enabled: false },
-						scrollBeyondLastLine: false,
-						automaticLayout: true,
-						wordWrap: "on",
 					}}
 				/>
 			</Tabs.Content>

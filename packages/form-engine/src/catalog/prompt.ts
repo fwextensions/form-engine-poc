@@ -4,7 +4,8 @@
 import { z } from "zod";
 import * as yaml from "js-yaml";
 import { zodSchemaToJsonSchema } from "./toJsonSchema";
-import { entryAllowsChildren, type Catalog, type CatalogEntry } from "./catalog";
+import { entryAllowsChildren, resolveAllowedChildren, type Catalog, type CatalogEntry } from "./catalog";
+import { ruleSchema } from "../core/baseSchemas";
 
 export interface CatalogPromptOptions {
 	/** Include YAML examples for each component */
@@ -35,7 +36,7 @@ export function generateCatalogPrompt(
 
 	for (const type of componentTypes) {
 		const entry = catalog.components[type];
-		sections.push(formatComponentDocumentation(type, entry, includeExamples));
+		sections.push(formatComponentDocumentation(type, entry, includeExamples, catalog));
 	}
 
 	// 3. Schema structure rules
@@ -193,7 +194,8 @@ function getConstraints(schema: any): string[] {
 function formatComponentDocumentation(
 	type: string,
 	entry: CatalogEntry,
-	includeExamples: boolean
+	includeExamples: boolean,
+	catalog?: Catalog,
 ): string {
 	const lines: string[] = [];
 
@@ -206,7 +208,8 @@ function formatComponentDocumentation(
 
 	// Children capability
 	if (entryAllowsChildren(entry)) {
-		lines.push("\n**Can contain children:** Yes");
+		const allowed = catalog ? resolveAllowedChildren(catalog, entry).sort() : [];
+		lines.push(`\n**Can contain children:** Yes${allowed.length ? ` (allowed types: ${allowed.join(", ")})` : ""}`);
 	}
 
 	// Properties
@@ -492,17 +495,13 @@ rules:
           required: true
 \`\`\`
 
-### When Conditions
+### Rule Properties
 
-- **field**: The ID of the field to check
-- **is**: The expected value (can be string, number, boolean, etc.)
-- Multiple conditions can be specified as an array (AND logic)
+${formatPropsFromZodSchema(ruleSchema)}
 
-### Then Actions
-
-- **set**: Updates component properties dynamically
-  - Can set any property: \`hidden\`, \`required\`, \`disabled\`, \`label\`, etc.
-- **log**: Outputs debug messages (useful for development)
+- \`when\` is an equality check: \`field\` is the id of the field to read and \`is\` the value it must equal. An array of conditions means all must match (AND).
+- \`whenLogic\` is a JSONLogic expression evaluated against \`{ formData, context }\`; use it for anything beyond equality.
+- \`then\` actions: \`set\` merges properties into the component while the condition holds (any property, e.g. \`hidden\`, \`required\`, \`disabled\`, \`label\`); \`log\` prints debug messages.
 
 ### Example: Conditional Required Field
 

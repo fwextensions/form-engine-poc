@@ -1,7 +1,7 @@
 // packages/form-engine/src/catalog/toJsonSchema.ts
 // Utility for converting catalog to JSON Schema
 import { z } from "zod";
-import type { Catalog } from "./catalog";
+import { resolveAllowedChildren, type Catalog } from "./catalog";
 
 /**
  * Options for JSON Schema generation.
@@ -96,5 +96,64 @@ export function catalogToUnifiedJsonSchema(
 		title: name,
 		definitions,
 		oneOf,
+	};
+}
+
+export interface CatalogToFormJsonSchemaOptions {
+	/** Component type the document root must be. Default `"form"`. */
+	rootType?: string;
+	title?: string;
+	/** Identifier placed in `$id`, useful when registering the schema with an editor. */
+	id?: string;
+}
+
+/**
+ * Builds the one JSON Schema (draft 2020-12) that describes a whole form
+ * document: every component type becomes a `$defs` entry, and each layout
+ * component's `children` is wired to the types its `children.allow/deny`
+ * spec permits. The document root must be `rootType`.
+ *
+ * This is the schema served to editors (VS Code, Monaco) and used to validate
+ * complete documents; the renderer and exporters keep using the Zod schemas.
+ */
+export function catalogToFormJsonSchema(
+	catalog: Catalog,
+	options: CatalogToFormJsonSchemaOptions = {},
+): Record<string, any> {
+	const { rootType = "form", title = "Form Engine Schema", id } = options;
+	if (!catalog.components[rootType]) {
+		throw new Error(`catalogToFormJsonSchema: root type "${rootType}" is not in the catalog`);
+	}
+
+	const $defs: Record<string, any> = {};
+
+	for (const [type, entry] of Object.entries(catalog.components)) {
+		const schema = { ...zodSchemaToJsonSchema(entry.schema) };
+		delete schema.$schema;
+		schema.title = type;
+		if (entry.meta?.description) {
+			schema.description = entry.meta.description;
+		}
+
+		if (entry.children && schema.properties?.children) {
+			const allowed = resolveAllowedChildren(catalog, entry).sort();
+			const refs = allowed.map((childType) => ({ $ref: `#/$defs/${childType}` }));
+			schema.properties.children = {
+				...schema.properties.children,
+				type: "array",
+				items: refs.length === 1 ? refs[0] : { anyOf: refs },
+				description: `Child components. Allowed types: ${allowed.join(", ")}`,
+			};
+		}
+
+		$defs[type] = schema;
+	}
+
+	return {
+		$schema: "https://json-schema.org/draft/2020-12/schema",
+		...(id ? { $id: id } : {}),
+		title,
+		$ref: `#/$defs/${rootType}`,
+		$defs,
 	};
 }

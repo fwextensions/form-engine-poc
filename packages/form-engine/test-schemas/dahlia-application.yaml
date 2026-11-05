@@ -1,4 +1,6 @@
 # Form Engine System Feature Suggestion: Consider implementing a "Save and finish later" functionality for long forms.
+type: form
+id: housingApplication
 title: "Housing Application Example"
 #display: singlepage
 # Page Navigation based on screenshots: YOU, HOUSEHOLD, INCOME, PREFERENCES, REVIEW

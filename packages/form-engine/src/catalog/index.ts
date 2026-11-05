@@ -29,8 +29,10 @@ export {
 export {
 	catalogToJsonSchema,
 	catalogToUnifiedJsonSchema,
+	catalogToFormJsonSchema,
 	entryToJsonSchema,
 	type CatalogToJsonSchemaOptions,
+	type CatalogToFormJsonSchemaOptions,
 } from "./toJsonSchema";
 
 // LLM Prompt Generation utilities

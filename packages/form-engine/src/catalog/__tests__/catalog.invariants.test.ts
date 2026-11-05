@@ -7,7 +7,8 @@ import * as fs from "fs";
 import * as path from "path";
 import * as yaml from "js-yaml";
 import "../../components";
-import { getAllComponentDefinitions, getComponentDefinition, getRegisteredCatalog } from "../../core/componentFactory";
+import { getAllComponentDefinitions, getRegisteredCatalog } from "../../core/componentFactory";
+import { validateSchemaTree } from "../../core/schemaParser";
 import { catalogToJsonSchema } from "../toJsonSchema";
 import { generateCatalogPrompt } from "../prompt";
 
@@ -57,28 +58,9 @@ describe("committed example schemas", () => {
 	const dir = path.resolve(__dirname, "../../../test-schemas");
 	const files = fs.readdirSync(dir).filter((f) => f.endsWith(".yaml"));
 
-	function walk(node: unknown, visit: (n: Record<string, unknown>) => void) {
-		if (!node || typeof node !== "object") return;
-		const rec = node as Record<string, unknown>;
-		if (typeof rec.type === "string") visit(rec);
-		if (Array.isArray(rec.children)) rec.children.forEach((c) => walk(c, visit));
-	}
-
 	it.each(files)("%s validates against the registry", (file) => {
 		const raw = yaml.load(fs.readFileSync(path.join(dir, file), "utf8"));
-		const problems: string[] = [];
-		walk(raw, (node) => {
-			const def = getComponentDefinition(node.type as string);
-			if (!def) {
-				problems.push(`${node.id ?? "?"}: unknown type "${node.type}"`);
-				return;
-			}
-			try {
-				def.validateConfig(node);
-			} catch (e) {
-				problems.push(`${node.id ?? "?"} (${node.type}): ${(e as Error).message.split("\n")[0]}`);
-			}
-		});
+		const problems = validateSchemaTree(raw).map((issue) => `${issue.severity} ${issue.path}: ${issue.message}`);
 		expect(problems).toEqual([]);
 	});
 
