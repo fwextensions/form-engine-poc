@@ -386,4 +386,32 @@ describe("LLM API Route", () => {
 			}).toThrow("Unsupported provider");
 		});
 	});
+
+	describe("stream errors", () => {
+		it("gives the client the provider's reason instead of the SDK default", async () => {
+			const toUIMessageStreamResponse = vi.fn(() => new Response("stream"));
+			(streamText as any).mockImplementation(() => ({ toUIMessageStreamResponse }));
+
+			const request = new NextRequest("http://localhost/api/llm", {
+				method: "POST",
+				body: JSON.stringify({
+					provider: "anthropic",
+					model: "claude-3-sonnet",
+					messages: [{ role: "user", content: "test" }],
+					apiKey: "key",
+				}),
+			});
+			await POST(request);
+
+			expect(toUIMessageStreamResponse).toHaveBeenCalledTimes(1);
+			const { onError } = (toUIMessageStreamResponse.mock.calls[0] as any[])[0];
+			expect(typeof onError).toBe("function");
+
+			(APICallError.isInstance as any).mockReturnValue(true);
+			const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+			expect(onError({ statusCode: 403, responseBody: '{"Message":"Please make sure your API Key is valid."}', message: "Forbidden" }))
+				.toBe("Authentication failed: Please make sure your API Key is valid.");
+			consoleError.mockRestore();
+		});
+	});
 });
