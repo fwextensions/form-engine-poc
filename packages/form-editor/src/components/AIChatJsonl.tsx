@@ -4,7 +4,7 @@ import React, { useState, useRef, useCallback, useSyncExternalStore } from "reac
 import {
 	AssistantRuntimeProvider,
 	ThreadPrimitive,
-	useThread,
+	useAuiState,
 } from "@assistant-ui/react";
 import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import {
@@ -66,7 +66,8 @@ function AIChatJsonlInner({
 	onPdfExtracted: (result: PdfExtractionResult, filename: string) => void;
 	onPdfAttachDirectly: (pdf: PdfFile) => void;
 }) {
-	const thread = useThread();
+	const threadIsEmpty = useAuiState((s) => s.thread.messages.length === 0);
+	const threadIsRunning = useAuiState((s) => s.thread.isRunning);
 
 	const isClient = useSyncExternalStore(
 		subscribeToClientSnapshot,
@@ -89,13 +90,13 @@ function AIChatJsonlInner({
 		});
 	}, []);
 
-	const isEmpty = thread.messages.length === 0;
+	const isEmpty = threadIsEmpty;
 
 	return (
 		<PdfDropZone
 			onExtracted={onPdfExtracted}
 			onAttachDirectly={onPdfAttachDirectly}
-			disabled={thread.isRunning}
+			disabled={threadIsRunning}
 		>
 			<ThreadPrimitive.Root className="flex-1 overflow-hidden relative">
 				{isEmpty ? (
