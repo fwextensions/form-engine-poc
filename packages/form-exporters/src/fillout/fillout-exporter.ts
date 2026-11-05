@@ -21,6 +21,7 @@ import {
   dropdownTemplate,
   multipleChoiceTemplate,
   checkboxTemplate,
+  checkboxesTemplate,
   datePickerTemplate,
   numberInputTemplate,
   phoneNumberTemplate,
@@ -129,10 +130,13 @@ function validateNode(
 
 // ─── Component mappers ────────────────────────────────────────────────────────
 
+type MappedWidget = { type: string; template: Record<string, unknown> };
+
+/** A mapper returns one widget, several (composite fields), or null to skip. */
 type WidgetMapper = (
   node: SchemaNode,
   diagnostics: ExportDiagnostic[]
-) => { type: string; template: Record<string, unknown> } | null;
+) => MappedWidget | MappedWidget[] | null;
 
 const componentMappers: Record<string, WidgetMapper> = {
   text: (node) => ({
@@ -201,6 +205,62 @@ const componentMappers: Record<string, WidgetMapper> = {
     template: checkboxTemplate(labelOf(node), baseOpts(node)),
   }),
 
+  checkboxgroup: (node, diagnostics) => {
+    if (!node.options?.length) {
+      diagnostics.push({
+        severity: "warning",
+        componentId: node.id,
+        componentType: "checkboxgroup",
+        message: "Checkbox group has no options; exported as empty Checkboxes.",
+      });
+    }
+    return {
+      type: "Checkboxes",
+      template: checkboxesTemplate(labelOf(node), mapOptions(node.options ?? []), baseOpts(node)),
+    };
+  },
+
+  yesno: (node) => ({
+    type: "MultipleChoice",
+    template: multipleChoiceTemplate(
+      labelOf(node),
+      [
+        { label: (node.yesLabel as string | undefined) ?? "Yes", value: "yes" },
+        { label: (node.noLabel as string | undefined) ?? "No", value: "no" },
+      ],
+      { ...baseOpts(node), layout: "wrap", defaultValue: node.defaultValue === true ? "yes" : node.defaultValue === false ? "no" : undefined },
+    ),
+  }),
+
+  name: (node) => {
+    const label = labelOf(node);
+    const prefix = label ? `${label}: ` : "";
+    const opts = { ...baseOpts(node), placeholder: undefined, defaultValue: undefined };
+    const parts: MappedWidget[] = [
+      { type: "ShortAnswer", template: shortAnswerTemplate(`${prefix}First name`, opts) },
+    ];
+    if (node.showMiddleName !== false) {
+      parts.push({ type: "ShortAnswer", template: shortAnswerTemplate(`${prefix}Middle name`, { ...opts, required: false }) });
+    }
+    parts.push({ type: "ShortAnswer", template: shortAnswerTemplate(`${prefix}Last name`, opts) });
+    return parts;
+  },
+
+  dateOfBirth: (node, diagnostics) => {
+    if (node.minAge !== undefined || node.maxAge !== undefined) {
+      diagnostics.push({
+        severity: "info",
+        componentId: node.id,
+        componentType: "dateOfBirth",
+        message: `Age limits on "${node.id ?? "dateOfBirth"}" (minAge/maxAge) are not enforced by the Fillout date picker.`,
+      });
+    }
+    return {
+      type: "DatePicker",
+      template: datePickerTemplate(labelOf(node), baseOpts(node)),
+    };
+  },
+
   date: (node) => ({
     type: "DatePicker",
     template: datePickerTemplate(labelOf(node), baseOpts(node)),
@@ -265,10 +325,10 @@ function emitFeatureDiagnostics(node: SchemaNode, diagnostics: ExportDiagnostic[
 }
 
 /**
- * Converts one validated leaf node into a Fillout widget, or null when it has
- * no mapping (a diagnostic is recorded).
+ * Converts one validated leaf node into Fillout widgets (usually one; several
+ * for composite fields). Unmapped types produce a diagnostic and no widgets.
  */
-function processComponent(node: SchemaNode, diagnostics: ExportDiagnostic[]): FilloutWidget | null {
+function processComponent(node: SchemaNode, diagnostics: ExportDiagnostic[]): FilloutWidget[] {
   emitFeatureDiagnostics(node, diagnostics);
 
   const mapper = componentMappers[node.type];
@@ -279,19 +339,33 @@ function processComponent(node: SchemaNode, diagnostics: ExportDiagnostic[]): Fi
       componentType: node.type,
       message: `Component type "${node.type}" has no Fillout mapping and was skipped.`,
     });
-    return null;
+    return [];
   }
 
   const result = mapper(node, diagnostics);
-  if (!result) return null;
+  if (!result) return [];
+  const mapped = Array.isArray(result) ? result : [result];
 
-  return {
+  return mapped.map((widget) => ({
     id: genId(),
-    name: `${result.type} field`,
-    type: result.type,
+    name: `${widget.type} field`,
+    type: widget.type,
     position: { row: 0, column: 0 }, // row set by caller
-    template: result.template,
-  };
+    template: widget.template,
+  }));
+}
+
+/** A heading widget for a layout group (section) that carries a title or description. */
+function headingWidget(node: SchemaNode): FilloutWidget | null {
+  const title = typeof node.title === "string" ? node.title.trim() : "";
+  const description = typeof node.description === "string" ? node.description.trim() : "";
+  if (!title && !description) return null;
+  const html = `${title ? `<h3>${escapeHtml(title)}</h3>` : ""}${description ? `<p>${escapeHtml(description)}</p>` : ""}`;
+  return { id: genId(), name: "Html field", type: "Html", position: { row: 0, column: 0 }, template: htmlTemplate(html) };
+}
+
+function escapeHtml(text: string): string {
+  return text.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] ?? c);
 }
 
 /**
@@ -307,11 +381,15 @@ function collectWidgets(children: unknown[], diagnostics: ExportDiagnostic[], wi
     }
     const { node, definition } = validateNode(raw as RawSchemaNode, diagnostics);
     if (definition?.kind === "layout") {
+      const heading = headingWidget(node);
+      if (heading) {
+        heading.position.row = widgets.length;
+        widgets.push(heading);
+      }
       collectWidgets(Array.isArray(node.children) ? node.children : [], diagnostics, widgets);
       continue;
     }
-    const widget = processComponent(node, diagnostics);
-    if (widget) {
+    for (const widget of processComponent(node, diagnostics)) {
       widget.position.row = widgets.length;
       widgets.push(widget);
     }

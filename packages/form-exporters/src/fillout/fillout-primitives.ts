@@ -171,6 +171,24 @@ export function multipleChoiceTemplate(
   };
 }
 
+/** Fillout "Checkboxes": select any number of options. */
+export function checkboxesTemplate(
+  label: string,
+  choices: FilloutSelectOption[],
+  opts: WidgetBaseOpts = {}
+) {
+  return {
+    label: ps(label),
+    ...widgetBase(opts),
+    layout: "single_column" as const,
+    options: makeOptions(choices),
+    defaultValue: ps("", ["string", "null"]),
+    optionsToShow: [] as never[],
+    optionsMappings: false,
+    randomizeOptionsOrder: false,
+  };
+}
+
 export function checkboxTemplate(
   label: string,
   opts: WidgetBaseOpts = {}
