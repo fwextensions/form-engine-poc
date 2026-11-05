@@ -1,10 +1,18 @@
 /**
  * fillout-exporter.ts
  *
- * Converts a form-engine FormConfig schema into Fillout export JSON (v2).
+ * Converts a form-engine schema into Fillout export JSON (v2).
  * Best-effort: always produces output, with diagnostics for unmappable features.
+ *
+ * The exporter is driven by the form-engine component registry: every node is
+ * validated through its component's own schema first (so label asterisks,
+ * top-level `required`, option shorthand and any other normalisation happen in
+ * exactly one place), and the tree is walked by component `kind` rather than
+ * by hard-coded type names.
  */
 
+import { ZodError } from "zod";
+import { getComponentDefinition, type ComponentDefinition } from "form-engine";
 import type { ExportDiagnostic, ExportResult } from "../types";
 import {
   genId,
@@ -27,12 +35,11 @@ import {
   type WidgetBaseOpts,
 } from "./fillout-primitives";
 
-// ─── Schema node types (loosely typed to match form-engine's passthrough schemas) ─
+// ─── Schema node types ────────────────────────────────────────────────────────
 
 /**
- * A generic schema node from form-engine. We use a loose interface here rather
- * than importing concrete types, so the exporter works with raw parsed schemas
- * regardless of whether the form-engine component modules have been imported.
+ * A validated form-engine node. Field-specific props are optional because the
+ * mappers are keyed by type and only read what their type declares.
  */
 interface SchemaNode {
   type: string;
@@ -43,7 +50,6 @@ interface SchemaNode {
   defaultValue?: unknown;
   disabled?: boolean;
   hidden?: boolean;
-  required?: boolean;
   validation?: { required?: boolean; [key: string]: unknown };
   options?: Array<{ label: string; value?: unknown }>;
   rows?: number;
@@ -52,61 +58,73 @@ interface SchemaNode {
   min?: unknown;
   max?: unknown;
   content?: string;
-  tag?: string;
-  className?: string;
   title?: string;
-  children?: SchemaNode[];
+  children?: unknown[];
   rules?: unknown[];
   condition?: unknown;
   [key: string]: unknown;
 }
 
+/** The raw, unvalidated input shape accepted by `exportToFillout`. */
+export interface RawSchemaNode {
+  type: string;
+  [key: string]: unknown;
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Extract the effective label from a form-engine node, handling the asterisk
- * notation for required fields (e.g. "Name*" -> "Name").
- */
-function extractLabel(node: SchemaNode): {
-  label: string;
-  requiredFromAsterisk: boolean;
-} {
-  const raw = node.label ?? "";
-  const trimmed = raw.trim();
-  if (trimmed.endsWith("*")) {
-    return { label: trimmed.slice(0, -1).trim(), requiredFromAsterisk: true };
-  }
-  return { label: trimmed, requiredFromAsterisk: false };
+function labelOf(node: SchemaNode): string {
+  return (node.label ?? "").trim();
 }
 
-/** Determine if a field is required from any source. */
 function isRequired(node: SchemaNode): boolean {
-  if (node.validation?.required) return true;
-  if (node.required) return true;
-  const { requiredFromAsterisk } = extractLabel(node);
-  return requiredFromAsterisk;
+  return node.validation?.required === true;
 }
 
-/** Build common Fillout widget opts from a form-engine field node. */
+/** Build common Fillout widget opts from a validated field node. */
 function baseOpts(node: SchemaNode): WidgetBaseOpts {
   return {
     required: isRequired(node),
     caption: node.description,
     placeholder: node.placeholder,
-    defaultValue:
-      node.defaultValue != null ? String(node.defaultValue) : undefined,
+    defaultValue: node.defaultValue != null ? String(node.defaultValue) : undefined,
     alwaysHide: node.hidden ?? false,
   };
 }
 
-/** Normalize options from form-engine format to Fillout format. */
-function mapOptions(
-  options: Array<{ label: string; value?: unknown }>
-): FilloutSelectOption[] {
+/** Options arrive normalised from the engine; Fillout wants string values. */
+function mapOptions(options: Array<{ label: string; value?: unknown }>): FilloutSelectOption[] {
   return options.map((o) => ({
     label: o.label,
     value: o.value != null ? String(o.value) : o.label,
   }));
+}
+
+/**
+ * Validates a raw node through its registered component schema. Falls back to
+ * the raw node (with a diagnostic) when the type is unknown or the config does
+ * not validate, so export remains best-effort.
+ */
+function validateNode(
+  raw: RawSchemaNode,
+  diagnostics: ExportDiagnostic[]
+): { node: SchemaNode; definition?: ComponentDefinition } {
+  const definition = getComponentDefinition(raw.type);
+  if (!definition) {
+    return { node: raw as SchemaNode };
+  }
+  try {
+    return { node: definition.validateConfig(raw) as SchemaNode, definition };
+  } catch (error) {
+    const detail = error instanceof ZodError ? error.issues[0]?.message : String(error);
+    diagnostics.push({
+      severity: "warning",
+      componentId: typeof raw.id === "string" ? raw.id : undefined,
+      componentType: raw.type,
+      message: `Component "${raw.id ?? raw.type}" has an invalid configuration (${detail}); exported from its raw values.`,
+    });
+    return { node: raw as SchemaNode, definition };
+  }
 }
 
 // ─── Component mappers ────────────────────────────────────────────────────────
@@ -119,38 +137,33 @@ type WidgetMapper = (
 const componentMappers: Record<string, WidgetMapper> = {
   text: (node) => ({
     type: "ShortAnswer",
-    template: shortAnswerTemplate(extractLabel(node).label, baseOpts(node)),
+    template: shortAnswerTemplate(labelOf(node), baseOpts(node)),
   }),
 
   email: (node) => ({
     type: "EmailInput",
-    template: shortAnswerTemplate(extractLabel(node).label, baseOpts(node)),
+    template: shortAnswerTemplate(labelOf(node), baseOpts(node)),
   }),
 
   password: (node) => ({
     type: "Password",
-    template: passwordTemplate(extractLabel(node).label, baseOpts(node)),
+    template: passwordTemplate(labelOf(node), baseOpts(node)),
   }),
 
   tel: (node) => ({
     type: "PhoneNumber",
-    template: phoneNumberTemplate(extractLabel(node).label, baseOpts(node)),
+    template: phoneNumberTemplate(labelOf(node), baseOpts(node)),
   }),
 
-  number: (node) => {
+  number: (node) => ({
     // min/max are not directly supported in basic Fillout NumberInput
-    return {
-      type: "NumberInput",
-      template: numberInputTemplate(extractLabel(node).label, baseOpts(node)),
-    };
-  },
+    type: "NumberInput",
+    template: numberInputTemplate(labelOf(node), baseOpts(node)),
+  }),
 
   textarea: (node) => ({
     type: "LongAnswer",
-    template: longAnswerTemplate(extractLabel(node).label, {
-      ...baseOpts(node),
-      rows: node.rows,
-    }),
+    template: longAnswerTemplate(labelOf(node), { ...baseOpts(node), rows: node.rows }),
   }),
 
   select: (node, diagnostics) => {
@@ -164,11 +177,7 @@ const componentMappers: Record<string, WidgetMapper> = {
     }
     return {
       type: "Dropdown",
-      template: dropdownTemplate(
-        extractLabel(node).label,
-        mapOptions(node.options ?? []),
-        baseOpts(node)
-      ),
+      template: dropdownTemplate(labelOf(node), mapOptions(node.options ?? []), baseOpts(node)),
     };
   },
 
@@ -178,42 +187,33 @@ const componentMappers: Record<string, WidgetMapper> = {
         severity: "warning",
         componentId: node.id,
         componentType: "radiogroup",
-        message:
-          "RadioGroup field has no options; exported as empty MultipleChoice.",
+        message: "RadioGroup field has no options; exported as empty MultipleChoice.",
       });
     }
     return {
       type: "MultipleChoice",
-      template: multipleChoiceTemplate(
-        extractLabel(node).label,
-        mapOptions(node.options ?? []),
-        baseOpts(node)
-      ),
+      template: multipleChoiceTemplate(labelOf(node), mapOptions(node.options ?? []), baseOpts(node)),
     };
   },
 
   checkbox: (node) => ({
     type: "Checkbox",
-    template: checkboxTemplate(extractLabel(node).label, baseOpts(node)),
+    template: checkboxTemplate(labelOf(node), baseOpts(node)),
   }),
 
   date: (node) => ({
     type: "DatePicker",
-    template: datePickerTemplate(extractLabel(node).label, baseOpts(node)),
+    template: datePickerTemplate(labelOf(node), baseOpts(node)),
   }),
 
   file: (node) => ({
     type: "FileUpload",
-    template: fileUploadTemplate(extractLabel(node).label, {
-      ...baseOpts(node),
-      acceptedFileTypes: node.accept,
-    }),
+    template: fileUploadTemplate(labelOf(node), { ...baseOpts(node), acceptedFileTypes: node.accept }),
   }),
 
   html: (node) => {
     const content = node.content ?? "";
-    // If the html block has a tag like <br> or <hr>, or has significant HTML,
-    // use the Html widget. Otherwise use Paragraph for simple text.
+    // Significant markup goes to the Html widget; plain text to Paragraph.
     const hasHtmlTags = /<[a-z][\s\S]*>/i.test(content);
     if (hasHtmlTags) {
       return { type: "Html", template: htmlTemplate(content) };
@@ -230,22 +230,14 @@ const componentMappers: Record<string, WidgetMapper> = {
     });
     return {
       type: "LongAnswer",
-      template: longAnswerTemplate(extractLabel(node).label, { ...baseOpts(node), rows: 3 }),
+      template: longAnswerTemplate(labelOf(node), { ...baseOpts(node), rows: 3 }),
     };
   },
 };
 
 // ─── Tree walker ──────────────────────────────────────────────────────────────
 
-/**
- * Process a single field/component node into a Fillout widget.
- * Returns null if the component type is a container (page, form) or unknown.
- */
-function processComponent(
-  node: SchemaNode,
-  diagnostics: ExportDiagnostic[]
-): FilloutWidget | null {
-  // Emit diagnostics for features we can't map
+function emitFeatureDiagnostics(node: SchemaNode, diagnostics: ExportDiagnostic[]) {
   if (node.rules?.length) {
     diagnostics.push({
       severity: "warning",
@@ -270,6 +262,14 @@ function processComponent(
       message: `Disabled state on "${node.id ?? node.type}" has no Fillout equivalent. The field will be editable.`,
     });
   }
+}
+
+/**
+ * Converts one validated leaf node into a Fillout widget, or null when it has
+ * no mapping (a diagnostic is recorded).
+ */
+function processComponent(node: SchemaNode, diagnostics: ExportDiagnostic[]): FilloutWidget | null {
+  emitFeatureDiagnostics(node, diagnostics);
 
   const mapper = componentMappers[node.type];
   if (!mapper) {
@@ -295,23 +295,32 @@ function processComponent(
 }
 
 /**
- * Process a page node's children into Fillout widgets.
+ * Collects the widgets for a list of children. Nested layout components (any
+ * registered `kind: "layout"` other than a page) are flattened into the same
+ * Fillout page, since Fillout has no grouping construct below a page.
  */
-function processPage(
-  pageNode: SchemaNode,
-  diagnostics: ExportDiagnostic[]
-): FilloutPage {
-  const widgets: FilloutWidget[] = [];
-  let row = 0;
-
-  for (const child of pageNode.children ?? []) {
-    const widget = processComponent(child, diagnostics);
+function collectWidgets(children: unknown[], diagnostics: ExportDiagnostic[], widgets: FilloutWidget[]) {
+  for (const raw of children) {
+    if (!raw || typeof raw !== "object" || typeof (raw as RawSchemaNode).type !== "string") {
+      diagnostics.push({ severity: "warning", message: "Skipped a child without a component type." });
+      continue;
+    }
+    const { node, definition } = validateNode(raw as RawSchemaNode, diagnostics);
+    if (definition?.kind === "layout") {
+      collectWidgets(Array.isArray(node.children) ? node.children : [], diagnostics, widgets);
+      continue;
+    }
+    const widget = processComponent(node, diagnostics);
     if (widget) {
-      widget.position.row = row++;
+      widget.position.row = widgets.length;
       widgets.push(widget);
     }
   }
+}
 
+function processPage(pageNode: SchemaNode, diagnostics: ExportDiagnostic[]): FilloutPage {
+  const widgets: FilloutWidget[] = [];
+  collectWidgets(Array.isArray(pageNode.children) ? pageNode.children : [], diagnostics, widgets);
   return {
     id: genId(),
     name: pageNode.title ?? "Untitled Page",
@@ -344,27 +353,14 @@ export interface FilloutExportOptions {
 /**
  * Export a form-engine schema to Fillout export JSON (v2).
  *
- * Accepts the raw parsed schema object (the result of `parseRootFormSchema().config`
- * or equivalently a plain object with `type: "form"` and `children`).
+ * Accepts the raw parsed schema object (for example the result of
+ * `yaml.load()` or `parseRootFormSchema().config`). Every node is validated
+ * through the form-engine registry before mapping.
  *
  * Always produces output. Unmappable features generate diagnostics.
- *
- * @example
- * ```ts
- * import { parseRootFormSchema } from "form-engine";
- * import { exportToFillout } from "form-exporters";
- *
- * const { config } = parseRootFormSchema(yamlData);
- * const { output, diagnostics } = exportToFillout(config);
- *
- * if (diagnostics.length) {
- *   console.warn("Export warnings:", diagnostics);
- * }
- * fs.writeFileSync("form.json", JSON.stringify(output, null, 2));
- * ```
  */
 export function exportToFillout(
-  schema: SchemaNode,
+  schema: RawSchemaNode,
   options: FilloutExportOptions = {}
 ): ExportResult<Record<string, unknown>> {
   const diagnostics: ExportDiagnostic[] = [];
@@ -377,43 +373,37 @@ export function exportToFillout(
     });
   }
 
-  const children = schema.children ?? [];
+  const { node: root } = validateNode(schema, diagnostics);
+  const children = Array.isArray(root.children) ? root.children : [];
   const pages: FilloutPage[] = [];
 
-  // Check if the form has page children (multi-page) or just fields (single-page)
-  const hasPages = children.some((child: SchemaNode) => child.type === "page");
+  // Validate direct children once so pages can be told apart from fields.
+  const validatedChildren = children
+    .filter((c): c is RawSchemaNode => !!c && typeof c === "object" && typeof (c as RawSchemaNode).type === "string")
+    .map((c) => validateNode(c, diagnostics));
+
+  const hasPages = validatedChildren.some(({ node }) => node.type === "page");
 
   if (hasPages) {
-    for (const child of children) {
-      if (child.type === "page") {
-        pages.push(processPage(child, diagnostics));
+    for (const { node } of validatedChildren) {
+      if (node.type === "page") {
+        pages.push(processPage(node, diagnostics));
       } else {
-        // Non-page children at the form root level in a multi-page form
         diagnostics.push({
           severity: "warning",
-          componentId: child.id,
-          componentType: child.type,
-          message: `Component "${child.id ?? child.type}" is at the form root level alongside pages. It will be skipped in the Fillout export.`,
+          componentId: node.id,
+          componentType: node.type,
+          message: `Component "${node.id ?? node.type}" is at the form root level alongside pages. It will be skipped in the Fillout export.`,
         });
       }
     }
   } else {
     // Single-page form: wrap all children in one page
-    const syntheticPage: SchemaNode = {
-      type: "page",
-      title: schema.title ?? "Form",
-      children,
-    };
-    pages.push(processPage(syntheticPage, diagnostics));
+    pages.push(processPage({ type: "page", title: root.title ?? "Form", children }, diagnostics));
   }
 
   if (pages.length === 0) {
-    // Edge case: no pages and no fields. Create an empty page.
-    pages.push({
-      id: genId(),
-      name: schema.title ?? "Empty Form",
-      widgets: [],
-    });
+    pages.push({ id: genId(), name: root.title ?? "Empty Form", widgets: [] });
     diagnostics.push({
       severity: "warning",
       message: "Form has no fields. Exported as an empty Fillout form.",

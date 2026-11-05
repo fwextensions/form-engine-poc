@@ -4,12 +4,12 @@ import { z } from "zod";
 import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
 import { defineField } from "../../core/defineField";
 import { serializeForUI, deserializeFromUI } from "../../utils/valueSerialization";
-import { normalizeOptions, radioOptionInputSchema } from "./options";
+import { radioOptionsSchema } from "./options";
 import { optionLabelClassName } from "./styles";
 
 export const RadioGroupConfigSchema = defineField<
 	{
-		options: z.ZodArray<typeof radioOptionInputSchema>;
+		options: typeof radioOptionsSchema;
 		defaultValue: z.ZodOptional<z.ZodAny>;
 		orientation: z.ZodDefault<z.ZodOptional<z.ZodEnum<{ horizontal: "horizontal"; vertical: "vertical" }>>>;
 	},
@@ -27,7 +27,7 @@ export const RadioGroupConfigSchema = defineField<
 	},
 	notes: "Prefer the `{label, value}` object form for options. Plain strings are also accepted and use the string as both label and value. Use `radiogroup` for up to about six options and `select` for longer lists.",
 	schema: {
-		options: z.array(radioOptionInputSchema).describe(
+		options: radioOptionsSchema.describe(
 			"List of radio options. Each option is either a {label, value} object (the preferred approach) or a plain string (used as both label and value). Example: [{label: 'Yes', value: true}, {label: 'No', value: false}]",
 		),
 		defaultValue: z.any().optional(),
@@ -35,10 +35,10 @@ export const RadioGroupConfigSchema = defineField<
 	},
 	value: { empty: undefined, serialize: serializeForUI, deserialize: deserializeFromUI },
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
-		const options = normalizeOptions(config.options).map((o) => ({
+		const options = config.options.map((o) => ({
 			label: o.label,
 			value: serializeForUI(o.value),
-			disabled: "disabled" in o ? o.disabled : undefined,
+			disabled: o.disabled,
 		}));
 		const uiValue = value !== undefined ? serializeForUI(value) : undefined;
 		const orientationClass = config.orientation === "horizontal" ? "flex space-x-4" : "space-y-2";

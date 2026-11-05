@@ -1,5 +1,9 @@
 // packages/form-engine/src/components/fields/options.ts
 // Shared option schemas for choice fields (select, radiogroup).
+//
+// Authors may write options as `{label, value}` objects or as plain strings.
+// The schemas normalise the shorthand during validation, so every consumer of
+// a validated config (renderer, exporters, tests) sees `{label, value}` objects.
 import { z } from "zod";
 
 export const optionSchema = z.object({
@@ -24,3 +28,7 @@ export type RadioOption = z.infer<typeof radioOptionSchema>;
 export function normalizeOptions<O extends Option>(options: ReadonlyArray<O | string>): O[] {
 	return options.map((o) => (typeof o === "string" ? ({ label: o, value: o } as O) : o));
 }
+
+/** `options` property for select-like fields; validated output is always normalised. */
+export const optionsSchema = z.array(optionInputSchema).transform((options) => normalizeOptions<Option>(options));
+export const radioOptionsSchema = z.array(radioOptionInputSchema).transform((options) => normalizeOptions<RadioOption>(options));

@@ -5,11 +5,11 @@ import * as SelectPrimitive from "@radix-ui/react-select";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
 import { defineField } from "../../core/defineField";
 import { serializeForUI, deserializeFromUI } from "../../utils/valueSerialization";
-import { normalizeOptions, optionInputSchema } from "./options";
+import { optionsSchema } from "./options";
 
 export const SelectConfigSchema = defineField<
 	{
-		options: z.ZodArray<typeof optionInputSchema>;
+		options: typeof optionsSchema;
 		placeholder: z.ZodOptional<z.ZodString>;
 		defaultValue: z.ZodOptional<z.ZodAny>;
 	},
@@ -28,7 +28,7 @@ export const SelectConfigSchema = defineField<
 	},
 	notes: "Prefer the `{label, value}` object form for options. Plain strings are also accepted and use the string as both label and value.",
 	schema: {
-		options: z.array(optionInputSchema).describe(
+		options: optionsSchema.describe(
 			"List of dropdown options. Each option is either a {label, value} object or a plain string. Example: [{label: 'California', value: 'CA'}, {label: 'Nevada', value: 'NV'}] or ['Option A', 'Option B']",
 		),
 		placeholder: z.string().optional(),
@@ -36,7 +36,7 @@ export const SelectConfigSchema = defineField<
 	},
 	value: { empty: undefined, serialize: serializeForUI, deserialize: deserializeFromUI },
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
-		const options = normalizeOptions(config.options).map((o) => ({ label: o.label, value: serializeForUI(o.value) }));
+		const options = config.options.map((o) => ({ label: o.label, value: serializeForUI(o.value) }));
 		const uiValue = value !== undefined ? serializeForUI(value) : undefined;
 
 		return (
