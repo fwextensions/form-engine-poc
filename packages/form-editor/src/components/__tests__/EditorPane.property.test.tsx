@@ -12,15 +12,10 @@ import * as fc from "fast-check";
 import EditorPane from "../EditorPane";
 
 // Mock Monaco Editor
-vi.mock("@monaco-editor/react", () => ({
-	default: ({ value, onChange }: any) => (
-		<textarea
-			data-testid="monaco-editor"
-			value={value}
-			onChange={(e) => onChange(e.target.value)}
-		/>
-	),
-}));
+vi.mock("@monaco-editor/react", async () => {
+	const { MockMonacoEditor } = await import("./monaco-mock");
+	return { default: MockMonacoEditor };
+});
 
 // Mock AIChatJsonl component
 vi.mock("../AIChatJsonl", () => ({

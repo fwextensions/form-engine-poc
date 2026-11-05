@@ -220,6 +220,19 @@ const componentMappers: Record<string, WidgetMapper> = {
     }
     return { type: "Paragraph", template: paragraphTemplate(content) };
   },
+
+  addressValidation: (node, diagnostics) => {
+    diagnostics.push({
+      severity: "warning",
+      componentId: node.id,
+      componentType: "addressValidation",
+      message: `Address validation field "${node.id ?? ""}" exported as a single long-answer field; Fillout has no validated-address equivalent.`,
+    });
+    return {
+      type: "LongAnswer",
+      template: longAnswerTemplate(extractLabel(node).label, { ...baseOpts(node), rows: 3 }),
+    };
+  },
 };
 
 // ─── Tree walker ──────────────────────────────────────────────────────────────
@@ -260,6 +273,12 @@ function processComponent(
 
   const mapper = componentMappers[node.type];
   if (!mapper) {
+    diagnostics.push({
+      severity: "warning",
+      componentId: node.id,
+      componentType: node.type,
+      message: `Component type "${node.type}" has no Fillout mapping and was skipped.`,
+    });
     return null;
   }
 
@@ -301,6 +320,11 @@ function processPage(
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
+
+/** Component types this exporter knows how to map to a Fillout widget. */
+export function getSupportedComponentTypes(): string[] {
+  return Object.keys(componentMappers);
+}
 
 export interface FilloutExportOptions {
   /** Partial theme overrides applied on top of the SF.gov default theme. */

@@ -187,9 +187,7 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 		initialMessages,
 		onFieldHighlight,
 	} = props;
-	const [validationResults, setValidationResults] = useState<ValidationResults>(
-		new Map(),
-	);
+	const [validationResults, setValidationResults] = useState<ValidationResults>(restoreValidationResults);
 	const [pdfExtractionMap, setPdfExtractionMap] = useState<PdfExtractionMap>(new Map());
 
 	const lastUserMessageRef = useRef<string>("");
@@ -237,11 +235,10 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 
 	// Restore patch cards for messages reloaded from localStorage.
 	// handleFinish only runs for new LLM responses, so historical JSONL
-	// messages need their cards reconstructed from stored text on mount.
-	React.useEffect(() => {
-		if (!initialMessages || initialMessages.length === 0) return;
-
+	// messages need their cards reconstructed from stored text.
+	function restoreValidationResults(): ValidationResults {
 		const restoredResults = new Map<string, ValidationResult>();
+		if (!initialMessages || initialMessages.length === 0) return restoredResults;
 
 		for (const msg of initialMessages) {
 			if (msg.role !== "assistant") continue;
@@ -269,10 +266,13 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 			}
 		}
 
-		if (restoredResults.size > 0) {
-			setValidationResults(restoredResults);
-		}
-	}, []); // eslint-disable-line react-hooks/exhaustive-deps
+		return restoredResults;
+	}
+
+	// Keep a stable ref to runtime so handleFinish can access thread state
+	// without runtime being in its dependency array (which would be circular).
+	// It is populated by an effect after useChatRuntime() below.
+	const runtimeRef = useRef<ReturnType<typeof useChatRuntime> | null>(null);
 
 	// Process JSONL response on completion
 	const handleFinish = useCallback(
@@ -283,7 +283,7 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 			const extraction = pendingExtractionAssocRef.current;
 			if (extraction) {
 				pendingExtractionAssocRef.current = null;
-				const messages = runtimeRef.current.thread.getState().messages;
+				const messages = runtimeRef.current?.thread.getState().messages ?? [];
 				// Find the user message immediately before this assistant message
 				const assistantIdx = messages.findIndex((m: any) => m.id === message.id);
 				const userMsg = assistantIdx > 0
@@ -398,10 +398,9 @@ function AIChatJsonl(props: AIChatJsonlProps) {
 		},
 	});
 
-	// Keep a stable ref to runtime so handleFinish can access thread state
-	// without runtime being in its dependency array (which would be circular)
-	const runtimeRef = useRef(runtime);
-	runtimeRef.current = runtime;
+	React.useEffect(() => {
+		runtimeRef.current = runtime;
+	}, [runtime]);
 
 	// Capture user messages for history descriptions + persist to localStorage
 	React.useEffect(() => {

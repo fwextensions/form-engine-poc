@@ -12,6 +12,18 @@
     "lint": "npm run lint --workspace=form-editor",
     "generate-schema": "npm run generate-schema --workspace=form-engine",
     "lint:all": "npm run lint --workspaces --if-present",
-    "build:all": "npm run build --workspaces --if-present"
+    "build:all": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "check": "npm run lint:all && npm run typecheck && npm run test && npm run build:all"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^2.1.0",
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.4.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.6.0",
+    "typescript-eslint": "^8.59.4"
   }
 }

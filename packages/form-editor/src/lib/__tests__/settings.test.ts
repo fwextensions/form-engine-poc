@@ -47,7 +47,7 @@ describe("settings", () => {
 		});
 
 		it("should have default model for bedrock", () => {
-			expect(DEFAULT_MODELS.bedrock).toBe("anthropic.claude-3-sonnet-20240229-v1:0");
+			expect(DEFAULT_MODELS.bedrock).toBe("us.anthropic.claude-haiku-4-5-20251001-v1:0");
 		});
 
 		it("should have all four providers defined", () => {

@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { z, ZodObject, ZodTypeAny } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { JSON_SCHEMA_OPTIONS } from "../src/catalog/toJsonSchema";
 import { getAllComponentDefinitions } from "../src/core/componentFactory";
 // Import all component definitions to ensure they are registered in the factory
 import "../src/components";
@@ -16,17 +16,10 @@ if (componentSchemas.length === 0) {
 	throw new Error("No component schemas found. Make sure all components are imported.");
 }
 
-// Define a base interface for recursive components.
-// This helps TypeScript understand the recursive structure without creating a circular type alias.
-interface ComponentConfig {
-	children?: ComponentConfig[];
-	[key: string]: any;
-}
-
 // Create a lazy-loaded schema that will eventually resolve to the union of all component schemas.
 // This is the key to handling recursion: `baseComponentSchema` can be used inside the definition
 // of the schemas that will eventually form the union it resolves to.
-const baseComponentSchema: z.ZodType<ComponentConfig> = z.lazy(() =>
+const baseComponentSchema: ZodTypeAny = z.lazy(() =>
 	z.union(finalComponentSchemas as [ZodTypeAny, ZodTypeAny, ...ZodTypeAny[]])
 );
 
@@ -60,7 +53,7 @@ if (!fs.existsSync(outputDir)) {
 	console.log(`Created directory: ${outputDir}`);
 }
 
-const jsonSchema = zodToJsonSchema(formSchema, "FormSchema");
+const jsonSchema = { ...z.toJSONSchema(formSchema, JSON_SCHEMA_OPTIONS), title: "FormSchema" };
 
 fs.writeFileSync(outputPath, JSON.stringify(jsonSchema, null, 2));
 

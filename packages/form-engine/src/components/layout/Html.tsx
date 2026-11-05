@@ -93,9 +93,8 @@ export const HtmlConfigSchema = baseComponentConfigSchema.extend({
 export type HtmlConfig = z.infer<typeof HtmlConfigSchema>;
 
 // 2. Define Props for the React Component
-export interface HtmlProps extends Omit<HtmlConfig, 'type' | 'condition'> {
-	// id is inherited from baseComponentConfigSchema via HtmlConfig
-}
+// id is inherited from baseComponentConfigSchema via HtmlConfig
+export type HtmlProps = Omit<HtmlConfig, "type" | "condition">;
 
 const VoidElements = [
 	"area",

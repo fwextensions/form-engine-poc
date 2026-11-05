@@ -1,6 +1,6 @@
 // packages/form-engine/src/catalog/toJsonSchema.ts
 // Utility for converting catalog to JSON Schema
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { z } from "zod";
 import type { Catalog } from "./catalog";
 
 /**
@@ -20,7 +20,25 @@ export function entryToJsonSchema(
 	schema: Catalog["components"][string]["schema"],
 	name?: string
 ): Record<string, any> {
-	return zodToJsonSchema(schema as any, name);
+	const jsonSchema = zodSchemaToJsonSchema(schema);
+	return name ? { ...jsonSchema, title: name } : jsonSchema;
+}
+
+/** Shared zod → JSON Schema conversion options used across the catalog. */
+export const JSON_SCHEMA_OPTIONS = {
+	io: "input",
+	unrepresentable: "any",
+	reused: "inline",
+} as const;
+
+/**
+ * Converts a Zod schema to JSON Schema using zod's native converter.
+ * `io: "input"` describes what authors write (so defaulted props stay optional),
+ * and `unrepresentable: "any"` turns `z.any()` into an unconstrained schema
+ * instead of throwing.
+ */
+export function zodSchemaToJsonSchema(schema: z.ZodType<any>): Record<string, any> {
+	return z.toJSONSchema(schema, JSON_SCHEMA_OPTIONS) as Record<string, any>;
 }
 
 /**
@@ -35,7 +53,7 @@ export function catalogToJsonSchema(
 	const schemas: Record<string, any> = {};
 
 	for (const [type, entry] of Object.entries(catalog.components)) {
-		const jsonSchema = zodToJsonSchema(entry.schema as any, type);
+		const jsonSchema = { ...zodSchemaToJsonSchema(entry.schema), title: type };
 
 		// Optionally add description from catalog entry
 		if (includeDescriptions && entry.description) {
@@ -67,8 +85,8 @@ export function catalogToUnifiedJsonSchema(
 	const oneOf: any[] = [];
 
 	for (const [type, schema] of Object.entries(componentSchemas)) {
-		// Extract the actual schema definition (zod-to-json-schema wraps it)
-		const actualSchema = (schema as any).definitions?.[type] || schema;
+		const actualSchema = { ...(schema as Record<string, any>) };
+		delete actualSchema.$schema;
 		definitions[type] = actualSchema;
 		oneOf.push({ $ref: `#/definitions/${type}` });
 	}

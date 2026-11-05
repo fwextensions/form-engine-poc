@@ -16,6 +16,7 @@ const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLI
 		/>
 	</Control>
 ));
+Input.displayName = "Input";
 
 // --- Main Component ---
 type ValidationStatus = "idle" | "validating" | "validated" | "error";

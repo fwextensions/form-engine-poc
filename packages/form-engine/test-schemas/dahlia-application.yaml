@@ -160,7 +160,7 @@ children:
       # Form Engine Enhancement: Field grouping for "DO YOU WORK IN SAN FRANCISCO?" and description text.
       # Description: "This means you currently work in San Francisco at least 75% of your working hours."
       - id: workInSF
-        type: radio
+        type: radiogroup
         label: "DO YOU WORK IN SAN FRANCISCO?*"
         options:
           - label: "Yes"
@@ -178,7 +178,7 @@ children:
       # Form Engine Enhancement: Field grouping for "ALTERNATE CONTACT" and description text.
       # Description: "Please select one."
       - id: alternateContactType
-        type: radio
+        type: radiogroup
         label: "ALTERNATE CONTACT*"
         options:
           - label: "Family member"

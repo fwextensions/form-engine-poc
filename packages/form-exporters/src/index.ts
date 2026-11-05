@@ -1,5 +1,5 @@
 // Fillout exporter
-export { exportToFillout } from "./fillout";
+export { exportToFillout, getSupportedComponentTypes } from "./fillout";
 export type { FilloutExportOptions } from "./fillout";
 
 // Common types

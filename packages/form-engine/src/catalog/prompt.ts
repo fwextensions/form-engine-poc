@@ -2,7 +2,7 @@
 // Generates LLM-consumable documentation from the component catalog
 
 import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import { zodSchemaToJsonSchema } from "./toJsonSchema";
 import type { Catalog, CatalogEntry } from "./catalog";
 
 export interface CatalogPromptOptions {
@@ -57,7 +57,7 @@ export function generateCatalogPrompt(
 export function formatPropsFromZodSchema(schema: z.ZodType<any>): string {
 	try {
 		// Convert Zod schema to JSON Schema for easier introspection
-		const jsonSchema = zodToJsonSchema(schema as any, { $refStrategy: "none" });
+		const jsonSchema = zodSchemaToJsonSchema(schema);
 
 		if (!jsonSchema || typeof jsonSchema !== "object" || !("properties" in jsonSchema)) {
 			return "No properties defined.";
@@ -214,7 +214,7 @@ function formatComponentDocumentation(
 
 	// Example
 	if (includeExamples) {
-		const example = generateComponentExample(type, entry);
+		const example = generateComponentExample(type);
 		if (example) {
 			lines.push("\n**Example:**\n");
 			lines.push("```yaml");
@@ -229,7 +229,7 @@ function formatComponentDocumentation(
 /**
  * Generates a simple YAML example for a component.
  */
-function generateComponentExample(type: string, entry: CatalogEntry): string | null {
+function generateComponentExample(type: string): string | null {
 	// Generate a basic example based on the component type
 	// This is a simplified version - could be enhanced with more sophisticated example generation
 
