@@ -385,10 +385,16 @@ describe("SettingsDialog", () => {
 		const awsRegionInput = screen.getByLabelText("AWS Region");
 		const modelInput = screen.getByLabelText("Model (Optional)");
 
-		await user.type(awsAccessKeyInput, "AKIAIOSFODNN7EXAMPLE");
-		await user.type(awsSecretKeyInput, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
-		await user.type(awsRegionInput, "us-west-2");
-		await user.type(modelInput, "anthropic.claude-3-sonnet-20240229-v1:0");
+		// Paste rather than type: typing ~110 characters key by key takes
+		// seconds and timed out under full-suite load.
+		const enter = async (input: HTMLElement, text: string) => {
+			await user.click(input);
+			await user.paste(text);
+		};
+		await enter(awsAccessKeyInput, "AKIAIOSFODNN7EXAMPLE");
+		await enter(awsSecretKeyInput, "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY");
+		await enter(awsRegionInput, "us-west-2");
+		await enter(modelInput, "anthropic.claude-3-sonnet-20240229-v1:0");
 
 		const saveButton = screen.getByRole("button", { name: "Save" });
 		await user.click(saveButton);

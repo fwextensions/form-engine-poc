@@ -22,9 +22,11 @@ vi.mock("../AIChatJsonl", () => ({
 	default: () => <div data-testid="ai-chat" />,
 }));
 
-// Configure fast-check
+// Configure fast-check. Each run mounts the whole pane (often several times),
+// so 100 runs took 3-6s per property and timed out under full-suite load. The
+// input space is small (two tabs, a handful of schema shapes), so 25 is plenty.
 fc.configureGlobal({
-	numRuns: 100,
+	numRuns: 25,
 });
 
 const defaultJsonlMode = {
@@ -112,18 +114,19 @@ describe("EditorPane - Property-Based Tests", () => {
 					schemaArb,
 					fc.array(tabArb, { minLength: 2, maxLength: 10 }),
 					(schema, tabSequence) => {
+						// Switch tabs on one mounted pane, as the app does.
+						const { container, rerender, unmount } = render(
+							<EditorPane {...baseProps} schema={schema} activeTab={tabSequence[0]} />
+						);
 						for (const tab of tabSequence) {
-							const { container, unmount } = render(
-								<EditorPane {...baseProps} schema={schema} activeTab={tab} />
-							);
+							rerender(<EditorPane {...baseProps} schema={schema} activeTab={tab} />);
 
 							if (tab === "yaml") {
 								const yamlEditor = container.querySelector('[data-testid="monaco-editor"]') as HTMLTextAreaElement;
 								expect(yamlEditor?.value).toBe(schema);
 							}
-
-							unmount();
 						}
+						unmount();
 					}
 				)
 			);
