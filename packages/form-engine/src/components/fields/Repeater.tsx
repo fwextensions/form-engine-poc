@@ -140,7 +140,7 @@ export const RepeaterConfigSchema = defineField<typeof repeaterShape, RepeaterIt
 	},
 	notes: "Put the fields for one item in `children`; their ids are unique within the item, not the form. `minItems` items are always shown; `validation.required: true` means at least one item. Rules on child fields see the item's own values first, then the rest of the form.",
 	schema: repeaterShape,
-	children: { allow: "any", deny: ["form", "page", "review"] },
+	children: { allow: "any", deny: ["form", "page", "reviewPage"] },
 	value: {
 		empty: [],
 		display: (value, config) => {

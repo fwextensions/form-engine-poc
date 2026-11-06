@@ -15,4 +15,4 @@ export * from "./layout/Page";
 export * from "./layout/Section";
 export * from "./layout/Form";
 export * from "./layout/Html";
-export * from "./layout/Review";
+export * from "./layout/ReviewPage";

@@ -420,6 +420,7 @@ children:
 
 - **form**: The root container (required)
 - **page**: Represents a step in a multi-step form
+- **reviewPage**: The last step of a multi-page form; shows a summary of every answer with Edit links
 - **fields**: Input components (text, select, checkbox, etc.)
 - **layout**: Containers and static content (html, section, etc.)
 

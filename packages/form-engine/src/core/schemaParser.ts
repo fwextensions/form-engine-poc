@@ -119,6 +119,19 @@ export function validateSchemaTree(rawSchema: unknown): SchemaIssue[] {
 	}
 
 	visit(rawSchema, "", undefined);
+
+	// A review page summarises the pages before it, so it belongs last and alone.
+	const rootChildren = (rawSchema as { children?: unknown })?.children;
+	if (Array.isArray(rootChildren)) {
+		const reviewIndices = rootChildren.flatMap((child, index) => (child && typeof child === "object" && (child as { type?: unknown }).type === "reviewPage" ? [index] : []));
+		for (const index of reviewIndices.slice(0, -1)) {
+			issues.push({ path: joinPath("", ["children", index]), componentId: (rootChildren[index] as { id?: string }).id, componentType: "reviewPage", message: "Only one reviewPage is needed; this one is not the last", severity: "warning", code: "review_page_position" });
+		}
+		const last = reviewIndices[reviewIndices.length - 1];
+		if (last !== undefined && last !== rootChildren.length - 1) {
+			issues.push({ path: joinPath("", ["children", last]), componentId: (rootChildren[last] as { id?: string }).id, componentType: "reviewPage", message: "A reviewPage should be the last page of the form; later pages are not included in its summary", severity: "warning", code: "review_page_position" });
+		}
+	}
 	return issues;
 }
 

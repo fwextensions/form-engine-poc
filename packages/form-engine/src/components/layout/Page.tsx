@@ -44,7 +44,8 @@ createComponent<PageConfig, PageProps>({
 	component: PageComponent,
 	description: "A page container for grouping form fields, used in multi-page forms",
 	example: { id: "personalInfo", title: "Personal information", children: [] },
-	children: { allow: "any", deny: ["form", "page"] },
+	children: { allow: "any", deny: ["form", "page", "reviewPage"] },
+	isPage: true,
 	transformProps: (config: PageConfig, context: FormEngineContext, renderChildren): PageProps => {
 		const { id, children, title, className, style } = config;
 

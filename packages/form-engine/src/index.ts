@@ -23,6 +23,7 @@ export {
 	getComponentDefinition,
 	getAllComponentDefinitions,
 	getComponentTypesByKind,
+	isPageNode,
 	type ComponentDefinition,
 	type CreateComponentArgs,
 	type ConfigCheck,

@@ -72,6 +72,8 @@ export interface CreateComponentArgs<
 	notes?: string;
 	/** Which types may appear in `children`; omit for leaf components. */
 	children?: ChildrenSpec;
+	/** Mark a layout component as a step of a multi-page form (see `page`). */
+	isPage?: boolean;
 	/** Value semantics for fields. */
 	value?: ValueSpec;
 }
@@ -92,7 +94,7 @@ export function createComponent<
 	ConfigType extends { type: string; [key: string]: any },
 	PropsType extends object,
 >(args: CreateComponentArgs<ConfigType, PropsType>): ComponentDefinition<ConfigType, PropsType> {
-	const { type, kind, schema, component, transformProps, transformConfig, description, example, notes, children, value } = args;
+	const { type, kind, schema, component, transformProps, transformConfig, description, example, notes, children, isPage, value } = args;
 
 	const definition: ComponentDefinition<ConfigType, PropsType> = {
 		type,
@@ -102,6 +104,7 @@ export function createComponent<
 		transformProps,
 		transformConfig,
 		children,
+		isPage,
 		value,
 		meta: { description, example: example as Record<string, unknown> | undefined, notes },
 		validateConfig: (rawData: unknown): ConfigType => {
@@ -179,6 +182,13 @@ export function getComponentDefinition(type: string): ComponentDefinition | unde
 
 export function getAllComponentDefinitions(): ReadonlyMap<string, ComponentDefinition> {
 	return registry;
+}
+
+/** True when `node` is a config whose registered type is a page (a step of a multi-page form). */
+export function isPageNode(node: unknown): boolean {
+	if (!node || typeof node !== "object") return false;
+	const type = (node as { type?: unknown }).type;
+	return typeof type === "string" && registry.get(type)?.isPage === true;
 }
 
 /** Registered component types of the given kind. */

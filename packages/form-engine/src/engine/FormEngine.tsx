@@ -14,6 +14,7 @@ import {
 } from "./FormEngineContext";
 import { DynamicRenderer } from "./DynamicRenderer";
 import { useFormRules } from "../hooks/useFormRules";
+import { isPageNode } from "../core/componentFactory";
 
 export interface FormMeta {
 	formTitle: string;
@@ -60,7 +61,7 @@ export const FormEngine = forwardRef<FormEngineHandle, FormEngineProps>(
 
 		const pageComponents = useMemo(() => {
 			if (schema?.type === "form" && Array.isArray(schema.children)) {
-				return schema.children.filter((child) => child?.type === "page") as PageConfig[];
+				return schema.children.filter(isPageNode) as PageConfig[];
 			}
 			return [];
 		}, [schema]);

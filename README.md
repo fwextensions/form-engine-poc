@@ -250,7 +250,7 @@ Refer to the [`docs/`](/docs) directory for detailed feature roadmaps, milestone
 
 * **Address validation**: Requires integration with address validation services `ShortFormApplicationController.js.coffee:41-42`
 
-* **Dynamic household members**: The form allows adding/removing household members dynamically — now covered by the `repeater` field, whose `children` template renders once per item (see `test-schemas/household-review.yaml`); a `review` component summarises every answer before submission.
+* **Dynamic household members**: The form allows adding/removing household members dynamically — now covered by the `repeater` field, whose `children` template renders once per item (see `test-schemas/household-review.yaml`); a `reviewPage` summarises every answer before submission.
 
 * **Conditional field display**: Many fields show/hide based on other field values using complex rules `c3-household-member-form.html.slim:58-60`
 

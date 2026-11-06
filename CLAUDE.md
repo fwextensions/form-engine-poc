@@ -55,7 +55,7 @@ Every component type is registered once, in its own file, with `createComponent(
 - `type`, `kind` (`"field" | "layout" | "static"`), `schema` (Zod, strict), `component`
 - `meta.description`, `meta.example` (minimal valid config minus `type`; verified by a test), `meta.notes`
 - `children: { allow: "any" | string[], deny?: string[] }` on layout components only
-- `value: { empty, serialize?, deserialize?, display? }` on fields only; `display(value, config)` is the human-readable form used by the `review` component
+- `value: { empty, serialize?, deserialize?, display? }` on fields only; `display(value, config)` is the human-readable form used by `reviewPage`
 - `validateConfig(data)` throws on any issue, including unknown keys; `checkConfig(data)` strips unknown keys and returns them as warnings
 
 ### Adding a field component
@@ -67,7 +67,7 @@ Every component type is registered once, in its own file, with `createComponent(
 4. Add a Fillout mapper in `packages/form-exporters/src/fillout/fillout-exporter.ts` (the coverage test fails until you do).
 5. Run `npm run check`; update the prompt snapshot.
 
-Layout and static components (`form`, `page`, `html`) and fields with bespoke rendering (`addressValidation`) use `createComponent()` directly.
+Layout and static components (`form`, `page`, `reviewPage`, `html`) and fields with bespoke rendering (`addressValidation`) use `createComponent()` directly. A layout component that is a step of a multi-page form sets `isPage: true`; consumers find pages with `isPageNode()` rather than by type name.
 
 ### Schema Processing Flow
 1. YAML → `parseRootFormSchema()` → `{ config, issues, errors? }`. `issues` covers the whole tree (unknown types, invalid or unknown props, disallowed nesting, duplicate ids) with severities; the root config is returned whenever the root itself is usable so the editor can keep rendering.

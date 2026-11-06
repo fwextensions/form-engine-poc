@@ -55,7 +55,7 @@ createComponent<SectionConfig, SectionProps>({
 	description: "Groups related fields under a heading with optional help text, within a page",
 	example: { id: "yourName", title: "Your name", description: "Enter your name as it appears on your ID.", children: [] },
 	notes: "Use a section when a paper form has a labelled block of related fields (\"YOUR ADDRESS\", \"ALTERNATE CONTACT\"). Sections live inside pages and may be nested.",
-	children: { allow: "any", deny: ["form", "page"] },
+	children: { allow: "any", deny: ["form", "page", "reviewPage"] },
 	transformProps: (config: SectionConfig, context: FormEngineContext, renderChildren): SectionProps => ({
 		id: config.id ? scopedId(context, config.id) : undefined,
 		title: config.title,

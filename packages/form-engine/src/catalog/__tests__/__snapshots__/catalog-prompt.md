@@ -332,7 +332,7 @@ accept: .pdf,image/*
 
 Root form container with submit handling and multi-page navigation
 
-**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, page, password, radiogroup, repeater, review, section, select, tel, text, textarea, yesno)
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, page, password, radiogroup, repeater, reviewPage, section, select, tel, text, textarea, yesno)
 
 **Properties:**
 
@@ -456,7 +456,7 @@ max: 20
 
 A page container for grouping form fields, used in multi-page forms
 
-**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, repeater, review, section, select, tel, text, textarea, yesno)
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, repeater, section, select, tel, text, textarea, yesno)
 
 **Properties:**
 
@@ -586,41 +586,46 @@ children:
 
 Put the fields for one item in `children`; their ids are unique within the item, not the form. `minItems` items are always shown; `validation.required: true` means at least one item. Rules on child fields see the item's own values first, then the rest of the form.
 
-### review
+### reviewPage
 
-A read-only summary of every answer entered so far, grouped by page, with Edit links back to each page; place it on the last page of a multi-page form
+The last page of a multi-page form: a read-only summary of every answer so far, grouped by page with Edit links, plus any children of its own
+
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, repeater, section, select, tel, text, textarea, yesno)
 
 **Properties:**
 
 - **id** (string) [Optional]
-- **type** (literal: "review") [Required]
+- **type** (literal: "reviewPage") [Required]
 - **rules** (array<object>) [Optional]
 - **hidden** (boolean) [Optional] - Hide the component; rules can set this dynamically
 - **condition** (any) [Optional] - JSONLogic expression; the component renders only when it is truthy
-- **title** (string) [Optional] - Heading shown above the summary
-- **description** (string) [Optional] - Text shown under the heading
-- **emptyText** (string) [Optional] Default: `"Not answered"` - Shown for fields with no value
+- **children** (array<any>) [Optional]
+- **title** (string) [Optional] - Page heading
+- **description** (string) [Optional] - Text shown above the summary
+- **summaryPlacement** (enum: "start" | "end") [Optional] Default: `"end"` - Where the summary goes relative to this page's own children: after them (default) or before them
 - **showEmpty** (boolean) [Optional] Default: `true` - Include fields that have no value
-- **editLinks** (boolean) [Optional] Default: `true` - Show an Edit link per page (multi-page forms only)
+- **emptyText** (string) [Optional] Default: `"Not answered"` - Shown for fields with no value
+- **editLinks** (boolean) [Optional] Default: `true` - Show an Edit link per page
 - **editLinkText** (string) [Optional] Default: `"Edit"`
 - **className** (string) [Optional]
+- **style** (object) [Optional]
 
 **Example:**
 
 ```yaml
-type: review
-id: reviewAnswers
+type: reviewPage
+id: review
 title: Review your answers
 description: Check everything before you submit.
 ```
 
-The review needs no list of fields: it reads the form config and shows every visible field with a value (or "Not answered"). Put it in its own final page so the submit button follows it.
+Use `reviewPage` instead of `page` for the final step; it needs no list of fields. Its own children render before the summary (set `summaryPlacement: start` to put them after it, e.g. a certification checkbox) and are not included in the summary.
 
 ### section
 
 Groups related fields under a heading with optional help text, within a page
 
-**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, repeater, review, section, select, tel, text, textarea, yesno)
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, repeater, section, select, tel, text, textarea, yesno)
 
 **Properties:**
 
@@ -825,6 +830,7 @@ children:
 
 - **form**: The root container (required)
 - **page**: Represents a step in a multi-step form
+- **reviewPage**: The last step of a multi-page form; shows a summary of every answer with Edit links
 - **fields**: Input components (text, select, checkbox, etc.)
 - **layout**: Containers and static content (html, section, etc.)
 

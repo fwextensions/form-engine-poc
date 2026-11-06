@@ -292,16 +292,6 @@ const componentMappers: Record<string, WidgetMapper> = {
     return heading ? { type: heading.type, template: heading.template } : null;
   },
 
-  review: (node, diagnostics) => {
-    diagnostics.push({
-      severity: "info",
-      componentId: node.id,
-      componentType: "review",
-      message: "Review page omitted: Fillout has no answer-summary widget.",
-    });
-    return null;
-  },
-
   addressValidation: (node, diagnostics) => {
     diagnostics.push({
       severity: "warning",
@@ -485,11 +475,19 @@ export function exportToFillout(
     .filter((c): c is RawSchemaNode => !!c && typeof c === "object" && typeof (c as RawSchemaNode).type === "string")
     .map((c) => validateNode(c, diagnostics));
 
-  const hasPages = validatedChildren.some(({ node }) => node.type === "page");
+  const hasPages = validatedChildren.some(({ definition }) => definition?.isPage);
 
   if (hasPages) {
-    for (const { node } of validatedChildren) {
-      if (node.type === "page") {
+    for (const { node, definition } of validatedChildren) {
+      if (definition?.isPage) {
+        if (node.type === "reviewPage") {
+          diagnostics.push({
+            severity: "info",
+            componentId: node.id,
+            componentType: node.type,
+            message: `Review page "${node.id ?? "reviewPage"}" exported without its answer summary; Fillout has no equivalent widget.`,
+          });
+        }
         pages.push(processPage(node, diagnostics));
       } else {
         diagnostics.push({

@@ -1,8 +1,9 @@
 import { describe, it, expect } from "vitest";
 import "../index";
 import { itemsFromValue, padItems, repeaterProblem } from "../fields/Repeater";
-import { collectEntries, collectGroups, displayValue } from "../layout/Review";
-import { getComponentDefinition } from "../../core/componentFactory";
+import { collectEntries, collectGroups, displayValue } from "../layout/reviewSummary";
+import { getComponentDefinition, isPageNode } from "../../core/componentFactory";
+import { validateSchemaTree } from "../../core/schemaParser";
 import type { FormEngineContext } from "../../engine/FormEngineContext";
 import type { FormConfig } from "../layout/Form";
 
@@ -99,7 +100,7 @@ const schema = {
 				},
 			],
 		},
-		{ type: "page", id: "p3", title: "Review", children: [{ type: "review", id: "review" }] },
+		{ type: "reviewPage", id: "p3", title: "Review", children: [{ type: "checkbox", id: "certify", label: "I certify this is true*" }] },
 	],
 } as unknown as FormConfig;
 
@@ -159,6 +160,22 @@ describe("review", () => {
 		const ctx = contextWith(schema, { email: "a@b.c" }, { dynamicProps: { email: { hidden: true } } });
 		const entries = collectEntries((schema.children![0] as { children: unknown[] }).children, ctx.formData, { showEmpty: true, formContext: {}, dynamicProps: ctx.dynamicProps! });
 		expect(entries.some((e) => e.kind === "row" && e.id === "email")).toBe(false);
+	});
+
+	it("counts the review page as a page but never summarises its own children", () => {
+		expect(isPageNode({ type: "reviewPage" })).toBe(true);
+		expect(isPageNode({ type: "section" })).toBe(false);
+		const groups = collectGroups(contextWith(schema, { certify: true, sms: true }), true);
+		expect(groups.map((g) => g.pageIndex)).toEqual([0, 1]);
+		expect(groups.flatMap((g) => g.entries).some((e) => e.kind === "row" && e.id === "certify")).toBe(false);
+	});
+
+	it("warns when a reviewPage is not the last page or appears twice", () => {
+		const codes = (children: unknown[]) => validateSchemaTree({ type: "form", id: "f", children }).map((i) => `${i.severity}:${i.code}@${i.path}`);
+		expect(codes([{ type: "page", id: "a", children: [] }, { type: "reviewPage", id: "r" }])).toEqual([]);
+		expect(codes([{ type: "reviewPage", id: "r" }, { type: "page", id: "a", children: [] }])).toEqual(["warning:review_page_position@children[0]"]);
+		expect(codes([{ type: "reviewPage", id: "r1" }, { type: "reviewPage", id: "r2" }])).toEqual(["warning:review_page_position@children[0]"]);
+		expect(codes([{ type: "page", id: "a", children: [{ type: "reviewPage", id: "r" }] }])).toEqual(["error:disallowed_child@children[0].children[0].type"]);
 	});
 
 	it("handles a form without pages as one group", () => {

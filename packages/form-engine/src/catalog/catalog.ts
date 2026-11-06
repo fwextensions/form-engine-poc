@@ -71,6 +71,8 @@ export interface CatalogEntry {
 	meta?: ComponentMeta;
 	/** Present when the component can contain children. */
 	children?: ChildrenSpec;
+	/** True for components that are a step of a multi-page form (shown one at a time, counted in page navigation). */
+	isPage?: boolean;
 	/** Value semantics for field components. */
 	value?: ValueSpec;
 	/**

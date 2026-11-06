@@ -83,11 +83,12 @@ children:
             orientation: horizontal
             options: [Home, Work, Mobile]
 
-  - type: page
-    id: reviewPage
-    title: Review
+  - type: reviewPage
+    id: review
+    title: Review your answers
+    description: Check everything before you submit.
+    summaryPlacement: start
     children:
-      - type: review
-        id: review
-        title: Review your answers
-        description: Check everything before you submit.
+      - type: checkbox
+        id: certify
+        label: I declare that the information above is true and complete.*

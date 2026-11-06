@@ -1,3 +1,4 @@
+import { isPageNode } from "@fwextensions/form-engine";
 import type { SchemaComponent } from "@/lib/jsonl/types";
 import type { PatchWithResult } from "@/components/chat/ValidationContext";
 import type { HighlightEdge } from "@/components/chat/FieldHighlightContext";
@@ -43,7 +44,7 @@ export function findPageIndexForField(
 		return null;
 	}
 
-	const pages = schema.children.filter((c) => c.type === "page");
+	const pages = schema.children.filter(isPageNode);
 	if (pages.length === 0) return null;
 
 	for (let i = 0; i < pages.length; i++) {

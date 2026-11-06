@@ -5,6 +5,7 @@ import yaml from "js-yaml";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import {
 	FormEngine,
+	isPageNode,
 	parseRootFormSchema,
 	type FormConfig,
 	type FormEngineHandle,
@@ -505,7 +506,7 @@ export default function FormEditorPage() {
 
 	const pageComponents = useMemo(() => {
 		if (formConfig?.type === "form" && Array.isArray(formConfig.children)) {
-			return formConfig.children.filter((child) => child?.type === "page");
+			return formConfig.children.filter(isPageNode);
 		}
 		return [];
 	}, [formConfig]);
