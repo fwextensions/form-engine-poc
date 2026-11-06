@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import * as Toolbar from "@radix-ui/react-toolbar";
+import { Toolbar } from "@base-ui/react/toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
 import { PlusIcon, TrashIcon, GearIcon } from "./icons";
 

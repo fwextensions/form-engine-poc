@@ -29,7 +29,7 @@ This is an npm workspace monorepo with 3 packages:
 
 1. **form-engine** (`packages/form-engine/`) - Core rendering library and component catalog
    - Main entry point: `src/index.ts`
-   - Built with React 19, Zod 4, Radix UI components
+   - Built with React 19, Zod 4 and [Base UI](https://base-ui.com) (`@base-ui/react`) for fields, selects, dialogs, tabs and toolbars
    - Test schemas in `test-schemas/` directory
 
 2. **form-editor** (`packages/form-editor/`) - Schema editor with live preview
@@ -60,7 +60,8 @@ Every component type is registered once, in its own file, with `createComponent(
 
 ### Adding a field component
 1. Create `packages/form-engine/src/components/fields/MyField.tsx` and call `defineField({ type, description, example, schema, value, control })`. `schema` holds only the props beyond `baseFieldConfigSchema`; `control` receives `{ config, value, setValue, disabled, required, inputProps }` and renders the control. Label, description, required/disabled handling, `aria-describedby` and value fallback are handled for you. Use `labelPlacement: "control"` when the control renders its own label (see `Checkbox.tsx`).
-2. If the field accepts validation keys beyond `required`, extend `textValidationSchema` or `numberValidationSchema` from `core/baseSchemas.ts` and wire each key to the native constraint attribute on the control. `FormFieldContainer` already renders a message for every constraint state.
+2. If the field accepts validation keys beyond `required`, extend `textValidationSchema` or `numberValidationSchema` from `core/baseSchemas.ts` and wire each key to the native constraint attribute on the control. `FormFieldContainer` is a Base UI `Field.Root` and renders a `Field.Error` for every constraint state; override a message with `messages` and add non-native rules with `validate` in `defineField()`. Validation runs on submit (Base UI `Form`), then on change.
+   Render a native input with `Field.Control` (`render={<textarea />}` for other elements). Base UI puts the `id` of a Checkbox or Radio on its hidden input, so wrap choice items in a `<label>` rather than relying on `htmlFor`.
 3. Export the file from `packages/form-engine/src/components/index.ts`. It registers itself on import.
 4. Add a Fillout mapper in `packages/form-exporters/src/fillout/fillout-exporter.ts` (the coverage test fails until you do).
 5. Run `npm run check`; update the prompt snapshot.

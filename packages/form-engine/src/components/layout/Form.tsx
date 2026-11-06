@@ -1,7 +1,7 @@
 // packages/form-engine/src/components/layout/Form.tsx
 import React, { useEffect, useRef } from "react";
 import { z } from "zod";
-import { Submit, Root } from "@radix-ui/react-form";
+import { Form } from "@base-ui/react/form";
 import { baseLayoutComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 import { FormEngineContext, useFormEngine } from "../../engine/FormEngineContext";
@@ -94,7 +94,7 @@ export const FormComponent: React.FC<FormProps> = ({
 	}
 
 	return (
-		<Root
+		<Form
 			{...rest} // Passes through other HTML attributes like id
 			className={`space-y-6 ${className || ''}`}
 			style={style}
@@ -118,7 +118,6 @@ export const FormComponent: React.FC<FormProps> = ({
 					)}
 
 					{(showSubmit || showNext || showFinalSubmitMultiPage) && (
-						<Submit asChild>
 							<button
 								type="submit"
 								className={`px-4 py-2 bg-primary-600 text-white rounded shadow-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed ${showNext ? (config.nextButtonClassName || '') : (config.submitButtonClassName || '')}`}
@@ -126,11 +125,10 @@ export const FormComponent: React.FC<FormProps> = ({
 							>
 								{showNext ? config.nextButtonText : config.submitButtonText}
 							</button>
-						</Submit>
 					)}
 				</div>
 			)}
-		</Root>
+		</Form>
 	);
 };
 

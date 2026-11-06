@@ -1,7 +1,7 @@
 // packages/form-engine/src/components/fields/File.tsx
 import React from "react";
 import { z } from "zod";
-import { Control } from "@radix-ui/react-form";
+import { Field } from "@base-ui/react/field";
 import { defineField } from "../../core/defineField";
 import { fileInputClassName } from "./styles";
 
@@ -20,16 +20,14 @@ export const FileConfigSchema = defineField<
 	// File inputs are uncontrolled: the browser owns the FileList, we only
 	// report it upward on change.
 	control: ({ config, setValue, inputProps }) => (
-		<Control asChild>
-			<input
-				{...inputProps}
-				type="file"
-				accept={config.accept}
-				multiple={config.multiple}
-				onChange={(e) => setValue(e.target.files)}
-				className={fileInputClassName}
-			/>
-		</Control>
+		<Field.Control
+			{...inputProps}
+			type="file"
+			accept={config.accept}
+			multiple={config.multiple}
+			onChange={(e) => setValue(e.target.files)}
+			className={fileInputClassName}
+		/>
 	),
 }).schema;
 export type FileConfig = z.infer<typeof FileConfigSchema>;

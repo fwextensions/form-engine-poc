@@ -1,11 +1,11 @@
 // packages/form-engine/src/components/fields/Select.tsx
 import React from "react";
 import { z } from "zod";
-import * as SelectPrimitive from "@radix-ui/react-select";
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "@radix-ui/react-icons";
+import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { defineField } from "../../core/defineField";
-import { serializeForUI, deserializeFromUI } from "../../utils/valueSerialization";
+import { serializeForUI } from "../../utils/valueSerialization";
 import { optionsSchema } from "./options";
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "./icons";
 
 export const SelectConfigSchema = defineField<
 	{
@@ -34,64 +34,59 @@ export const SelectConfigSchema = defineField<
 		placeholder: z.string().optional(),
 		defaultValue: z.any().optional(),
 	},
-	value: { empty: undefined, serialize: serializeForUI, deserialize: deserializeFromUI },
+	value: { empty: undefined },
+	messages: { valueMissing: "Please select an option." },
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
-		const options = config.options.map((o) => ({ label: o.label, value: serializeForUI(o.value) }));
-		const uiValue = value !== undefined ? serializeForUI(value) : undefined;
+		const items = config.options.map((o) => ({ value: o.value, label: o.label }));
+		const labelFor = (v: unknown) => items.find((i) => serializeForUI(i.value) === serializeForUI(v))?.label;
 
 		return (
 			<SelectPrimitive.Root
 				name={inputProps.name}
-				value={uiValue}
-				onValueChange={(v) => setValue(deserializeFromUI(v))}
+				items={items}
+				value={value === undefined ? null : value}
+				onValueChange={(v) => setValue(v ?? undefined)}
 				disabled={disabled}
 				required={required}
 			>
 				<SelectPrimitive.Trigger
-					id={inputProps.id} // id on the trigger for label association
+					id={inputProps.id}
 					aria-describedby={inputProps["aria-describedby"]}
-					aria-required={required}
-					disabled={disabled}
-					className="mt-1.5 inline-flex items-center justify-between rounded px-3 py-2 text-sm text-gray-900 bg-white border border-ink-100 shadow-sm hover:bg-gray-50 focus:outline-none focus:border-primary-500 w-full disabled:bg-gray-100 disabled:cursor-not-allowed"
+					className="mt-1.5 inline-flex items-center justify-between rounded px-3 py-2 text-sm text-gray-900 bg-white border border-ink-100 shadow-sm hover:bg-gray-50 focus:outline-none focus:border-primary-500 w-full data-[disabled]:bg-gray-100 data-[disabled]:cursor-not-allowed data-[placeholder]:text-gray-500"
 				>
-					<SelectPrimitive.Value placeholder={config.placeholder} />
+					<SelectPrimitive.Value>
+						{(v: unknown) => (v === null || v === undefined ? (config.placeholder ?? "") : labelFor(v) ?? String(v))}
+					</SelectPrimitive.Value>
 					<SelectPrimitive.Icon className="ml-2">
 						<ChevronDownIcon />
 					</SelectPrimitive.Icon>
 				</SelectPrimitive.Trigger>
 				<SelectPrimitive.Portal>
-					<SelectPrimitive.Content
-						position="popper"
-						sideOffset={5}
-						className="w-[var(--radix-select-trigger-width)] overflow-hidden bg-white rounded-md shadow-lg ring-1 ring-gray-300 z-50"
-						onKeyDown={(event: React.KeyboardEvent) => {
-							if (event.key === "Enter") {
-								// Prevent Enter from submitting the form when selecting an item
-								event.preventDefault();
-							}
-						}}
-					>
-						<SelectPrimitive.ScrollUpButton className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default">
-							<ChevronUpIcon />
-						</SelectPrimitive.ScrollUpButton>
-						<SelectPrimitive.Viewport className="p-1">
-							{options.map((option) => (
-								<SelectPrimitive.Item
-									key={option.value}
-									value={option.value}
-									className="relative flex items-center px-8 py-2 rounded-sm text-sm text-gray-900 select-none hover:bg-primary-500 hover:text-white focus:bg-primary-500 focus:text-white"
-								>
-									<SelectPrimitive.ItemText>{option.label}</SelectPrimitive.ItemText>
-									<SelectPrimitive.ItemIndicator className="absolute left-2 inline-flex items-center">
-										<CheckIcon />
-									</SelectPrimitive.ItemIndicator>
-								</SelectPrimitive.Item>
-							))}
-						</SelectPrimitive.Viewport>
-						<SelectPrimitive.ScrollDownButton className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default">
-							<ChevronDownIcon />
-						</SelectPrimitive.ScrollDownButton>
-					</SelectPrimitive.Content>
+					<SelectPrimitive.Positioner sideOffset={5} alignItemWithTrigger={false} className="z-50 outline-none">
+						<SelectPrimitive.Popup className="w-[var(--anchor-width)] overflow-hidden bg-white rounded-md shadow-lg ring-1 ring-gray-300">
+							<SelectPrimitive.ScrollUpArrow className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default">
+								<ChevronUpIcon />
+							</SelectPrimitive.ScrollUpArrow>
+							<SelectPrimitive.List className="p-1 max-h-72 overflow-y-auto">
+								{items.map((item) => (
+									<SelectPrimitive.Item
+										key={serializeForUI(item.value)}
+										value={item.value}
+										label={item.label}
+										className="relative flex items-center px-8 py-2 rounded-sm text-sm text-gray-900 select-none cursor-default data-[highlighted]:bg-primary-500 data-[highlighted]:text-white"
+									>
+										<SelectPrimitive.ItemIndicator className="absolute left-2 inline-flex items-center">
+											<CheckIcon />
+										</SelectPrimitive.ItemIndicator>
+										<SelectPrimitive.ItemText>{item.label}</SelectPrimitive.ItemText>
+									</SelectPrimitive.Item>
+								))}
+							</SelectPrimitive.List>
+							<SelectPrimitive.ScrollDownArrow className="flex items-center justify-center h-6 bg-white text-gray-700 cursor-default">
+								<ChevronDownIcon />
+							</SelectPrimitive.ScrollDownArrow>
+						</SelectPrimitive.Popup>
+					</SelectPrimitive.Positioner>
 				</SelectPrimitive.Portal>
 			</SelectPrimitive.Root>
 		);

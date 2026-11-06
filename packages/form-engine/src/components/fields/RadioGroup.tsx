@@ -1,9 +1,10 @@
 // packages/form-engine/src/components/fields/RadioGroup.tsx
 import React from "react";
 import { z } from "zod";
-import * as RadioGroupPrimitive from "@radix-ui/react-radio-group";
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
 import { defineField } from "../../core/defineField";
-import { serializeForUI, deserializeFromUI } from "../../utils/valueSerialization";
+import { serializeForUI } from "../../utils/valueSerialization";
 import { radioOptionsSchema } from "./options";
 import { optionLabelClassName, radioItemClassName } from "./styles";
 
@@ -33,49 +34,33 @@ export const RadioGroupConfigSchema = defineField<
 		defaultValue: z.any().optional(),
 		orientation: z.enum(["horizontal", "vertical"]).optional().default("vertical"),
 	},
-	value: { empty: undefined, serialize: serializeForUI, deserialize: deserializeFromUI },
+	value: { empty: undefined },
+	messages: { valueMissing: "Please select an option." },
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
-		const options = config.options.map((o) => ({
-			label: o.label,
-			value: serializeForUI(o.value),
-			disabled: o.disabled,
-		}));
-		const uiValue = value !== undefined ? serializeForUI(value) : undefined;
 		const orientationClass = config.orientation === "horizontal" ? "flex space-x-4" : "space-y-2";
 
 		return (
-			<RadioGroupPrimitive.Root
+			<RadioGroupPrimitive
 				name={inputProps.name}
-				value={uiValue}
-				onValueChange={(v) => setValue(deserializeFromUI(v))}
+				value={value ?? null}
+				onValueChange={(v) => setValue(v)}
 				disabled={disabled}
 				required={required}
-				orientation={config.orientation}
-				aria-required={required}
+				aria-labelledby={`${inputProps.id}-label`}
 				aria-describedby={inputProps["aria-describedby"]}
 				className={`mt-1.5 ${orientationClass}`}
 			>
-				{options.map((option) => {
-					const itemId = `${inputProps.id}-${option.value}`;
-					return (
-						<div key={option.value} className="flex items-center gap-2">
-							<RadioGroupPrimitive.Item
-								value={option.value}
-								id={itemId}
-								disabled={option.disabled}
-								className={radioItemClassName}
-							>
-								<RadioGroupPrimitive.Indicator className="flex items-center justify-center">
-									<div className="h-1.5 w-1.5 rounded-full bg-white"></div>
-								</RadioGroupPrimitive.Indicator>
-							</RadioGroupPrimitive.Item>
-							<label htmlFor={itemId} className={optionLabelClassName}>
-								{option.label}
-							</label>
-						</div>
-					);
-				})}
-			</RadioGroupPrimitive.Root>
+				{config.options.map((option) => (
+					<label key={serializeForUI(option.value)} className={`flex items-center gap-2 ${optionLabelClassName}`}>
+						<Radio.Root value={option.value} disabled={option.disabled} className={radioItemClassName}>
+							<Radio.Indicator className="flex items-center justify-center">
+								<div className="h-1.5 w-1.5 rounded-full bg-white"></div>
+							</Radio.Indicator>
+						</Radio.Root>
+						{option.label}
+					</label>
+				))}
+			</RadioGroupPrimitive>
 		);
 	},
 }).schema;

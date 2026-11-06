@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import * as Dialog from "@radix-ui/react-dialog";
+import { Dialog } from "@base-ui/react/dialog";
 import { getSettings, saveSettings, getServerCredentialStatus, subscribeToSettings, type LLMProvider } from "@/lib/settings";
 import { startOpenRouterLogin } from "@/lib/openrouter-auth";
 
@@ -12,7 +12,7 @@ interface SettingsDialogProps {
 
 /**
  * Settings dialog for configuring LLM provider and API key.
- * Uses Radix UI Dialog for the modal interface.
+ * Uses Base UI Dialog for the modal interface.
  * 
  * Requirements: 6.1, 6.2, 6.3
  */
@@ -102,8 +102,8 @@ export default function SettingsDialog({
 	return (
 		<Dialog.Root open={open} onOpenChange={onOpenChange}>
 			<Dialog.Portal>
-				<Dialog.Overlay className="fixed inset-0 bg-black/50 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-				<Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg p-6 w-full max-w-md z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]">
+				<Dialog.Backdrop className="fixed inset-0 bg-black/50 z-50" />
+				<Dialog.Popup className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg shadow-lg p-6 w-full max-w-md z-50 outline-none">
 					<Dialog.Title className="text-xl font-semibold mb-4">
 						LLM Settings
 					</Dialog.Title>
@@ -393,11 +393,10 @@ export default function SettingsDialog({
 						</button>
 					</div>
 
-					<Dialog.Close asChild>
-						<button
-							className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
-							aria-label="Close"
-						>
+					<Dialog.Close
+						className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors"
+						aria-label="Close"
+					>
 							<svg
 								width="15"
 								height="15"
@@ -412,9 +411,8 @@ export default function SettingsDialog({
 									clipRule="evenodd"
 								/>
 							</svg>
-						</button>
 					</Dialog.Close>
-				</Dialog.Content>
+				</Dialog.Popup>
 			</Dialog.Portal>
 		</Dialog.Root>
 	);
