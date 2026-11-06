@@ -134,8 +134,10 @@
 		outline-color: transparent !important;
 	}
 
-	/* Required field asterisk — applied via FormFieldContainer */
-	.field-required-marker:has(input[required], select[required], textarea[required])
+	/* Required field asterisk — FormFieldContainer sets data-required from the
+	   field's own config (a nested required input, e.g. inside a repeater item,
+	   must not mark the group) */
+	.field-required-marker[data-required]
 		> *:first-child
 		> label::after {
 		content: ' *';

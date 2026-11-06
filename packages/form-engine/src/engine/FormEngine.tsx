@@ -160,6 +160,8 @@ export const FormEngine = forwardRef<FormEngineHandle, FormEngineProps>(
 			onNavigatePrev: isMultiPage ? handlePrevPage : undefined,
 			dynamicProps, // Pass the dynamic props through the context
 			meta,
+			schema,
+			onNavigateTo: isMultiPage ? handleNavigate : undefined,
 		};
 
 		return (

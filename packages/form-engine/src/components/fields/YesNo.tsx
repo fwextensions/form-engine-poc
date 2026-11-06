@@ -26,7 +26,12 @@ export const YesNoConfigSchema = defineField<
 		defaultValue: z.boolean().optional(),
 		orientation: z.enum(["horizontal", "vertical"]).optional().default("horizontal"),
 	},
-	value: { empty: undefined, serialize: (v) => (v === true ? "true" : v === false ? "false" : ""), deserialize: (s) => (s === "true" ? true : s === "false" ? false : undefined) },
+	value: {
+		empty: undefined,
+		serialize: (v) => (v === true ? "true" : v === false ? "false" : ""),
+		deserialize: (s) => (s === "true" ? true : s === "false" ? false : undefined),
+		display: (v, config) => (v === true ? (config.yesLabel ?? "Yes") : v === false ? (config.noLabel ?? "No") : null),
+	},
 	messages: { valueMissing: "Please choose yes or no." },
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
 		const options = [

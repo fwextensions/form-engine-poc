@@ -165,11 +165,12 @@ function getConstraints(schema: any): string[] {
 		constraints.push(`maxLength: ${schema.maxLength}`);
 	}
 
-	if (typeof schema.minimum === "number") {
+	// z.int() emits the safe-integer bounds; they are not an authoring constraint.
+	if (typeof schema.minimum === "number" && schema.minimum !== Number.MIN_SAFE_INTEGER) {
 		constraints.push(`min: ${schema.minimum}`);
 	}
 
-	if (typeof schema.maximum === "number") {
+	if (typeof schema.maximum === "number" && schema.maximum !== Number.MAX_SAFE_INTEGER) {
 		constraints.push(`max: ${schema.maximum}`);
 	}
 

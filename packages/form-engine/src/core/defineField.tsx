@@ -6,9 +6,10 @@
 import React from "react";
 import { z } from "zod";
 import { baseFieldConfigSchema, commonFieldTransform, type BaseFieldConfig } from "./baseSchemas";
-import { createComponent, type ComponentDefinition } from "./componentFactory";
+import { createComponent, type ComponentDefinition, type RenderChildren } from "./componentFactory";
 import type { FormEngineContext } from "../engine/FormEngineContext";
-import type { ValueSpec } from "../catalog/catalog";
+import type { ChildrenSpec, ValueSpec } from "../catalog/catalog";
+import { scopedId } from "../engine/FormEngineContext";
 import { FormFieldContainer, type ConstraintMessages, type FormFieldContainerProps } from "../components/layout/FormFieldContainer";
 
 /** Attributes shared by every native control rendered for a field. */
@@ -24,6 +25,8 @@ export interface FieldInputProps {
 export interface FieldControlArgs<Config, Value> {
 	/** Validated config, with any dynamic props from rules already merged. */
 	config: Config;
+	/** The field's data key (`config.id`); `inputProps.id` is the scoped DOM id. */
+	id: string;
 	/** Current value, falling back to `defaultValue` and then `value.empty`. */
 	value: Value;
 	setValue: (value: Value) => void;
@@ -33,6 +36,8 @@ export interface FieldControlArgs<Config, Value> {
 	/** Ready-to-spread attributes for the primary native control. */
 	inputProps: FieldInputProps;
 	context: FormEngineContext;
+	/** Renders child component configs (only for fields that declare `children`). */
+	renderChildren: RenderChildren;
 }
 
 export interface DefineFieldArgs<Shape extends z.ZodRawShape, Value> {
@@ -43,6 +48,8 @@ export interface DefineFieldArgs<Shape extends z.ZodRawShape, Value> {
 	notes?: string;
 	/** Props beyond the base field schema. May override base props such as `validation`. */
 	schema?: Shape;
+	/** Declare when the field contains other components (a repeating group); the schema must then include `children`. */
+	children?: ChildrenSpec;
 	/** Value semantics; `empty` is also the fallback when nothing is entered. */
 	value: ValueSpec & { empty: Value };
 	/** Renders the control inside the standard label/description container. */
@@ -56,10 +63,10 @@ export interface DefineFieldArgs<Shape extends z.ZodRawShape, Value> {
 	/** Overrides for the container's native constraint messages (e.g. a field-specific `valueMissing`). */
 	messages?: ConstraintMessages;
 	/**
-	 * Custom validation of the field's value, run by the form on submit (and on
-	 * change afterwards). Return a message to show, or null when valid.
+	 * Custom validation of the field's current value, run by the form on submit
+	 * (and on change afterwards). Return a message to show, or null when valid.
 	 */
-	validate?: (value: unknown, config: { required: boolean }) => string | string[] | null;
+	validate?: (value: Value, info: { required: boolean; config: FieldConfig<Shape> }) => string | string[] | null;
 }
 
 export type FieldConfig<Shape extends z.ZodRawShape> = BaseFieldConfig & { type: string } & z.infer<z.ZodObject<Shape>>;
@@ -108,39 +115,49 @@ export function defineField<Shape extends z.ZodRawShape, Value>(
 		example: def.example as any,
 		notes: def.notes,
 		value: def.value,
+		children: def.children,
 		transformConfig: commonFieldTransform,
-		transformProps: (config, context) => {
+		transformProps: (config, context, renderChildren) => {
 			const { id, label, description, validation } = config;
+			// Inside a repeating group the same template renders once per item, so
+			// DOM ids and input names carry the item's scope; the data key does not.
+			const domId = scopedId(context, id);
 			const disabled = context.formMode === "view" || config.disabled === true;
 			const required = validation?.required === true;
-			const describedBy = description ? `${id}-description` : undefined;
+			const describedBy = description ? `${domId}-description` : undefined;
 			const stored = context.formData[id];
 			const value = (stored !== undefined ? stored : (config as { defaultValue?: unknown }).defaultValue ?? def.value.empty) as Value;
 
 			const control = def.control({
 				config,
+				id,
 				value,
 				setValue: (next) => context.onDataChange(id, next),
 				disabled,
 				required,
 				inputProps: {
-					id,
-					name: id,
+					id: domId,
+					name: domId,
 					required: required || undefined,
 					disabled,
 					"aria-describedby": describedBy,
 				},
 				context,
+				renderChildren,
 			});
 
 			return {
 				containerProps: {
-					name: id,
+					name: domId,
+					fieldId: id,
+					required,
 					label: labelPlacement === "above" ? label : undefined,
 					description,
-					htmlFor: id,
+					htmlFor: domId,
 					messages: def.messages,
-					validate: def.validate ? (v) => def.validate!(v, { required }) : undefined,
+					// Validate the engine's value rather than what Base UI tracked for the
+					// control, so fields without a native control (groups) work too.
+					validate: def.validate ? () => def.validate!(value, { required, config }) : undefined,
 				},
 				control,
 			};

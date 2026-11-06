@@ -1,5 +1,6 @@
 import { createContext, ReactNode, useContext } from "react";
 import type { FormMeta } from "./FormEngine";
+import type { FormConfig } from "../components/layout/Form";
 
 export interface FormEngineContext {
     formData: Record<string, any>;
@@ -16,6 +17,20 @@ export interface FormEngineContext {
 	onNavigatePrev?: () => void;
     dynamicProps?: Record<string, Record<string, any>>;
     meta?: FormMeta;
+	/** The whole form config, for components that need to see other fields (review). */
+	schema?: FormConfig;
+	/** Jumps to a page by index in multi-page mode. */
+	onNavigateTo?: (pageIndex: number) => void;
+	/**
+	 * Prefix for DOM ids and input names when fields render inside a repeating
+	 * group, so each item's controls stay unique. Data keys are unaffected.
+	 */
+	scope?: string;
+}
+
+/** DOM id / input name for a field id under the context's scope (the id itself at the top level). */
+export function scopedId(context: Pick<FormEngineContext, "scope">, id: string): string {
+	return context.scope ? `${context.scope}-${id}` : id;
 }
 
 // Default context value - provides sensible defaults or stubs for when no provider is found

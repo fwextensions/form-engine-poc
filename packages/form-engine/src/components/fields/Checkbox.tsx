@@ -13,7 +13,7 @@ export const CheckboxConfigSchema = defineField<{ defaultValue: z.ZodOptional<z.
 	schema: {
 		defaultValue: z.boolean().optional(),
 	},
-	value: { empty: false },
+	value: { empty: false, display: (v) => (v === true ? "Yes" : "No") },
 	// The label sits beside the box, so the control renders it.
 	labelPlacement: "control",
 	messages: { valueMissing: "This box must be checked." },

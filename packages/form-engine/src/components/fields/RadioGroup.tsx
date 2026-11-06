@@ -5,7 +5,7 @@ import { Radio } from "@base-ui/react/radio";
 import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
 import { defineField } from "../../core/defineField";
 import { serializeForUI } from "../../utils/valueSerialization";
-import { radioOptionsSchema } from "./options";
+import { displayChoice, radioOptionsSchema } from "./options";
 import { optionLabelClassName, radioItemClassName } from "./styles";
 
 export const RadioGroupConfigSchema = defineField<
@@ -34,7 +34,7 @@ export const RadioGroupConfigSchema = defineField<
 		defaultValue: z.any().optional(),
 		orientation: z.enum(["horizontal", "vertical"]).optional().default("vertical"),
 	},
-	value: { empty: undefined },
+	value: { empty: undefined, display: displayChoice },
 	messages: { valueMissing: "Please select an option." },
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
 		const orientationClass = config.orientation === "horizontal" ? "flex space-x-4" : "space-y-2";

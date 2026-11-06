@@ -4,7 +4,7 @@ import { z } from "zod";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { defineField } from "../../core/defineField";
 import { serializeForUI } from "../../utils/valueSerialization";
-import { optionsSchema } from "./options";
+import { displayChoice, optionsSchema } from "./options";
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "./icons";
 
 export const SelectConfigSchema = defineField<
@@ -34,7 +34,7 @@ export const SelectConfigSchema = defineField<
 		placeholder: z.string().optional(),
 		defaultValue: z.any().optional(),
 	},
-	value: { empty: undefined },
+	value: { empty: undefined, display: displayChoice },
 	messages: { valueMissing: "Please select an option." },
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
 		const items = config.options.map((o) => ({ value: o.value, label: o.label }));

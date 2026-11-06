@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Field } from "@base-ui/react/field";
 import { defineField } from "../../core/defineField";
 import { inputClassName } from "./styles";
+import { displayIsoDate } from "../../utils/displayDate";
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected an ISO date (YYYY-MM-DD)");
 
@@ -18,7 +19,7 @@ export const DatePickerConfigSchema = defineField({
 		min: isoDate.optional(),
 		max: isoDate.optional(),
 	},
-	value: { empty: "" },
+	value: { empty: "", display: displayIsoDate },
 	control: ({ config, value, setValue, inputProps }) => (
 		<Field.Control
 			{...inputProps}

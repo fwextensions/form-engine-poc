@@ -52,18 +52,17 @@ function flattenComponents(components: FormComponentConfig[]): FormComponentConf
 }
 
 /**
- * A hook that processes the conditional rules for a form and returns a map of dynamic props.
- * @param schema - The full form schema.
- * @param formData - The current data of the form.
- * @returns A memoized object mapping component IDs to their dynamically calculated props.
+ * Evaluates every component's `rules` against the data and returns a map of
+ * component id to the props its matching rules set. Pure: the hook below
+ * memoizes it, and the review page calls it per repeater item.
  */
-export function useFormRules(
-	schema: FormSchema,
+export function computeDynamicProps(
+	children: unknown[] | undefined,
 	formData: Record<string, any>,
 	formContext?: Record<string, any>,
 ): DynamicPropsMap {
-	const dynamicProps = useMemo(() => {
-		const allComponents = flattenComponents(schema.children || []);
+	{
+		const allComponents = flattenComponents((children ?? []) as FormComponentConfig[]);
 		const propsMap: DynamicPropsMap = {};
 
 		for (const component of allComponents) {
@@ -121,7 +120,19 @@ export function useFormRules(
 		}
 
 		return propsMap;
-	}, [schema, formData, formContext]);
+	}
+}
 
-	return dynamicProps;
+/**
+ * A hook that processes the conditional rules for a form and returns a map of dynamic props.
+ * @param schema - The full form schema.
+ * @param formData - The current data of the form.
+ * @returns A memoized object mapping component IDs to their dynamically calculated props.
+ */
+export function useFormRules(
+	schema: FormSchema,
+	formData: Record<string, any>,
+	formContext?: Record<string, any>,
+): DynamicPropsMap {
+	return useMemo(() => computeDynamicProps(schema.children, formData, formContext), [schema, formData, formContext]);
 }

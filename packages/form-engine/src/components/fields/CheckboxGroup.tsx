@@ -52,8 +52,15 @@ export const CheckboxGroupConfigSchema = defineField<
 		defaultValue: z.array(z.any()).optional().describe("Option values selected initially"),
 		orientation: z.enum(["horizontal", "vertical"]).optional().default("vertical"),
 	},
-	value: { empty: [] },
-	// Base UI tracks the group's value on the field; `required` becomes a validate rule.
+	value: {
+		empty: [],
+		display: (value, config) => {
+			if (!Array.isArray(value) || value.length === 0) return null;
+			const options = (config.options ?? []) as Array<{ label: string; value: unknown }>;
+			return value.map((v) => options.find((o) => serializeForUI(o.value) === serializeForUI(v))?.label ?? String(v)).join(", ");
+		},
+	},
+	// `required` becomes a validate rule on the group's value.
 	validate: (value, { required }) => (required && (!Array.isArray(value) || value.length === 0) ? "Select at least one option." : null),
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
 		const selected = Array.isArray(value) ? value : [];

@@ -246,11 +246,11 @@ Refer to the [`docs/`](/docs) directory for detailed feature roadmaps, milestone
 
 [Devin noted](https://deepwiki.com/search/take-a-look-at-the-files-that_155ccf08-e637-44d5-be08-3a71e305d838) that the current JSON schema has several limitations for representing the full DAHLIA short form:
 
-* **Complex date fields**: The form uses separate `MM/DD/YYYY` inputs with custom validation `c3-household-member-form.html.slim:28-41`
+* **Complex date fields**: The form uses separate `MM/DD/YYYY` inputs with custom validation `c3-household-member-form.html.slim:28-41` — now covered by the `dateOfBirth` field.
 
 * **Address validation**: Requires integration with address validation services `ShortFormApplicationController.js.coffee:41-42`
 
-* **Dynamic household members**: The form allows adding/removing household members dynamically, which requires array field management not supported by the schema
+* **Dynamic household members**: The form allows adding/removing household members dynamically — now covered by the `repeater` field, whose `children` template renders once per item (see `test-schemas/household-review.yaml`); a `review` component summarises every answer before submission.
 
 * **Conditional field display**: Many fields show/hide based on other field values using complex rules `c3-household-member-form.html.slim:58-60`
 
@@ -258,4 +258,4 @@ Refer to the [`docs/`](/docs) directory for detailed feature roadmaps, milestone
 
 * **Multi-field address components**: Addresses require separate fields for address1, address2, city, state, zip with validation
 
-The schema would also need extensions for dynamic arrays, complex conditional logic, file uploads, and multi-component field types to fully represent the DAHLIA form structure.
+The schema would still need extensions for complex conditional logic, categorised file uploads and multi-field address components to fully represent the DAHLIA form structure.

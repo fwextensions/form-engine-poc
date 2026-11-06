@@ -4,7 +4,7 @@ import React from "react";
 import { z } from "zod";
 import { baseLayoutComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
-import type { FormEngineContext } from "../../engine/FormEngineContext";
+import { scopedId, type FormEngineContext } from "../../engine/FormEngineContext";
 
 export const SectionConfigSchema = baseLayoutComponentConfigSchema.extend({
 	type: z.literal("section"),
@@ -57,7 +57,7 @@ createComponent<SectionConfig, SectionProps>({
 	notes: "Use a section when a paper form has a labelled block of related fields (\"YOUR ADDRESS\", \"ALTERNATE CONTACT\"). Sections live inside pages and may be nested.",
 	children: { allow: "any", deny: ["form", "page"] },
 	transformProps: (config: SectionConfig, context: FormEngineContext, renderChildren): SectionProps => ({
-		id: config.id,
+		id: config.id ? scopedId(context, config.id) : undefined,
 		title: config.title,
 		description: config.description,
 		className: config.className,

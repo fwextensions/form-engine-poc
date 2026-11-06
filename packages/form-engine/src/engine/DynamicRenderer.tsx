@@ -92,22 +92,22 @@ function resolve(
 		return { kind: "error", error };
 	}
 
+	// Merge dynamic props from the rules engine before validating, so the
+	// component's own normalisation (label asterisks, top-level `required`)
+	// applies to them too. Deep merge keeps nested objects; dynamic props win.
+	const componentId = (config as any).id;
+	const dynamic = typeof componentId === "string" ? context?.dynamicProps?.[componentId] : undefined;
+	const rawConfig = dynamic ? deepMerge(config as Record<string, any>, dynamic) : config;
+
 	// Lenient check: unknown keys are stripped and reported once; real errors throw.
-	const check = componentDef.checkConfig(config);
+	const check = componentDef.checkConfig(rawConfig);
 	for (const issue of check.issues) {
 		if (issue.severity === "warning") warnOnce(`${componentType}:${(config as any).id ?? ""}:${issue.path.join(".")}`, `DynamicRenderer: ${issue.message}`);
 	}
 	if (!check.config) {
 		throw new ZodError(check.issues.filter((i) => i.severity === "error").map((i) => ({ code: "custom" as const, path: i.path, message: i.message, input: config })));
 	}
-	let validatedConfig = check.config;
-
-	// Merge dynamic props from the rules engine. Deep merge so nested objects
-	// are preserved; dynamic props take precedence.
-	const componentId = (validatedConfig as any)?.id;
-	if (context?.dynamicProps?.[componentId]) {
-		validatedConfig = deepMerge(validatedConfig as any, context.dynamicProps[componentId] as any) as typeof validatedConfig;
-	}
+	const validatedConfig = check.config;
 
 	if ((validatedConfig as any).hidden || ((validatedConfig as any).condition && !evaluateCondition((validatedConfig as any).condition, context.formData, context.formContext))) {
 		return { kind: "hidden" };

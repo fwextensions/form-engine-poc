@@ -258,8 +258,8 @@ Date of birth entered as month, day and year inputs; the value is an ISO date (Y
 - **required** (boolean) [Optional] - Shorthand for validation.required
 - **disabled** (boolean) [Optional]
 - **validation** (object) [Optional]
-- **minAge** (integer) [Optional] Constraints: min: 0, max: 9007199254740991 - Minimum age in whole years
-- **maxAge** (integer) [Optional] Constraints: max: 9007199254740991 - Maximum age in whole years
+- **minAge** (integer) [Optional] Constraints: min: 0 - Minimum age in whole years
+- **maxAge** (integer) [Optional] - Maximum age in whole years
 - **defaultValue** (string) [Optional] Constraints: pattern: ^\d{4}-\d{2}-\d{2}$
 
 **Example:**
@@ -332,7 +332,7 @@ accept: .pdf,image/*
 
 Root form container with submit handling and multi-page navigation
 
-**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, page, password, radiogroup, section, select, tel, text, textarea, yesno)
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, page, password, radiogroup, repeater, review, section, select, tel, text, textarea, yesno)
 
 **Properties:**
 
@@ -456,7 +456,7 @@ max: 20
 
 A page container for grouping form fields, used in multi-page forms
 
-**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, section, select, tel, text, textarea, yesno)
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, repeater, review, section, select, tel, text, textarea, yesno)
 
 **Properties:**
 
@@ -541,11 +541,86 @@ options:
 
 Prefer the `{label, value}` object form for options. Plain strings are also accepted and use the string as both label and value. Use `radiogroup` for up to about six options and `select` for longer lists.
 
+### repeater
+
+A repeating group of fields the user can add and remove ("add another household member"); the value is an array with one object per item, keyed by the child field ids
+
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, repeater, section, select, tel, text, textarea, yesno)
+
+**Properties:**
+
+- **id** (string) [Required] Constraints: minLength: 1
+- **type** (literal: "repeater") [Required]
+- **rules** (array<object>) [Optional]
+- **hidden** (boolean) [Optional] - Hide the component; rules can set this dynamically
+- **condition** (any) [Optional] - JSONLogic expression; the component renders only when it is truthy
+- **label** (string) [Optional] - Label shown above the control; a trailing * marks the field required
+- **description** (string) [Optional] - Help text shown under the label
+- **required** (boolean) [Optional] - Shorthand for validation.required
+- **disabled** (boolean) [Optional]
+- **validation** (object) [Optional]
+- **children** (array<any>) [Optional] - Template fields rendered once per item
+- **itemLabel** (string) [Optional] Default: `"Item"` - Heading for each item, numbered ("Household member 1")
+- **addButtonText** (string) [Optional] - Text of the add button; defaults to "Add <itemLabel>"
+- **removeButtonText** (string) [Optional] Default: `"Remove"`
+- **minItems** (integer) [Optional] Default: `0` Constraints: min: 0 - Items always shown and not removable
+- **maxItems** (integer) [Optional] - Hide the add button at this many items
+- **defaultValue** (array<object>) [Optional] - Initial items, keyed by child field id
+
+**Example:**
+
+```yaml
+type: repeater
+id: householdMembers
+label: Other household members
+itemLabel: Household member
+addButtonText: Add another household member
+children:
+  - type: name
+    id: memberName
+    label: Name*
+  - type: dateOfBirth
+    id: memberDob
+    label: Date of birth*
+```
+
+Put the fields for one item in `children`; their ids are unique within the item, not the form. `minItems` items are always shown; `validation.required: true` means at least one item. Rules on child fields see the item's own values first, then the rest of the form.
+
+### review
+
+A read-only summary of every answer entered so far, grouped by page, with Edit links back to each page; place it on the last page of a multi-page form
+
+**Properties:**
+
+- **id** (string) [Optional]
+- **type** (literal: "review") [Required]
+- **rules** (array<object>) [Optional]
+- **hidden** (boolean) [Optional] - Hide the component; rules can set this dynamically
+- **condition** (any) [Optional] - JSONLogic expression; the component renders only when it is truthy
+- **title** (string) [Optional] - Heading shown above the summary
+- **description** (string) [Optional] - Text shown under the heading
+- **emptyText** (string) [Optional] Default: `"Not answered"` - Shown for fields with no value
+- **showEmpty** (boolean) [Optional] Default: `true` - Include fields that have no value
+- **editLinks** (boolean) [Optional] Default: `true` - Show an Edit link per page (multi-page forms only)
+- **editLinkText** (string) [Optional] Default: `"Edit"`
+- **className** (string) [Optional]
+
+**Example:**
+
+```yaml
+type: review
+id: reviewAnswers
+title: Review your answers
+description: Check everything before you submit.
+```
+
+The review needs no list of fields: it reads the form config and shows every visible field with a value (or "Not answered"). Put it in its own final page so the submit button follows it.
+
 ### section
 
 Groups related fields under a heading with optional help text, within a page
 
-**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, section, select, tel, text, textarea, yesno)
+**Can contain children:** Yes (allowed types: addressValidation, checkbox, checkboxgroup, date, dateOfBirth, email, file, html, name, number, password, radiogroup, repeater, review, section, select, tel, text, textarea, yesno)
 
 **Properties:**
 

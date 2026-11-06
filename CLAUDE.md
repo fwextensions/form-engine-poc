@@ -55,13 +55,14 @@ Every component type is registered once, in its own file, with `createComponent(
 - `type`, `kind` (`"field" | "layout" | "static"`), `schema` (Zod, strict), `component`
 - `meta.description`, `meta.example` (minimal valid config minus `type`; verified by a test), `meta.notes`
 - `children: { allow: "any" | string[], deny?: string[] }` on layout components only
-- `value: { empty, serialize?, deserialize? }` on fields only
+- `value: { empty, serialize?, deserialize?, display? }` on fields only; `display(value, config)` is the human-readable form used by the `review` component
 - `validateConfig(data)` throws on any issue, including unknown keys; `checkConfig(data)` strips unknown keys and returns them as warnings
 
 ### Adding a field component
 1. Create `packages/form-engine/src/components/fields/MyField.tsx` and call `defineField({ type, description, example, schema, value, control })`. `schema` holds only the props beyond `baseFieldConfigSchema`; `control` receives `{ config, value, setValue, disabled, required, inputProps }` and renders the control. Label, description, required/disabled handling, `aria-describedby` and value fallback are handled for you. Use `labelPlacement: "control"` when the control renders its own label (see `Checkbox.tsx`).
 2. If the field accepts validation keys beyond `required`, extend `textValidationSchema` or `numberValidationSchema` from `core/baseSchemas.ts` and wire each key to the native constraint attribute on the control. `FormFieldContainer` is a Base UI `Field.Root` and renders a `Field.Error` for every constraint state; override a message with `messages` and add non-native rules with `validate` in `defineField()`. Validation runs on submit (Base UI `Form`), then on change.
    Render a native input with `Field.Control` (`render={<textarea />}` for other elements). Base UI puts the `id` of a Checkbox or Radio on its hidden input, so wrap choice items in a `<label>` rather than relying on `htmlFor`.
+   Use `inputProps.id` for DOM ids and `id` for the data key: inside a `repeater` item they differ (the context's `scope` prefixes DOM ids and input names so each item's controls stay unique). A field that contains other components declares `children` in both its schema and `defineField({ children })` and renders them with `renderChildren` inside a nested `FormEngineProvider` (see `Repeater.tsx`).
 3. Export the file from `packages/form-engine/src/components/index.ts`. It registers itself on import.
 4. Add a Fillout mapper in `packages/form-exporters/src/fillout/fillout-exporter.ts` (the coverage test fails until you do).
 5. Run `npm run check`; update the prompt snapshot.

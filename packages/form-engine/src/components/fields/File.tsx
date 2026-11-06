@@ -16,7 +16,13 @@ export const FileConfigSchema = defineField<
 		accept: z.string().optional(), // e.g. "image/*,.pdf"
 		multiple: z.boolean().optional(),
 	},
-	value: { empty: null },
+	value: {
+		empty: null,
+		display: (v) => {
+			const files = v && typeof v === "object" && "length" in (v as object) ? Array.from(v as ArrayLike<{ name?: string }>) : [];
+			return files.length ? files.map((f) => f.name ?? "file").join(", ") : null;
+		},
+	},
 	// File inputs are uncontrolled: the browser owns the FileList, we only
 	// report it upward on change.
 	control: ({ config, setValue, inputProps }) => (

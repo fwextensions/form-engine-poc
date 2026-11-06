@@ -144,6 +144,7 @@ const transformProps = (config: AddressValidationFieldConfig, context: FormEngin
 			name: id,
 			label,
 			description,
+			required: config.validation?.required === true,
 		},
 		initialValue: formData[id] as Address | undefined,
 		onChange: (value) => onDataChange(id, value),

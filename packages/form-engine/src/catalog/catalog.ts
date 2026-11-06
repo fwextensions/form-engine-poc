@@ -49,6 +49,12 @@ export interface ValueSpec {
 	serialize?: (value: unknown) => string;
 	/** Converts a UI control string back to the stored value. */
 	deserialize?: (serialized: string) => unknown;
+	/**
+	 * Human-readable rendering of a value (review pages, summaries). Receives
+	 * the validated field config so option labels and the like can be looked
+	 * up. Return null for "nothing entered".
+	 */
+	display?: (value: unknown, config: Record<string, any>) => string | null;
 }
 
 /**

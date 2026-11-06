@@ -35,7 +35,14 @@ export const NameConfigSchema = defineField<
 		showMiddleName: z.boolean().optional().default(true),
 		defaultValue: nameValueSchema.optional(),
 	},
-	value: { empty: EMPTY },
+	value: {
+		empty: EMPTY,
+		display: (v) => {
+			const parts = v && typeof v === "object" ? (v as Partial<NameValue>) : {};
+			const text = [parts.first, parts.middle, parts.last].map((p) => (p ?? "").trim()).filter(Boolean).join(" ");
+			return text || null;
+		},
+	},
 	control: ({ config, value, setValue, disabled, required, inputProps }) => {
 		const current: NameValue = { ...EMPTY, ...(value ?? {}) };
 		const update = (part: keyof NameValue, text: string) => setValue({ ...current, [part]: text });

@@ -281,6 +281,27 @@ const componentMappers: Record<string, WidgetMapper> = {
     return { type: "Paragraph", template: paragraphTemplate(content) };
   },
 
+  repeater: (node, diagnostics) => {
+    diagnostics.push({
+      severity: "warning",
+      componentId: node.id,
+      componentType: "repeater",
+      message: `Repeating group "${node.id ?? "repeater"}" has no Fillout equivalent; its fields were exported once, under a heading.`,
+    });
+    const heading = headingWidget({ ...node, title: labelOf(node) });
+    return heading ? { type: heading.type, template: heading.template } : null;
+  },
+
+  review: (node, diagnostics) => {
+    diagnostics.push({
+      severity: "info",
+      componentId: node.id,
+      componentType: "review",
+      message: "Review page omitted: Fillout has no answer-summary widget.",
+    });
+    return null;
+  },
+
   addressValidation: (node, diagnostics) => {
     diagnostics.push({
       severity: "warning",
@@ -392,6 +413,10 @@ function collectWidgets(children: unknown[], diagnostics: ExportDiagnostic[], wi
     for (const widget of processComponent(node, diagnostics)) {
       widget.position.row = widgets.length;
       widgets.push(widget);
+    }
+    // A field that contains a template (repeater) contributes its fields once.
+    if (definition?.children && Array.isArray(node.children)) {
+      collectWidgets(node.children, diagnostics, widgets);
     }
   }
 }

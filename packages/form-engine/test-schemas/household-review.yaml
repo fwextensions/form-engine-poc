@@ -1,0 +1,93 @@
+# Repeating group and review page: a household application that collects
+# any number of members, then summarises every answer before submission.
+type: form
+id: householdApplication
+title: Household application
+display: multipage
+children:
+  - type: page
+    id: aboutYou
+    title: About you
+    children:
+      - type: name
+        id: applicantName
+        label: Your name*
+      - type: email
+        id: email
+        label: Email address*
+      - type: yesno
+        id: hasOtherMembers
+        label: Does anyone else live with you?*
+
+  - type: page
+    id: household
+    title: Your household
+    children:
+      - type: section
+        id: membersSection
+        title: Other household members
+        description: Add everyone who will live with you.
+        children:
+          - type: repeater
+            id: members
+            label: Household members
+            itemLabel: Household member
+            addButtonText: Add another household member
+            minItems: 1
+            maxItems: 8
+            rules:
+              - when:
+                  field: hasOtherMembers
+                  is: false
+                then:
+                  - set:
+                      hidden: true
+            children:
+              - type: name
+                id: memberName
+                label: Name*
+              - type: dateOfBirth
+                id: memberDob
+                label: Date of birth*
+              - type: select
+                id: relationship
+                label: Relationship to you*
+                options:
+                  - { label: Spouse or partner, value: partner }
+                  - { label: Child, value: child }
+                  - { label: Parent, value: parent }
+                  - { label: Other, value: other }
+              - type: text
+                id: relationshipOther
+                label: Please describe
+                hidden: true
+                rules:
+                  - when:
+                      field: relationship
+                      is: other
+                    then:
+                      - set:
+                          hidden: false
+                          required: true
+      - type: repeater
+        id: phones
+        label: Phone numbers
+        itemLabel: Phone number
+        children:
+          - type: tel
+            id: number
+            label: Number*
+          - type: radiogroup
+            id: kind
+            label: Type
+            orientation: horizontal
+            options: [Home, Work, Mobile]
+
+  - type: page
+    id: reviewPage
+    title: Review
+    children:
+      - type: review
+        id: review
+        title: Review your answers
+        description: Check everything before you submit.

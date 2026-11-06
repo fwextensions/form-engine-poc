@@ -23,7 +23,12 @@ export const defaultConstraintMessages: ConstraintMessages = {
 
 // Props for FormFieldContainer
 export interface FormFieldContainerProps {
+	/** Input name (scoped inside repeating groups). */
 	name: string;
+	/** The field's data key, exposed as `data-field-id` for tooling; defaults to `name`. */
+	fieldId?: string;
+	/** Marks the label with the required asterisk (`data-required` on the root). */
+	required?: boolean;
 	label?: string;
 	description?: string;
 	htmlFor?: string; // Corresponds to the input's id
@@ -48,6 +53,8 @@ export interface FormFieldContainerProps {
  */
 export const FormFieldContainer: React.FC<FormFieldContainerProps> = ({
 	name,
+	fieldId,
+	required,
 	label,
 	description,
 	htmlFor,
@@ -64,7 +71,8 @@ export const FormFieldContainer: React.FC<FormFieldContainerProps> = ({
 			name={name}
 			validate={validate}
 			validationMode={validationMode}
-			data-field-id={name}
+			data-field-id={fieldId ?? name}
+			data-required={required || undefined}
 			className={`mb-5 ${RequiredFieldStyles} ${className || ""}`}
 			style={style}
 		>

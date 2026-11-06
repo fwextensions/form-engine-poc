@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { z } from "zod";
 import { defineField } from "../../core/defineField";
 import { SubField } from "./composite";
+import { displayIsoDate } from "../../utils/displayDate";
 
 export interface DateParts {
 	month: string;
@@ -127,7 +128,7 @@ export const DateOfBirthConfigSchema = defineField<
 		maxAge: z.number().int().positive().optional().describe("Maximum age in whole years"),
 		defaultValue: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Expected an ISO date (YYYY-MM-DD)").optional(),
 	},
-	value: { empty: "" },
+	value: { empty: "", display: displayIsoDate },
 	control: ({ config, value, setValue, disabled, required, inputProps }) => (
 		<DateOfBirthInput
 			id={inputProps.id}

@@ -32,3 +32,15 @@ export function normalizeOptions<O extends Option>(options: ReadonlyArray<O | st
 /** `options` property for select-like fields; validated output is always normalised. */
 export const optionsSchema = z.array(optionInputSchema).transform((options) => normalizeOptions<Option>(options));
 export const radioOptionsSchema = z.array(radioOptionInputSchema).transform((options) => normalizeOptions<RadioOption>(options));
+
+/** The label of the option whose value equals `value`, or the value itself as text. */
+export function optionLabel(options: ReadonlyArray<{ label: string; value: unknown }> | undefined, value: unknown): string {
+	const key = JSON.stringify(value);
+	return options?.find((o) => JSON.stringify(o.value) === key)?.label ?? String(value);
+}
+
+/** Display text for a single-choice value: null when nothing is chosen. */
+export function displayChoice(value: unknown, config: Record<string, any>): string | null {
+	if (value === undefined || value === null || value === "") return null;
+	return optionLabel(config.options, value);
+}
