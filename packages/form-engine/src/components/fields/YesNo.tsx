@@ -2,8 +2,8 @@
 // A two-option question with a boolean value. Rules can test `is: true` / `is: false`.
 import React from "react";
 import { z } from "zod";
-import { Radio } from "@base-ui-components/react/radio";
-import { RadioGroup as RadioGroupPrimitive } from "@base-ui-components/react/radio-group";
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
 import { defineField } from "../../core/defineField";
 import { optionLabelClassName, radioItemClassName } from "./styles";
 

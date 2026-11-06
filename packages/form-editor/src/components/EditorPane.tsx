@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useEffect, useRef, useImperativeHandle, forwardRef } from "react";
-import { Tabs } from "@base-ui-components/react/tabs";
-import { Toolbar } from "@base-ui-components/react/toolbar";
+import { Tabs } from "@base-ui/react/tabs";
+import { Toolbar } from "@base-ui/react/toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
 import { UndoIcon, RedoIcon } from "./icons";
 import YamlEditor from "./YamlEditor";

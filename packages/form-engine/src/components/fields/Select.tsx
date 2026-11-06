@@ -1,7 +1,7 @@
 // packages/form-engine/src/components/fields/Select.tsx
 import React from "react";
 import { z } from "zod";
-import { Select as SelectPrimitive } from "@base-ui-components/react/select";
+import { Select as SelectPrimitive } from "@base-ui/react/select";
 import { defineField } from "../../core/defineField";
 import { serializeForUI } from "../../utils/valueSerialization";
 import { optionsSchema } from "./options";

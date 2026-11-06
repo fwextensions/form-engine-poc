@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from "react";
-import { Toolbar } from "@base-ui-components/react/toolbar";
+import { Toolbar } from "@base-ui/react/toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
 import { PlusIcon, TrashIcon, GearIcon } from "./icons";
 

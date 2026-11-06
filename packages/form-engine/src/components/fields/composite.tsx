@@ -3,7 +3,7 @@
 // Each part is its own Base UI field so native constraint messages and
 // custom validation attach to the part that failed.
 import React from "react";
-import { Field } from "@base-ui-components/react/field";
+import { Field } from "@base-ui/react/field";
 import { inputClassName } from "./styles";
 
 export interface SubFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "name" | "id"> {

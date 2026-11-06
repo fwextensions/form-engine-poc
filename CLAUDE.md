@@ -29,7 +29,7 @@ This is an npm workspace monorepo with 3 packages:
 
 1. **form-engine** (`packages/form-engine/`) - Core rendering library and component catalog
    - Main entry point: `src/index.ts`
-   - Built with React 19, Zod 4 and [Base UI](https://base-ui.com) (`@base-ui-components/react`) for fields, selects, dialogs, tabs and toolbars
+   - Built with React 19, Zod 4 and [Base UI](https://base-ui.com) (`@base-ui/react`) for fields, selects, dialogs, tabs and toolbars
    - Test schemas in `test-schemas/` directory
 
 2. **form-editor** (`packages/form-editor/`) - Schema editor with live preview

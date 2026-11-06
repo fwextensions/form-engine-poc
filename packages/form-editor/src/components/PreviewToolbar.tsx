@@ -1,5 +1,5 @@
 import React from "react";
-import { Toolbar } from "@base-ui-components/react/toolbar";
+import { Toolbar } from "@base-ui/react/toolbar";
 import ToolbarIconButton from "./ToolbarIconButton";
 import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 

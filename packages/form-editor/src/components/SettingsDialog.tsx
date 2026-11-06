@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Dialog } from "@base-ui-components/react/dialog";
+import { Dialog } from "@base-ui/react/dialog";
 import { getSettings, saveSettings, getServerCredentialStatus, subscribeToSettings, type LLMProvider } from "@/lib/settings";
 import { startOpenRouterLogin } from "@/lib/openrouter-auth";
 

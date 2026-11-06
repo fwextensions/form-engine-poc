@@ -2,8 +2,8 @@
 // "Select all that apply": a set of checkboxes that collects an array of values.
 import React from "react";
 import { z } from "zod";
-import { Checkbox as CheckboxPrimitive } from "@base-ui-components/react/checkbox";
-import { CheckboxGroup as CheckboxGroupPrimitive } from "@base-ui-components/react/checkbox-group";
+import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
+import { CheckboxGroup as CheckboxGroupPrimitive } from "@base-ui/react/checkbox-group";
 import { defineField } from "../../core/defineField";
 import { serializeForUI } from "../../utils/valueSerialization";
 import { radioOptionsSchema } from "./options";

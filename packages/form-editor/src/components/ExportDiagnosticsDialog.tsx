@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Dialog } from "@base-ui-components/react/dialog";
+import { Dialog } from "@base-ui/react/dialog";
 import type { ExportDiagnostic } from "form-exporters";
 
 interface ExportDiagnosticsDialogProps {

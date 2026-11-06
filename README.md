@@ -21,7 +21,7 @@ npm run dev
 - **Language**: TypeScript for type safety
 - **Schema**: YAML with `js-yaml` parsing
 - **Validation**: Zod schemas
-- **UI Components**: Base UI (`@base-ui-components/react`)
+- **UI Components**: Base UI (`@base-ui/react`)
 - **Styling**: Tailwind CSS
 - **Build**: npm workspaces
 

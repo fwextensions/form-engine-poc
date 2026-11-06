@@ -1,7 +1,7 @@
 // packages/form-engine/src/components/fields/Checkbox.tsx
 import React from "react";
 import { z } from "zod";
-import { Checkbox as CheckboxPrimitive } from "@base-ui-components/react/checkbox";
+import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
 import { defineField } from "../../core/defineField";
 import { CheckIcon } from "./icons";
 import { checkboxClassName, optionLabelClassName } from "./styles";

@@ -2,7 +2,7 @@
 // The single-line input family: text, email, password, tel, number.
 import React from "react";
 import { z } from "zod";
-import { Field } from "@base-ui-components/react/field";
+import { Field } from "@base-ui/react/field";
 import { defineField, type FieldInputProps } from "../../core/defineField";
 import { numberValidationSchema, textValidationSchema } from "../../core/baseSchemas";
 import { inputClassName } from "./styles";

@@ -1,6 +1,6 @@
 // packages/form-engine/src/components/layout/FormFieldContainer.tsx
 import React from "react";
-import { Field } from "@base-ui-components/react/field";
+import { Field } from "@base-ui/react/field";
 
 // Required asterisk is handled by the .field-required-marker CSS class in globals.css
 // (Tailwind v4 scanner can't reliably detect classes inside JS string variables)

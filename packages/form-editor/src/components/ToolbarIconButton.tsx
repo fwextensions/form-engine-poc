@@ -1,5 +1,5 @@
 import React from "react";
-import { Toolbar } from "@base-ui-components/react/toolbar";
+import { Toolbar } from "@base-ui/react/toolbar";
 
 interface ToolbarIconButtonProps {
 	onClick: () => void;

@@ -1,7 +1,7 @@
 // packages/form-engine/src/components/layout/Form.tsx
 import React, { useEffect, useRef } from "react";
 import { z } from "zod";
-import { Form } from "@base-ui-components/react/form";
+import { Form } from "@base-ui/react/form";
 import { baseLayoutComponentConfigSchema } from "../../core/baseSchemas";
 import { createComponent } from "../../core/componentFactory";
 import { FormEngineContext, useFormEngine } from "../../engine/FormEngineContext";

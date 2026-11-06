@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Field } from "@base-ui-components/react/field";
+import { Field } from "@base-ui/react/field";
 import { FormEngineContext } from "../../../engine/FormEngineContext";
 import { FormFieldContainer, FormFieldContainerProps } from "../../layout/FormFieldContainer";
 import { AddressValidationFieldConfig, addressValidationFieldConfigSchema, transformConfig } from "./schema";

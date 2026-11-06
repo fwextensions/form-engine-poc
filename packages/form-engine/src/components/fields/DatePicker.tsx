@@ -1,7 +1,7 @@
 // packages/form-engine/src/components/fields/DatePicker.tsx
 import React from "react";
 import { z } from "zod";
-import { Field } from "@base-ui-components/react/field";
+import { Field } from "@base-ui/react/field";
 import { defineField } from "../../core/defineField";
 import { inputClassName } from "./styles";
 
