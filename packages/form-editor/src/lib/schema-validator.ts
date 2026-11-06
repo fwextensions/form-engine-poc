@@ -1,5 +1,5 @@
 import * as yaml from "js-yaml";
-import { validateSchemaTree, type SchemaIssue } from "form-engine";
+import { validateSchemaTree, type SchemaIssue } from "@fwextensions/form-engine";
 
 /**
  * Result of schema validation containing validation status and any errors/warnings.

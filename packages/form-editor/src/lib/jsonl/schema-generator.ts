@@ -7,7 +7,7 @@
  * AND that it should output JSONL patches.
  */
 
-import { getRegisteredCatalog, generateCatalogPrompt } from "form-engine";
+import { getRegisteredCatalog, generateCatalogPrompt } from "@fwextensions/form-engine";
 import { getJsonlPreamble, buildJsonlEditPrompt, buildJsonlCreatePrompt } from "./prompt";
 
 /**

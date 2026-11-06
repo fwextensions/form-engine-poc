@@ -12,7 +12,7 @@
 import * as monaco from "monaco-editor";
 import { loader } from "@monaco-editor/react";
 import { configureMonacoYaml, type MonacoYaml } from "monaco-yaml";
-import { getRegisteredCatalog, catalogToFormJsonSchema } from "form-engine";
+import { getRegisteredCatalog, catalogToFormJsonSchema } from "@fwextensions/form-engine";
 
 export const FORM_SCHEMA_URI = "form-engine://schema/form-schema.json";
 

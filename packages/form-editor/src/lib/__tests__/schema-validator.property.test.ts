@@ -15,7 +15,7 @@
 import { describe, it, expect } from "vitest";
 import * as fc from "fast-check";
 import { validateSchema } from "../schema-validator";
-import { parseRootFormSchema, getCatalogTypes, getRegisteredCatalog } from "form-engine";
+import { parseRootFormSchema, getCatalogTypes, getRegisteredCatalog } from "@fwextensions/form-engine";
 import * as yaml from "js-yaml";
 
 // Configure fast-check

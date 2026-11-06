@@ -6,11 +6,11 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=form-editor",
-    "build": "npm run build --workspace=form-editor",
-    "start": "npm run start --workspace=form-editor",
-    "lint": "npm run lint --workspace=form-editor",
-    "generate-schema": "npm run generate-schema --workspace=form-engine",
+    "dev": "npm run dev --workspace=@fwextensions/form-editor",
+    "build": "npm run build --workspace=@fwextensions/form-editor",
+    "start": "npm run start --workspace=@fwextensions/form-editor",
+    "lint": "npm run lint --workspace=@fwextensions/form-editor",
+    "generate-schema": "npm run generate-schema --workspace=@fwextensions/form-engine",
     "lint:all": "npm run lint --workspaces --if-present",
     "build:all": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",

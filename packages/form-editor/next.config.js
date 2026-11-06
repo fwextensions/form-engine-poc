@@ -2,6 +2,6 @@
 export default {
 	reactStrictMode: true,
 	devIndicators: false,
-	transpilePackages: ["form-engine", "form-exporters"],
+	transpilePackages: ["@fwextensions/form-engine", "@fwextensions/form-exporters"],
 	agentRules: false,
 };

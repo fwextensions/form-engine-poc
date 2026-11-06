@@ -1,5 +1,5 @@
 {
-  "name": "form-editor",
+  "name": "@fwextensions/form-editor",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -29,8 +29,8 @@
     "@streamdown/math": "^1.0.0",
     "@streamdown/mermaid": "^1.0.0",
     "ai": "^7.0.163",
-    "form-engine": "*",
-    "form-exporters": "*",
+    "@fwextensions/form-engine": "*",
+    "@fwextensions/form-exporters": "*",
     "js-yaml": "^4.1.1",
     "monaco-yaml": "^5.5.1",
     "next": "^16.4.5",

@@ -1,5 +1,5 @@
 {
-  "name": "form-exporters",
+  "name": "@fwextensions/form-exporters",
   "version": "0.1.0",
   "private": true,
   "main": "src/index.ts",
@@ -11,7 +11,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "form-engine": "*"
+    "@fwextensions/form-engine": "*"
   },
   "devDependencies": {
     "typescript": "^6.0.3",

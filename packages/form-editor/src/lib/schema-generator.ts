@@ -5,7 +5,7 @@
  * Provides catalog documentation and formats edit requests.
  */
 
-import { getRegisteredCatalog, generateCatalogPrompt } from "form-engine";
+import { getRegisteredCatalog, generateCatalogPrompt } from "@fwextensions/form-engine";
 
 /**
  * SchemaGenerator builds prompts for form schema generation.

@@ -12,7 +12,7 @@
  */
 
 import { ZodError } from "zod";
-import { getComponentDefinition, type ComponentDefinition } from "form-engine";
+import { getComponentDefinition, type ComponentDefinition } from "@fwextensions/form-engine";
 import type { ExportDiagnostic, ExportResult } from "../types";
 import {
   genId,

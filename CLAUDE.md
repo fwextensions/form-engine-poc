@@ -12,9 +12,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run generate-schema` - Write the registry-derived JSON Schema to `packages/form-engine/dist/form-schema.json`
 
 ### Package-specific commands:
-- **form-engine**: `npm run test --workspace=form-engine` (vitest), `npm run build --workspace=form-engine` (JSON schema + tsc)
-- **form-editor**: `npm run dev --workspace=form-editor` (Next.js with Monaco editor)
-- **form-exporters**: `npm run test --workspace=form-exporters`
+- **form-engine**: `npm run test --workspace=@fwextensions/form-engine` (vitest), `npm run build --workspace=@fwextensions/form-engine` (JSON schema + tsc)
+- **form-editor**: `npm run dev --workspace=@fwextensions/form-editor` (Next.js with Monaco editor)
+- **form-exporters**: `npm run test --workspace=@fwextensions/form-exporters`
 
 ### Testing:
 - Every package has a vitest suite; `npm test` runs them all. CI (`.github/workflows/ci.yml`) runs `npm run check`.
@@ -95,4 +95,4 @@ Layout and static components (`form`, `page`, `html`) and fields with bespoke re
 - When the lockfile has to be regenerated, use `rm -rf node_modules packages/*/node_modules package-lock.json && npm install --prefer-dedupe`. Then check `npm ls @assistant-ui/store` shows one copy: two copies (root and `packages/form-editor/node_modules`) mean two React contexts and the editor fails with `The current scope does not have a "threads" property`. Never run `npm dedupe`: it drops the optional native packages for every platform other than the current one (`lightningcss-win32-*`, `@tailwindcss/oxide-*`), so `npm ci` on Windows or macOS then fails with `Cannot find module '../lightningcss.<platform>.node'`.
 - To verify the chat loop without a provider key: generate a stream from the SDK's mock model (`ai/test`, `MockLanguageModelV3`, `toUIMessageStreamResponse()`), serve it for `/api/llm` with Playwright's `page.route`, and check the YAML gains the patched field.
 - `monaco-editor` is overridden to 0.52.2: `monaco-yaml`'s worker helper imports a path that 0.53+ no longer exports and uses the pre-0.53 worker bootstrap.
-- The workspace package is named `form-engine`, which is also an unrelated public npm package. The `"form-engine": "*"` dependencies resolve to the workspace; keep it that way (or rename to a scoped name).
+- The packages are scoped (`@fwextensions/form-engine`, `@fwextensions/form-exporters`, `@fwextensions/form-editor`) and private. The scope exists to avoid the unrelated public `form-engine` package on npm, not because anything is published; the `"@fwextensions/form-engine": "*"` dependencies resolve to the workspace.

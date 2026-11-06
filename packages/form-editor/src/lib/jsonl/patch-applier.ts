@@ -11,7 +11,7 @@
  */
 
 import { ZodError } from "zod";
-import { getComponentDefinition, getRegisteredCatalog, resolveAllowedChildren, validateSchemaTree } from "form-engine";
+import { getComponentDefinition, getRegisteredCatalog, resolveAllowedChildren, validateSchemaTree } from "@fwextensions/form-engine";
 import type { PatchOp, SchemaComponent, AddOp, UpdateOp, RemoveOp, MoveOp, ReplaceOp } from "./types";
 
 /**

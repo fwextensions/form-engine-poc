@@ -10,8 +10,8 @@ import {
 	type FormEngineHandle,
 	type FormMeta,
 	type SchemaIssue,
-} from "form-engine";
-import { exportToFillout, type ExportDiagnostic } from "form-exporters";
+} from "@fwextensions/form-engine";
+import { exportToFillout, type ExportDiagnostic } from "@fwextensions/form-exporters";
 import EditorToolbar from "@/components/EditorToolbar";
 import PreviewToolbar from "@/components/PreviewToolbar";
 import EditorPane from "@/components/EditorPane";

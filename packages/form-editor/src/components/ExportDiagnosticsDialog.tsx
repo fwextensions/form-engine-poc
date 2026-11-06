@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import type { ExportDiagnostic } from "form-exporters";
+import type { ExportDiagnostic } from "@fwextensions/form-exporters";
 
 interface ExportDiagnosticsDialogProps {
 	open: boolean;

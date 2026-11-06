@@ -1,7 +1,7 @@
 // Keeps the Fillout exporter in step with the form-engine component registry.
 
 import { describe, it, expect } from "vitest";
-import { getAllComponentDefinitions } from "form-engine";
+import { getAllComponentDefinitions } from "@fwextensions/form-engine";
 import { exportToFillout, getSupportedComponentTypes } from "../index";
 
 describe("fillout exporter coverage", () => {
